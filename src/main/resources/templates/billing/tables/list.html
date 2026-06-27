@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Tables — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Tables</h1>
+      <p class="text-sand text-sm mt-0.5">Manage café tables and QR codes</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/admin/tables"
+         class="px-3 py-2 rounded-lg border border-elevated/60 text-sand text-xs
+                font-heading tracking-widest hover:border-sand/40 hover:text-ivory transition-colors">
+        FLOOR PLAN
+      </a>
+      <a href="/admin/tables/new"
+         class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
+                font-heading tracking-widest text-sm
+                hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        + ADD TABLE
+      </a>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  <div th:if="${param.created}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Table created with QR code.
+  </div>
+  <div th:if="${param.updated}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Table updated.
+  </div>
+  <div th:if="${param.deactivated}"
+       id="flash-deactivated"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-sand/30
+              text-sand text-xs font-medium whitespace-nowrap">
+    Table deactivated.
+  </div>
+  <script th:if="${param.deactivated}">
+    const _fd = document.getElementById('flash-deactivated');
+    if (_fd) setTimeout(() => { _fd.style.opacity = '0'; setTimeout(() => _fd.style.display = 'none', 400); }, 3000);
+  </script>
+  <div th:if="${param.activebills}"
+       id="flash-activebills"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-red-500/30
+              text-red-400 text-xs font-medium whitespace-nowrap">
+    <span>⚠</span> Cannot deactivate — table has active bills.
+  </div>
+  <script th:if="${param.activebills}">
+    const _fab = document.getElementById('flash-activebills');
+    if (_fab) setTimeout(() => { _fab.style.opacity = '0'; setTimeout(() => _fab.style.display = 'none', 400); }, 3000);
+  </script>
+
+  <!-- Table -->
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+
+    <div th:if="${#lists.isEmpty(tables)}"
+         class="py-16 text-center text-sand text-sm">
+      No tables yet.
+      <a href="/admin/tables/new" class="text-accent hover:underline ml-1">Add one?</a>
+    </div>
+
+    <table th:unless="${#lists.isEmpty(tables)}" class="w-full text-left">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-4 py-3 font-medium">Name</th>
+          <th class="px-4 py-3 font-medium">Capacity</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">QR Code</th>
+          <th class="px-4 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="t : ${tables}"
+            class="border-b border-elevated/40 last:border-0 hover:bg-elevated/20 transition-colors">
+
+          <td class="px-4 py-3 text-ivory text-sm font-medium" th:text="${t.name}"></td>
+
+          <td class="px-4 py-3 text-sand text-sm"
+              th:text="${t.capacity != null} ? ${t.capacity} + ' seats' : '—'"></td>
+
+          <td class="px-4 py-3">
+            <span th:if="${t.status.name() == 'FREE'}"
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs border rounded-full
+                         text-emerald-400 border-emerald-400/40 bg-emerald-400/10">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Free
+            </span>
+            <span th:unless="${t.status.name() == 'FREE'}"
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs border rounded-full
+                         text-amber-400 border-amber-400/40 bg-amber-400/10">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Occupied
+            </span>
+          </td>
+
+          <td class="px-4 py-3">
+            <a th:if="${t.qrImagePath != null}"
+               th:href="@{/admin/tables/{id}/qr/download(id=${t.id})}"
+               title="Download QR">
+              <img th:src="@{/admin/tables/{id}/qr(id=${t.id})}"
+                   width="60" height="60"
+                   class="rounded border border-elevated/60 hover:border-accent/40 transition-colors"
+                   alt="QR"/>
+            </a>
+            <span th:unless="${t.qrImagePath != null}" class="text-sand text-xs">—</span>
+          </td>
+
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2 flex-wrap">
+              <a th:href="@{/admin/tables/{id}/edit(id=${t.id})}"
+                 class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                        hover:border-ivory/40 hover:text-ivory transition-colors">
+                Edit
+              </a>
+              <a th:if="${t.qrImagePath != null}"
+                 th:href="@{/admin/tables/{id}/qr/download(id=${t.id})}"
+                 class="text-xs px-2.5 py-1 rounded border border-accent/30 text-accent
+                        hover:bg-accent/10 transition-colors">
+                Download QR
+              </a>
+              <form th:action="@{/admin/tables/{id}/deactivate(id=${t.id})}" method="post"
+                    class="inline"
+                    onsubmit="return bbConfirm(this, 'Deactivate ' + this.dataset.name + '?')"
+                    th:attr="data-name=${t.name}">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-red-500/40 text-red-400
+                               hover:bg-red-500/10 transition-colors cursor-pointer">
+                  Deactivate
+                </button>
+              </form>
+            </div>
+          </td>
+
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <p th:unless="${#lists.isEmpty(tables)}"
+     class="mt-3 text-sand text-xs text-right"
+     th:text="${#lists.size(tables)} + ' table' + (${#lists.size(tables)} == 1 ? '' : 's')">
+  </p>
+
+</main>
+</body>
+</html>

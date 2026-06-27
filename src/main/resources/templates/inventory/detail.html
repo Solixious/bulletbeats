@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${item.name} + ' — Inventory — Bullet Beats Café'">Item — Inventory</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <!-- Back -->
+  <a href="/inventory"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Inventory
+  </a>
+
+  <!-- Flash -->
+  <div th:if="${param.updated}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Item updated.
+  </div>
+
+  <!-- Two-column layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+    <!-- ── Left: item info card ──────────────────────────────────── -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-6 space-y-5">
+
+      <div class="flex items-start justify-between">
+        <div>
+          <h1 class="font-heading text-3xl text-ivory tracking-wide" th:text="${item.name}">Name</h1>
+          <p class="text-sand text-sm mt-0.5" th:text="${item.unit}">unit</p>
+        </div>
+        <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+           th:href="@{/inventory/{id}/edit(id=${item.id})}"
+           class="text-xs px-3 py-1.5 rounded border border-sand/30 text-sand
+                  hover:border-ivory/40 hover:text-ivory transition-colors flex-shrink-0">
+          Edit
+        </a>
+      </div>
+
+      <!-- Default Supplier -->
+      <div>
+        <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Default Supplier</p>
+        <p class="text-ivory text-sm"
+           th:text="${item.defaultSupplier != null} ? ${item.defaultSupplier.name} : 'No default supplier'"></p>
+      </div>
+
+      <!-- Stock info (HTMX-swappable section) -->
+      <div>
+        <p class="text-sand text-xs uppercase tracking-widest mb-2">Current Stock</p>
+        <th:block th:replace="~{inventory/fragments/stock-info :: stock-info}"></th:block>
+      </div>
+
+      <!-- Thresholds -->
+      <div class="grid grid-cols-2 gap-4 pt-2 border-t border-elevated/40">
+        <div>
+          <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Min Threshold</p>
+          <p class="font-mono text-ivory text-sm"
+             th:text="${#numbers.formatDecimal(item.minThreshold, 1, 3)} + ' ' + ${item.unit}"></p>
+        </div>
+        <div>
+          <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Reorder Qty</p>
+          <p class="font-mono text-ivory text-sm"
+             th:text="${#numbers.formatDecimal(item.reorderQuantity, 1, 3)} + ' ' + ${item.unit}"></p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Right: adjust stock form ──────────────────────────────── -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+      <h2 class="font-heading text-xl text-ivory tracking-wide mb-1">Adjust Stock</h2>
+      <p class="text-sand text-xs mb-5">Record inbound, outbound, adjustment or wastage</p>
+
+      <form th:attr="hx-post=@{/inventory/{id}/adjust(id=${item.id})}"
+            hx-target="#stock-info"
+            hx-swap="outerHTML"
+            class="space-y-4">
+
+        <!-- Movement type -->
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Movement Type
+          </label>
+          <select name="movementType"
+                  class="w-full bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                         transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+            <option th:each="type : ${movementTypes}"
+                    th:value="${type}"
+                    th:text="${type.displayName}">Type</option>
+          </select>
+        </div>
+
+        <!-- Quantity -->
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Quantity (<span th:text="${item.unit}"></span>)
+          </label>
+          <input type="number" name="quantity" step="0.001" min="0.001" required
+                 class="w-full bg-elevated border border-elevated focus:border-accent
+                        rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                        outline-none transition-all duration-200 focus:shadow-neon-sm"
+                 placeholder="0.000"/>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Notes</label>
+          <textarea name="notes" rows="2"
+                    class="w-full bg-elevated border border-elevated focus:border-accent
+                           rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                           outline-none transition-all duration-200 focus:shadow-neon-sm resize-none"
+                    placeholder="Optional reason or reference"></textarea>
+        </div>
+
+        <button type="submit"
+                class="w-full px-4 py-2.5 rounded-lg bg-accent text-base font-heading
+                       tracking-widest text-sm hover:shadow-neon hover:brightness-110
+                       transition-all duration-200">
+          APPLY ADJUSTMENT
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- ── Movement history ──────────────────────────────────────── -->
+  <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+    <div class="px-5 py-4 border-b border-elevated/60">
+      <h2 class="font-heading text-xl text-ivory tracking-wide">Movement History</h2>
+    </div>
+    <div class="p-4"
+         th:attr="hx-get='/inventory/' + ${item.id} + '/movements'"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="innerHTML">
+      <p class="text-sand text-sm text-center py-4">Loading movements…</p>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

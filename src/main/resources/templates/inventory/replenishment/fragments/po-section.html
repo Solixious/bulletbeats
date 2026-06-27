@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="po-section">
+
+  <div th:if="${#lists.isEmpty(orders)}"
+       class="py-10 text-center text-sand text-sm">
+    No purchase orders yet.
+  </div>
+
+  <table th:unless="${#lists.isEmpty(orders)}" class="w-full text-left">
+    <thead>
+      <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+        <th class="px-4 py-3 font-medium">PO #</th>
+        <th class="px-4 py-3 font-medium">Supplier</th>
+        <th class="px-4 py-3 font-medium">Status</th>
+        <th class="px-4 py-3 font-medium">Created</th>
+        <th class="px-4 py-3 font-medium"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="po : ${orders}"
+          class="border-b border-elevated/40 hover:bg-elevated/20 transition-colors">
+        <td class="px-4 py-3 text-sand text-xs font-mono"
+            th:text="'PO-' + ${po.id}"></td>
+        <td class="px-4 py-3 text-ivory text-sm" th:text="${po.supplier.name}"></td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase"
+                th:with="s=${po.status.name()}"
+                th:classappend="${s == 'RECEIVED'}  ? 'text-emerald-400 border-emerald-400/40 bg-emerald-400/10' :
+                               (${s == 'ORDERED'}   ? 'text-blue-400 border-blue-400/40 bg-blue-400/10' :
+                               (${s == 'APPROVED'}  ? 'text-accent border-accent/40 bg-accent/10' :
+                               (${s == 'CANCELLED'} ? 'text-sand border-sand/40 bg-sand/10' :
+                                                      'text-amber-400 border-amber-400/40 bg-amber-400/10')))"
+                th:text="${po.status}">
+          </span>
+        </td>
+        <td class="px-4 py-3 text-sand text-xs"
+            th:text="${#temporals.format(po.createdAt, 'dd MMM yyyy')}"></td>
+        <td class="px-4 py-3">
+          <a th:href="@{/inventory/purchase-orders/{id}(id=${po.id})}"
+             class="text-xs text-accent hover:underline">View →</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</th:block>
+</body>
+</html>

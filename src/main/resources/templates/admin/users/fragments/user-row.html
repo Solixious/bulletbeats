@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body><table><tbody>
+
+<tr th:fragment="user-row"
+    th:id="|user-row-${user.id}|"
+    class="border-b border-elevated/40 hover:bg-elevated/20 transition-colors duration-100">
+
+  <!-- Full name -->
+  <td class="px-4 py-3">
+    <span class="text-ivory text-sm font-medium" th:text="${user.fullName}">Jane Smith</span>
+  </td>
+
+  <!-- Username -->
+  <td class="px-4 py-3">
+    <span class="text-sand text-sm font-mono" th:text="${user.username}">jsmith</span>
+  </td>
+
+  <!-- Role badge -->
+  <td class="px-4 py-3">
+    <span class="px-2 py-0.5 text-xs border rounded-full font-bold tracking-wide uppercase"
+          th:text="${user.role.displayName}"
+          th:classappend="${user.role.name() == 'ADMIN'}   ? 'text-accent border-accent/40 bg-accent/10' :
+                         (${user.role.name() == 'MANAGER'} ? 'text-amber-400 border-amber-400/40 bg-amber-400/10' :
+                                                             'text-emerald-400 border-emerald-400/40 bg-emerald-400/10')">
+      Staff
+    </span>
+  </td>
+
+  <!-- Active badge -->
+  <td class="px-4 py-3">
+    <span th:if="${user.active}"
+          class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs border rounded-full
+                 text-emerald-400 border-emerald-400/40 bg-emerald-400/10">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
+    </span>
+    <span th:unless="${user.active}"
+          class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs border rounded-full
+                 text-sand border-sand/40 bg-sand/10">
+      <span class="w-1.5 h-1.5 rounded-full bg-sand/60"></span> Inactive
+    </span>
+  </td>
+
+  <!-- Actions -->
+  <td class="px-4 py-3">
+    <div class="flex items-center gap-2">
+
+      <!-- Edit -->
+      <a th:href="@{/admin/users/{id}/edit(id=${user.id})}"
+         class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                hover:border-ivory/40 hover:text-ivory transition-colors">
+        Edit
+      </a>
+
+      <!-- Toggle active (disabled for self) -->
+      <button th:if="${currentUserId != user.id}"
+              th:attr="hx-post=@{/admin/users/{id}/toggle-active(id=${user.id})},
+                       hx-target=|#user-row-${user.id}|"
+              hx-swap="outerHTML"
+              th:text="${user.active} ? 'Deactivate' : 'Activate'"
+              th:classappend="${user.active}
+                ? 'border-red-500/40 text-red-400 hover:bg-red-500/10'
+                : 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'"
+              class="text-xs px-2.5 py-1 rounded border transition-colors cursor-pointer">
+        Toggle
+      </button>
+
+      <span th:if="${currentUserId == user.id}"
+            class="text-xs text-sand/40 italic">you</span>
+
+    </div>
+  </td>
+</tr>
+
+</tbody></table></body>
+</html>

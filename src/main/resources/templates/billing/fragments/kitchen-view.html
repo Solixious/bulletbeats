@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<div th:fragment="kitchen-view" id="kitchen-view">
+
+  <div class="mb-4 flex items-center justify-between">
+    <div>
+      <h2 class="font-heading text-2xl text-ivory tracking-wide">Kitchen Order</h2>
+      <p class="text-sand text-xs mt-0.5"
+         th:text="${bill.cafeTable.name}
+                  + (${bill.customer != null} ? ' · ' + ${bill.customer.name} : ' · Walk-in')"></p>
+    </div>
+    <span class="px-3 py-1 rounded-full border border-amber-400/40 bg-amber-400/10
+                 text-amber-400 text-xs font-bold tracking-widest">
+      CONFIRMED
+    </span>
+  </div>
+
+  <!-- Item cards -->
+  <div class="grid grid-cols-1 gap-3">
+    <th:block th:each="item : ${bill.items}">
+
+      <!--
+        "New" = item was added AFTER the bill was confirmed.
+        We give a 3-second grace window (confirmedAt + 3s) to avoid false positives
+        from items that were in the cart at confirmation time but saved milliseconds later.
+      -->
+      <th:block th:with="
+        isNew=${bill.confirmedAt != null
+                and item.createdAt != null
+                and item.createdAt.isAfter(bill.confirmedAt.plusSeconds(3))}">
+
+        <!-- NEW item: amber/orange accent highlight -->
+        <div th:if="${isNew}"
+             class="relative rounded-xl border-2 border-amber-400/70 bg-amber-400/10
+                    shadow-[0_0_16px_rgba(251,191,36,0.25)] p-4 flex flex-col gap-2">
+
+          <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-amber-400 text-base
+                       text-xs font-bold tracking-widest leading-none">NEW</span>
+
+          <p class="font-heading text-2xl text-ivory tracking-wide leading-tight pr-12"
+             th:text="${item.itemName}">Item</p>
+
+          <div class="flex items-end justify-between mt-auto pt-1">
+            <div class="flex items-center gap-2">
+              <span class="text-sand text-sm">Qty</span>
+              <span class="font-heading text-4xl text-amber-400 leading-none"
+                    th:text="${item.quantity}">1</span>
+            </div>
+            <div class="text-right">
+              <p class="text-sand text-xs">@ ₹<span th:text="${item.unitPrice}">0</span> each</p>
+              <p class="font-heading text-xl text-ivory"
+                 th:text="'₹' + ${item.lineTotal}">₹0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ORIGINAL item: standard card -->
+        <div th:unless="${isNew}"
+             class="rounded-xl border border-elevated/60 bg-surface p-4 flex flex-col gap-2">
+
+          <p class="font-heading text-2xl text-ivory tracking-wide leading-tight"
+             th:text="${item.itemName}">Item</p>
+
+          <div class="flex items-end justify-between mt-auto pt-1">
+            <div class="flex items-center gap-2">
+              <span class="text-sand text-sm">Qty</span>
+              <span class="font-heading text-4xl text-accent leading-none"
+                    th:text="${item.quantity}">1</span>
+            </div>
+            <div class="text-right">
+              <p class="text-sand text-xs">@ ₹<span th:text="${item.unitPrice}">0</span> each</p>
+              <p class="font-heading text-xl text-ivory"
+                 th:text="'₹' + ${item.lineTotal}">₹0</p>
+            </div>
+          </div>
+        </div>
+
+      </th:block>
+    </th:block>
+  </div>
+
+  <!-- Total bar -->
+  <div class="mt-4 rounded-xl border border-elevated/60 bg-elevated/30 px-5 py-3
+              flex items-center justify-between">
+    <span class="text-sand text-sm">Order Total</span>
+    <span class="font-heading text-2xl text-accent tracking-wide"
+          th:text="'₹' + ${bill.totalAmount}">₹0</span>
+  </div>
+
+</div>
+
+</body>
+</html>

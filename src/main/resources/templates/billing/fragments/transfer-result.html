@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<div th:fragment="transfer-result" id="transfer-panel-inner"
+     class="mt-4 bg-elevated/40 rounded-xl border border-emerald-400/30 p-4">
+
+  <div class="flex items-center gap-3 mb-3">
+    <div class="w-8 h-8 rounded-full bg-emerald-400/20 flex items-center justify-center">
+      <span class="text-emerald-400 text-sm">✓</span>
+    </div>
+    <div>
+      <p class="text-emerald-400 font-medium text-sm">Transfer Complete</p>
+      <p class="text-sand text-xs mt-0.5"
+         th:text="${result.billsTransferred} + ' bill(s) moved from '
+                  + ${result.fromTable.name} + ' → ' + ${result.toTable.name}"></p>
+    </div>
+  </div>
+
+  <a th:href="@{/bills/{id}(id=${billId})}"
+     class="block w-full text-center py-2 rounded-lg bg-accent text-base text-sm font-heading
+            tracking-wider hover:brightness-110 transition-all">
+    Reload Bill
+  </a>
+
+</div>
+
+</body>
+</html>

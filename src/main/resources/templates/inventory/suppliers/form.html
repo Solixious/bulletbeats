@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${mode == 'edit'} ? 'Edit Supplier — Bullet Beats Café' : 'New Supplier — Bullet Beats Café'">
+    Supplier
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-xl mx-auto">
+
+  <a href="/inventory/suppliers"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Suppliers
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide"
+        th:text="${mode == 'edit'} ? 'Edit Supplier' : 'New Supplier'">Supplier</h1>
+    <p class="text-sand text-sm mt-0.5"
+       th:text="${mode == 'edit'} ? 'Update supplier details' : 'Add a new supplier'"></p>
+  </div>
+
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+    <form th:action="${mode == 'edit'}
+                    ? @{/inventory/suppliers/{id}/edit(id=${supplier.id})}
+                    : @{/inventory/suppliers/new}"
+          th:object="${dto}"
+          method="post"
+          class="space-y-5">
+
+      <!-- Name -->
+      <div>
+        <label for="name" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Name</label>
+        <input id="name" type="text" th:field="*{name}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('name')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="Supplier name"/>
+        <p th:if="*{#fields.hasErrors('name')}" th:errors="*{name}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Phone -->
+      <div>
+        <label for="phone" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Phone <span class="text-sand/50 normal-case">(optional)</span>
+        </label>
+        <input id="phone" type="tel" th:field="*{phone}"
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('phone')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="+91 98765 43210"/>
+        <p th:if="*{#fields.hasErrors('phone')}" th:errors="*{phone}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-3 pt-2">
+        <button type="submit"
+                class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200"
+                th:text="${mode == 'edit'} ? 'UPDATE SUPPLIER' : 'CREATE SUPPLIER'">
+          Submit
+        </button>
+        <a href="/inventory/suppliers"
+           class="px-4 py-2.5 text-sand text-sm hover:text-ivory transition-colors">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+</main>
+</body>
+</html>

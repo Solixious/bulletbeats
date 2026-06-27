@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Replenishment — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Replenishment</h1>
+      <p class="text-sand text-sm mt-0.5">Review low-stock alerts and purchase orders</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button hx-get="/inventory/replenishment/manual-po-form"
+              hx-target="#manual-po-panel"
+              hx-swap="innerHTML"
+              class="text-xs px-3 py-1.5 rounded-lg bg-accent text-base font-heading
+                     tracking-widest hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        + NEW ORDER
+      </button>
+      <a href="/inventory"
+         class="text-xs px-3 py-1.5 border border-sand/30 text-sand rounded
+                hover:border-ivory/40 hover:text-ivory transition-colors">
+        ← Inventory
+      </a>
+    </div>
+  </div>
+
+  <!-- Manual PO panel (populated on demand by HTMX) -->
+  <div id="manual-po-panel" class="mb-8"></div>
+
+  <!-- Flash -->
+  <div th:if="${param.approved}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Request approved and added to purchase order.
+  </div>
+  <div th:if="${param.cancelled}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-red-500/30 text-red-400 text-sm">
+    Request cancelled.
+  </div>
+
+  <!-- ── Section 1: Pending Requests (hidden when empty) ─────── -->
+  <div th:replace="~{inventory/replenishment/fragments/pending-section :: pending-section}"></div>
+
+  <!-- ── Section 2: Recent Purchase Orders ────────────────────── -->
+  <div>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-heading text-xl text-ivory tracking-wide">Purchase Orders</h2>
+      <a href="/inventory/purchase-orders"
+         class="text-xs text-accent hover:underline">View all →</a>
+    </div>
+
+    <div id="po-card"
+         hx-get="/inventory/replenishment/po-section"
+         hx-trigger="replenishmentApproved from:body"
+         hx-swap="innerHTML"
+         class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+      <div th:replace="~{inventory/replenishment/fragments/po-section :: po-section}"></div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${mode == 'edit'} ? 'Edit Menu Item — Bullet Beats Café' : 'New Menu Item — Bullet Beats Café'">
+    Menu Item — Bullet Beats Café
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-2xl mx-auto">
+
+  <a th:href="${mode == 'edit'} ? @{/admin/menu/{id}(id=${item.id})} : '/admin/menu'"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide"
+        th:text="${mode == 'edit'} ? 'Edit Menu Item' : 'New Menu Item'">Menu Item</h1>
+    <p class="text-sand text-sm mt-0.5"
+       th:text="${mode == 'edit'} ? 'Update item details' : 'Add a new item to the menu'"></p>
+  </div>
+
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+    <form th:action="${mode == 'edit'}
+                    ? @{/admin/menu/{id}/edit(id=${item.id})}
+                    : @{/admin/menu/new}"
+          th:object="${dto}"
+          method="post"
+          enctype="multipart/form-data"
+          class="space-y-5">
+
+      <!-- Name -->
+      <div>
+        <label for="name" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Name</label>
+        <input id="name" type="text" th:field="*{name}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('name')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="e.g. Masala Chai"/>
+        <p th:if="*{#fields.hasErrors('name')}" th:errors="*{name}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Category -->
+      <div>
+        <label for="categoryId" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Category</label>
+        <select id="categoryId" th:field="*{categoryId}" required
+                class="w-full bg-elevated border border-elevated focus:border-accent
+                       rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                       transition-all duration-200 focus:shadow-neon-sm cursor-pointer"
+                th:classappend="*{#fields.hasErrors('categoryId')} ? 'border-red-500/70' : ''">
+          <option value="">Select category…</option>
+          <option th:each="cat : ${categories}"
+                  th:value="${cat.id}"
+                  th:text="${cat.name}">Category</option>
+        </select>
+        <p th:if="*{#fields.hasErrors('categoryId')}" th:errors="*{categoryId}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Type selector -->
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-2">Type</label>
+        <div class="flex gap-4 mb-3">
+          <label class="flex items-center gap-2 cursor-pointer text-sm text-ivory">
+            <input type="radio" id="type-dish" name="_type" value="DISH"
+                   th:checked="${dto.comboId == null}"
+                   hx-get="/admin/menu/dish-selector"
+                   hx-target="#item-selector"
+                   hx-swap="innerHTML"
+                   hx-on:htmx:after-request="clearOtherType('combo')"
+                   class="accent-accent"/>
+            Dish
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer text-sm text-ivory">
+            <input type="radio" id="type-combo" name="_type" value="COMBO"
+                   th:checked="${dto.comboId != null}"
+                   hx-get="/admin/menu/combo-selector"
+                   hx-target="#item-selector"
+                   hx-swap="innerHTML"
+                   hx-on:htmx:after-request="clearOtherType('dish')"
+                   class="accent-accent"/>
+            Combo
+          </label>
+        </div>
+
+        <div id="item-selector">
+          <!-- Pre-populated on edit; defaults to dish selector on create -->
+          <th:block th:if="${dto.comboId != null}">
+            <select id="comboId" name="comboId" required
+                    class="w-full bg-elevated border border-elevated focus:border-accent
+                           rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                           transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+              <option value="">Select a combo…</option>
+              <option th:each="c : ${combos}"
+                      th:value="${c.id}"
+                      th:text="${c.name}"
+                      th:selected="${c.id == dto.comboId}">Combo</option>
+            </select>
+          </th:block>
+          <th:block th:unless="${dto.comboId != null}">
+            <select id="dishId" name="dishId" required
+                    class="w-full bg-elevated border border-elevated focus:border-accent
+                           rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                           transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+              <option value="">Select a dish…</option>
+              <option th:each="d : ${dishes}"
+                      th:value="${d.id}"
+                      th:text="${d.name}"
+                      th:selected="${d.id == dto.dishId}">Dish</option>
+            </select>
+          </th:block>
+        </div>
+        <p th:if="*{#fields.hasErrors('dishOrComboSelected')}"
+           class="mt-1.5 text-red-400 text-xs">Exactly one of dish or combo must be selected.</p>
+      </div>
+
+      <!-- Price -->
+      <div>
+        <label for="price" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Price (₹)</label>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sand text-sm">₹</span>
+          <input id="price" type="number" step="0.01" min="0.01" th:field="*{price}" required
+                 class="w-full bg-elevated rounded-lg pl-8 pr-4 py-2.5 text-ivory text-sm
+                        placeholder-sand/40 outline-none transition-all duration-200"
+                 th:classappend="*{#fields.hasErrors('price')}
+                                 ? 'border border-red-500/70'
+                                 : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+                 placeholder="0.00"/>
+        </div>
+        <p th:if="*{#fields.hasErrors('price')}" th:errors="*{price}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Display Order -->
+      <div>
+        <label for="displayOrder" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Display Order
+        </label>
+        <input id="displayOrder" type="number" min="0" th:field="*{displayOrder}"
+               class="w-full bg-elevated border border-elevated focus:border-accent
+                      rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200 focus:shadow-neon-sm"
+               placeholder="0"/>
+        <p class="mt-1 text-sand/50 text-xs">Lower numbers appear first within a category.</p>
+      </div>
+
+      <!-- Image upload -->
+      <div>
+        <label for="image" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Image <span class="text-sand/40 normal-case">(jpg / png / webp, max 2 MB)</span>
+        </label>
+        <div th:if="${mode == 'edit' and item.imagePath != null}"
+             class="mb-2 flex items-center gap-3">
+          <img th:src="'/uploads/' + ${item.imagePath}"
+               alt="Current image"
+               class="w-16 h-16 object-cover rounded-lg border border-elevated/60"/>
+          <span class="text-sand text-xs">Current image — upload a new one to replace it</span>
+        </div>
+        <input id="image" type="file" name="image" accept=".jpg,.jpeg,.png,.webp"
+               class="w-full text-sand text-sm file:mr-3 file:py-1.5 file:px-3
+                      file:rounded file:border file:border-sand/30 file:text-sand
+                      file:bg-elevated file:text-xs file:cursor-pointer
+                      hover:file:border-ivory/40 hover:file:text-ivory transition-colors"/>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-3 pt-2 border-t border-elevated/40">
+        <button type="submit"
+                class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200"
+                th:text="${mode == 'edit'} ? 'UPDATE ITEM' : 'CREATE ITEM'">
+          Submit
+        </button>
+        <a th:href="${mode == 'edit'} ? @{/admin/menu/{id}(id=${item.id})} : '/admin/menu'"
+           class="px-4 py-2.5 text-sand text-sm hover:text-ivory transition-colors">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <script>
+    // When dish selector loads, clear any hidden combo input and vice-versa
+    function clearOtherType(type) {
+      var sel = document.getElementById(type + 'Id');
+      if (sel) sel.removeAttribute('name');
+    }
+  </script>
+
+</main>
+</body>
+</html>

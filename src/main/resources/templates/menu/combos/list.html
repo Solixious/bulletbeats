@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Combos — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Combos</h1>
+      <p class="text-sand text-sm mt-0.5">Multi-component offerings and their ingredients</p>
+    </div>
+    <a href="/admin/combos/new"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
+              font-heading tracking-widest text-sm
+              hover:shadow-neon hover:brightness-110 transition-all duration-200">
+      + ADD COMBO
+    </a>
+  </div>
+
+  <div th:if="${param.created}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Combo created successfully.
+  </div>
+  <div th:if="${param.deactivated}"
+       id="flash-deactivated"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-sand/30
+              text-sand text-xs font-medium whitespace-nowrap">
+    Combo deactivated.
+  </div>
+  <script th:if="${param.deactivated}">
+    const _fd = document.getElementById('flash-deactivated');
+    if (_fd) setTimeout(() => { _fd.style.opacity = '0'; setTimeout(() => _fd.style.display = 'none', 400); }, 3000);
+  </script>
+
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+
+    <div th:if="${#lists.isEmpty(combos)}"
+         class="py-16 text-center text-sand text-sm">
+      No active combos. <a href="/admin/combos/new" class="text-accent hover:underline ml-1">Add one?</a>
+    </div>
+
+    <table th:unless="${#lists.isEmpty(combos)}" class="w-full text-left">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-4 py-3 font-medium">Name</th>
+          <th class="px-4 py-3 font-medium">Ingredients</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="combo : ${combos}"
+            class="border-b border-elevated/40 hover:bg-elevated/20 transition-colors duration-100">
+
+          <td class="px-4 py-3">
+            <a th:href="@{/admin/combos/{id}(id=${combo.id})}"
+               class="text-ivory text-sm font-medium hover:text-accent transition-colors"
+               th:text="${combo.name}">Combo Name</a>
+            <p th:if="${combo.description}" class="text-sand text-xs mt-0.5 truncate max-w-xs"
+               th:text="${combo.description}"></p>
+          </td>
+
+          <td class="px-4 py-3">
+            <span class="px-2 py-0.5 text-xs border rounded-full font-bold
+                         text-accent border-accent/40 bg-accent/10"
+                  th:text="${#lists.size(combo.ingredients)} + ' item' + (${#lists.size(combo.ingredients)} == 1 ? '' : 's')">
+            </span>
+          </td>
+
+          <td class="px-4 py-3">
+            <span th:if="${combo.active}"
+                  class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                         text-emerald-400 border-emerald-400/40 bg-emerald-400/10">Active</span>
+            <span th:unless="${combo.active}"
+                  class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                         text-sand border-sand/40 bg-sand/10">Inactive</span>
+          </td>
+
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <a th:href="@{/admin/combos/{id}(id=${combo.id})}"
+                 class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                        hover:border-ivory/40 hover:text-ivory transition-colors">View</a>
+              <a th:href="@{/admin/combos/{id}/edit(id=${combo.id})}"
+                 class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                        hover:border-ivory/40 hover:text-ivory transition-colors">Edit</a>
+              <form th:action="@{/admin/combos/{id}/deactivate(id=${combo.id})}"
+                    method="post" class="inline"
+                    onsubmit="return bbConfirm(this, 'Deactivate this combo?')">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-red-500/30 text-red-400
+                               hover:border-red-500/60 hover:bg-red-500/10 transition-colors">
+                  Deactivate
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p th:unless="${#lists.isEmpty(combos)}"
+     class="mt-3 text-sand text-xs text-right"
+     th:text="${#lists.size(combos)} + ' combo' + (${#lists.size(combos)} == 1 ? '' : 's')">
+  </p>
+
+</main>
+</body>
+</html>

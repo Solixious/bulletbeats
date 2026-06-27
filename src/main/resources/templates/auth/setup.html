@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>First Time Setup — Bullet Beats Café</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base:     '#1C1C1C',
+            surface:  '#2A2A2A',
+            elevated: '#333333',
+            accent:   '#00D4FF',
+            ivory:    '#F5F0E8',
+            sand:     '#9A9080',
+          },
+          fontFamily: {
+            heading: ['"Bebas Neue"', 'cursive'],
+            body:    ['Lato', 'sans-serif'],
+          },
+          boxShadow: {
+            neon:      '0 0 24px rgba(0,212,255,0.45), 0 0 48px rgba(0,212,255,0.15)',
+            'neon-sm': '0 0 10px rgba(0,212,255,0.4)',
+          },
+        }
+      }
+    };
+  </script>
+</head>
+
+<body class="bg-base font-body text-ivory min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-4xl flex min-h-[620px] rounded-2xl overflow-hidden shadow-2xl">
+
+    <!-- ── Left: brand panel ───────────────────────────────────── -->
+    <div class="hidden lg:flex flex-col w-5/12 bg-elevated relative overflow-hidden">
+
+      <div class="h-3 w-full flex-shrink-0"
+           style="background: repeating-linear-gradient(90deg,
+                    #00D4FF 0,#00D4FF 10px, transparent 10px, transparent 20px)"></div>
+
+      <div class="flex-1 flex flex-col justify-center px-10 py-8">
+        <div class="text-6xl mb-1 leading-none select-none">🏍</div>
+        <div class="font-heading text-ivory leading-none tracking-widest">
+          <span class="text-7xl block">BULLET</span>
+          <span class="text-7xl block text-accent">BEATS</span>
+          <span class="text-7xl block">CAFÉ</span>
+        </div>
+        <p class="mt-5 text-sand text-xs tracking-[0.25em] uppercase">
+          Let's get you set up
+        </p>
+      </div>
+
+      <div class="flex-shrink-0 pb-8 px-10 space-y-1.5">
+        <div class="h-2 w-full"
+             style="background: repeating-linear-gradient(90deg,
+                      #9A9080 0,#9A9080 5px, transparent 5px, transparent 12px)"></div>
+        <div class="h-1 w-3/4"
+             style="background: repeating-linear-gradient(90deg,
+                      #00D4FF 0,#00D4FF 5px, transparent 5px, transparent 12px)"></div>
+      </div>
+
+      <div class="absolute bottom-0 right-0 w-40 h-40 opacity-5"
+           style="background: radial-gradient(circle, #00D4FF 0%, transparent 70%)"></div>
+    </div>
+
+    <!-- ── Right: setup card ──────────────────────────────────── -->
+    <div class="flex-1 bg-surface flex flex-col justify-center px-8 py-10 lg:px-12">
+
+      <!-- mobile logo -->
+      <div class="lg:hidden text-center mb-8">
+        <span class="font-heading text-4xl text-accent tracking-widest">BULLET BEATS CAFÉ</span>
+      </div>
+
+      <div class="flex items-center gap-2 mb-0.5">
+        <span class="text-xl">🔧</span>
+        <h1 class="font-heading text-3xl text-ivory tracking-wide">First Time Setup</h1>
+      </div>
+      <p class="text-sand text-sm mb-7">Create your administrator account to get started</p>
+
+      <!-- ADMIN badge -->
+      <div class="mb-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-full
+                  bg-accent/10 border border-accent/30 self-start">
+        <span class="w-2 h-2 rounded-full bg-accent"></span>
+        <span class="text-accent text-xs font-body font-bold tracking-widest uppercase">
+          Administrator Account
+        </span>
+      </div>
+
+      <form th:action="@{/setup}" th:object="${createUserDto}" method="post"
+            class="space-y-5" autocomplete="off">
+
+        <!-- role forced to ADMIN — satisfies @NotNull validation -->
+        <input type="hidden" name="role" value="ADMIN"/>
+
+        <!-- Full Name -->
+        <div>
+          <label for="fullName"
+                 class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Full Name
+          </label>
+          <input id="fullName" type="text" th:field="*{fullName}" required autofocus
+                 class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                        placeholder-sand/40 outline-none transition-all duration-200
+                        focus:shadow-neon-sm"
+                 th:classappend="*{#fields.hasErrors('fullName')}
+                                 ? 'border border-red-500/70'
+                                 : 'border border-elevated focus:border-accent'"
+                 placeholder="Jane Smith"/>
+          <p th:if="*{#fields.hasErrors('fullName')}"
+             th:errors="*{fullName}"
+             class="mt-1.5 text-red-400 text-xs"></p>
+        </div>
+
+        <!-- Username -->
+        <div>
+          <label for="username"
+                 class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Username
+          </label>
+          <input id="username" type="text" th:field="*{username}" required
+                 class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                        placeholder-sand/40 outline-none transition-all duration-200
+                        focus:shadow-neon-sm"
+                 th:classappend="*{#fields.hasErrors('username')}
+                                 ? 'border border-red-500/70'
+                                 : 'border border-elevated focus:border-accent'"
+                 placeholder="admin"/>
+          <p th:if="*{#fields.hasErrors('username')}"
+             th:errors="*{username}"
+             class="mt-1.5 text-red-400 text-xs"></p>
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="password"
+                 class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Password
+          </label>
+          <input id="password" type="password" th:field="*{password}" required
+                 class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                        placeholder-sand/40 outline-none transition-all duration-200
+                        focus:shadow-neon-sm"
+                 th:classappend="*{#fields.hasErrors('password')}
+                                 ? 'border border-red-500/70'
+                                 : 'border border-elevated focus:border-accent'"
+                 placeholder="minimum 6 characters"/>
+          <p th:if="*{#fields.hasErrors('password')}"
+             th:errors="*{password}"
+             class="mt-1.5 text-red-400 text-xs"></p>
+        </div>
+
+        <button type="submit"
+                class="w-full bg-accent text-base font-heading text-xl tracking-widest
+                       py-3 rounded-lg transition-all duration-200
+                       hover:shadow-neon hover:brightness-110
+                       focus:outline-none focus:ring-2 focus:ring-accent/40
+                       active:brightness-95">
+          CREATE ADMIN ACCOUNT
+        </button>
+
+      </form>
+    </div>
+
+  </div>
+</body>
+</html>

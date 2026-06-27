@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${mode == 'edit'} ? 'Edit Dish — Bullet Beats Café' : 'New Dish — Bullet Beats Café'">
+    Dish — Bullet Beats Café
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-3xl mx-auto">
+
+  <a th:href="${mode == 'edit'} ? @{/admin/dishes/{id}(id=${dish.id})} : '/admin/dishes'"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide"
+        th:text="${mode == 'edit'} ? 'Edit Dish' : 'New Dish'">Dish</h1>
+    <p class="text-sand text-sm mt-0.5"
+       th:text="${mode == 'edit'} ? 'Update dish details and ingredients' : 'Define a new dish and its ingredients'"></p>
+  </div>
+
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+    <form id="dish-form"
+          th:action="${mode == 'edit'}
+                    ? @{/admin/dishes/{id}/edit(id=${dish.id})}
+                    : @{/admin/dishes/new}"
+          th:object="${dto}"
+          method="post"
+          class="space-y-6">
+
+      <!-- Name -->
+      <div>
+        <label for="name" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Name</label>
+        <input id="name" type="text" th:field="*{name}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('name')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="e.g. Classic Masala Chai"/>
+        <p th:if="*{#fields.hasErrors('name')}" th:errors="*{name}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label for="description" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Description <span class="text-sand/40 normal-case">(optional)</span>
+        </label>
+        <textarea id="description" th:field="*{description}" rows="2"
+                  class="w-full bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                         outline-none transition-all duration-200 focus:shadow-neon-sm resize-none"
+                  placeholder="Brief description"></textarea>
+      </div>
+
+      <!-- Prep Time -->
+      <div>
+        <label for="prepTimeMinutes" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Prep Time <span class="text-sand/40 normal-case">(minutes, optional)</span>
+        </label>
+        <input id="prepTimeMinutes" type="number" min="0" th:field="*{prepTimeMinutes}"
+               class="w-full bg-elevated border border-elevated focus:border-accent
+                      rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200 focus:shadow-neon-sm"
+               placeholder="e.g. 5"/>
+      </div>
+
+      <!-- Recipe Notes -->
+      <div>
+        <label for="recipeNotes" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Recipe Notes <span class="text-sand/40 normal-case">(optional)</span>
+        </label>
+        <p class="text-sand/60 text-xs mb-2">
+          Cooking steps, technique, taste notes — so taste stays consistent across cooks
+        </p>
+        <textarea id="recipeNotes" th:field="*{recipeNotes}" rows="6"
+                  class="w-full bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-3 py-2.5 text-ivory text-sm
+                         outline-none transition-all duration-200 focus:shadow-neon-sm resize-y"></textarea>
+      </div>
+
+      <!-- Ingredients -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <label class="text-sand text-xs uppercase tracking-[0.2em]">Ingredients</label>
+          <p th:if="*{#fields.hasErrors('ingredients')}"
+             class="text-red-400 text-xs" th:errors="*{ingredients}"></p>
+        </div>
+
+        <div class="bg-elevated/40 rounded-lg overflow-hidden border border-elevated/60 mb-3">
+          <div class="grid grid-cols-[1fr_160px_36px] gap-0 px-3 py-2 border-b border-elevated/60">
+            <span class="text-sand text-xs uppercase tracking-widest">Item</span>
+            <span class="text-sand text-xs uppercase tracking-widest">Quantity</span>
+            <span></span>
+          </div>
+          <div id="ingredients-list">
+            <div th:each="ing,stat : *{ingredients}" class="ingredient-row grid grid-cols-[1fr_160px_36px] gap-2 px-3 py-2 border-b border-elevated/30 last:border-0 items-center">
+              <select th:name="'ingredients[' + ${stat.index} + '].groceryItemId'"
+                      required
+                      class="bg-elevated border border-elevated/80 focus:border-accent
+                             rounded px-3 py-1.5 text-ivory text-sm outline-none
+                             focus:shadow-neon-sm cursor-pointer transition-all">
+                <option value="">Select item…</option>
+                <option th:each="gi : ${groceryItems}"
+                        th:value="${gi.id}"
+                        th:text="${gi.name + ' (' + gi.unit + ')'}"
+                        th:selected="${gi.id == ing.groceryItemId}">Item</option>
+              </select>
+              <input type="number" step="0.001" min="0.001" required
+                     th:name="'ingredients[' + ${stat.index} + '].quantityRequired'"
+                     th:value="${ing.quantityRequired}"
+                     class="bg-elevated border border-elevated/80 focus:border-accent
+                            rounded px-3 py-1.5 text-ivory text-sm outline-none
+                            focus:shadow-neon-sm transition-all"
+                     placeholder="0.000"/>
+              <button type="button" onclick="removeRow(this)"
+                      class="text-sand/40 hover:text-red-400 text-xl leading-none transition-colors"
+                      title="Remove">×</button>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" onclick="addIngredientRow()"
+                class="text-xs px-3 py-1.5 rounded border border-accent/40 text-accent
+                       hover:bg-accent/10 transition-colors">
+          + Add Ingredient
+        </button>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-3 pt-2 border-t border-elevated/40">
+        <button type="submit"
+                class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200"
+                th:text="${mode == 'edit'} ? 'UPDATE DISH' : 'CREATE DISH'">
+          Submit
+        </button>
+        <a th:href="${mode == 'edit'} ? @{/admin/dishes/{id}(id=${dish.id})} : '/admin/dishes'"
+           class="px-4 py-2.5 text-sand text-sm hover:text-ivory transition-colors">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <script>
+    function addIngredientRow() {
+      var count = document.querySelectorAll('#ingredients-list .ingredient-row').length;
+      htmx.ajax('GET', '/admin/dishes/ingredient-row?index=' + count, {
+        target: '#ingredients-list',
+        swap: 'beforeend'
+      });
+    }
+
+    function removeRow(btn) {
+      var row = btn.closest('.ingredient-row');
+      if (document.querySelectorAll('#ingredients-list .ingredient-row').length > 1) {
+        row.remove();
+      }
+    }
+
+    // Renumber indices sequentially before submit
+    document.getElementById('dish-form').addEventListener('submit', function () {
+      var rows = document.querySelectorAll('#ingredients-list .ingredient-row');
+      rows.forEach(function (row, i) {
+        row.querySelectorAll('[name]').forEach(function (el) {
+          el.name = el.name.replace(/ingredients\[\d+\]/, 'ingredients[' + i + ']');
+        });
+      });
+    });
+  </script>
+
+</main>
+</body>
+</html>

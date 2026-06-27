@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In — Bullet Beats Café</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base:     '#1C1C1C',
+            surface:  '#2A2A2A',
+            elevated: '#333333',
+            accent:   '#00D4FF',
+            ivory:    '#F5F0E8',
+            sand:     '#9A9080',
+          },
+          fontFamily: {
+            heading: ['"Bebas Neue"', 'cursive'],
+            body:    ['Lato', 'sans-serif'],
+          },
+          boxShadow: {
+            neon:      '0 0 24px rgba(0,212,255,0.45), 0 0 48px rgba(0,212,255,0.15)',
+            'neon-sm': '0 0 10px rgba(0,212,255,0.4)',
+          },
+        }
+      }
+    };
+  </script>
+</head>
+
+<body class="bg-base font-body text-ivory min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-4xl flex min-h-[600px] rounded-2xl overflow-hidden shadow-2xl">
+
+    <!-- ── Left: brand panel ───────────────────────────────────── -->
+    <div class="hidden lg:flex flex-col w-5/12 bg-elevated relative overflow-hidden">
+
+      <!-- tyre-tread top stripe -->
+      <div class="h-3 w-full flex-shrink-0"
+           style="background: repeating-linear-gradient(90deg,
+                    #00D4FF 0,#00D4FF 10px, transparent 10px, transparent 20px)"></div>
+
+      <div class="flex-1 flex flex-col justify-center px-10 py-8">
+        <div class="text-6xl mb-1 leading-none select-none">🏍</div>
+        <div class="font-heading text-ivory leading-none tracking-widest">
+          <span class="text-7xl block">BULLET</span>
+          <span class="text-7xl block text-accent">BEATS</span>
+          <span class="text-7xl block">CAFÉ</span>
+        </div>
+        <p class="mt-5 text-sand text-xs tracking-[0.25em] uppercase">
+          Manage your rides &amp; your roastery
+        </p>
+      </div>
+
+      <!-- tyre-tread bottom divider -->
+      <div class="flex-shrink-0 pb-8 px-10 space-y-1.5">
+        <div class="h-2 w-full"
+             style="background: repeating-linear-gradient(90deg,
+                      #9A9080 0,#9A9080 5px, transparent 5px, transparent 12px)"></div>
+        <div class="h-1 w-3/4"
+             style="background: repeating-linear-gradient(90deg,
+                      #00D4FF 0,#00D4FF 5px, transparent 5px, transparent 12px)"></div>
+      </div>
+
+      <!-- decorative corner graphic -->
+      <div class="absolute bottom-0 right-0 w-40 h-40 opacity-5"
+           style="background: radial-gradient(circle, #00D4FF 0%, transparent 70%)"></div>
+    </div>
+
+    <!-- ── Right: login card ───────────────────────────────────── -->
+    <div class="flex-1 bg-surface flex flex-col justify-center px-8 py-10 lg:px-12">
+
+      <!-- mobile logo -->
+      <div class="lg:hidden text-center mb-8">
+        <span class="font-heading text-4xl text-accent tracking-widest">BULLET BEATS CAFÉ</span>
+      </div>
+
+      <h1 class="font-heading text-3xl text-ivory tracking-wide mb-0.5">Welcome back</h1>
+      <p class="text-sand text-sm mb-7">Sign in to continue</p>
+
+      <!-- logout notice -->
+      <div th:if="${param.logout}"
+           class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-sand/30 text-sand text-sm">
+        You've been signed out successfully.
+      </div>
+
+      <!-- setup-complete notice -->
+      <div th:if="${param.setup}"
+           class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+        Admin account created. Please sign in.
+      </div>
+
+      <!-- session expired -->
+      <div th:if="${param.expired}"
+           class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-sand/30 text-sand text-sm">
+        Your session expired. Please sign in again.
+      </div>
+
+      <!-- IP locked out -->
+      <div th:if="${param.locked}"
+           class="mb-5 px-4 py-3 rounded-lg bg-red-900/30 border border-red-500/40 text-red-400 text-sm">
+        Too many failed attempts. Please wait
+        <strong th:text="${loginAttemptService.getLockoutMinutes()}">15</strong>
+        minutes before trying again.
+      </div>
+
+      <!-- Warning: 1 or 2 attempts remaining (shows on 4th / 5th failure) -->
+      <div th:if="${param.error != null and remainingAttempts != null
+                   and remainingAttempts > 0 and remainingAttempts <= 2}"
+           class="mb-5 px-4 py-3 rounded-lg bg-amber-900/30 border border-amber-500/40 text-amber-400 text-sm">
+        Incorrect credentials.
+        <strong th:text="${remainingAttempts}">2</strong>
+        attempt(s) remaining before temporary lockout.
+      </div>
+
+      <!-- Standard error (first 3 failures — no countdown warning needed) -->
+      <div th:if="${param.error != null and (remainingAttempts == null or remainingAttempts > 2)}"
+           class="mb-5 px-4 py-3 rounded-lg bg-red-900/30 border border-red-500/40 text-red-400 text-sm">
+        Invalid username or password. Please try again.
+      </div>
+
+      <form th:action="@{/login}" method="post" class="space-y-5" autocomplete="off">
+
+        <div>
+          <label for="username"
+                 class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Username
+          </label>
+          <input id="username" type="text" name="username" required autofocus
+                 class="w-full bg-elevated border border-elevated rounded-lg px-4 py-2.5
+                        text-ivory text-sm placeholder-sand/40 outline-none
+                        transition-all duration-200
+                        focus:border-accent focus:shadow-neon-sm focus:ring-0"
+                 placeholder="your username"/>
+        </div>
+
+        <div>
+          <label for="password"
+                 class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Password
+          </label>
+          <input id="password" type="password" name="password" required
+                 class="w-full bg-elevated border border-elevated rounded-lg px-4 py-2.5
+                        text-ivory text-sm placeholder-sand/40 outline-none
+                        transition-all duration-200
+                        focus:border-accent focus:shadow-neon-sm focus:ring-0"
+                 placeholder="••••••••"/>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <input id="remember-me" type="checkbox" name="remember-me"
+                 class="w-4 h-4 rounded border-sand/50 bg-elevated
+                        accent-accent cursor-pointer"/>
+          <label for="remember-me" class="text-sand text-sm cursor-pointer select-none">
+            Keep me logged in for 7 days
+          </label>
+        </div>
+
+        <button type="submit"
+                class="w-full bg-accent text-base font-heading text-xl tracking-widest
+                       py-3 rounded-lg transition-all duration-200
+                       hover:shadow-neon hover:brightness-110
+                       focus:outline-none focus:ring-2 focus:ring-accent/40
+                       active:brightness-95">
+          SIGN IN
+        </button>
+
+      </form>
+    </div>
+
+  </div>
+</body>
+</html>

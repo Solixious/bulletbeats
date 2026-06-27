@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="bill-panel">
+
+  <!-- Poll for live updates while bill is active (customer may add items via QR) -->
+  <div th:if="${bill.status.name() == 'DRAFT' or bill.status.name() == 'CONFIRMED'}"
+       th:attr="hx-get=@{/bills/{id}/panel(id=${bill.id})}"
+       hx-trigger="every 5s"
+       hx-target="#bill-panel"
+       hx-swap="innerHTML"
+       class="h-0 overflow-hidden pointer-events-none" aria-hidden="true"></div>
+
+  <!-- Bill header card -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-4 mb-3">
+    <div class="flex items-start justify-between mb-1">
+      <span class="font-mono text-accent text-sm font-medium" th:text="${bill.billNumber}"></span>
+      <span th:switch="${bill.status.name()}">
+        <span th:case="'DRAFT'"
+              class="px-2 py-0.5 text-xs border rounded-full text-sand border-sand/30 bg-sand/5">
+          Draft
+        </span>
+        <span th:case="'CONFIRMED'"
+              class="px-2 py-0.5 text-xs border rounded-full text-amber-400 border-amber-400/40 bg-amber-400/10">
+          Confirmed
+        </span>
+        <span th:case="'PAID'"
+              class="px-2 py-0.5 text-xs border rounded-full text-emerald-400 border-emerald-400/40 bg-emerald-400/10">
+          Paid
+        </span>
+        <span th:case="'CANCELLED'"
+              class="px-2 py-0.5 text-xs border rounded-full text-red-400 border-red-500/30 bg-red-500/5">
+          Cancelled
+        </span>
+      </span>
+    </div>
+    <p class="text-ivory text-sm font-medium" th:text="${bill.cafeTable.name}"></p>
+    <p class="text-sand text-xs mt-0.5"
+       th:text="${bill.customer != null} ? ${bill.customer.name} + ' · ' + ${bill.customer.phone} : 'Walk-in'"></p>
+  </div>
+
+  <!-- Items table -->
+  <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden mb-3">
+
+    <div th:if="${#lists.isEmpty(bill.items)}"
+         class="py-10 text-center text-sand text-sm">
+      No items yet — tap a menu item to add.
+    </div>
+
+    <table th:unless="${#lists.isEmpty(bill.items)}" class="w-full text-left">
+      <tbody>
+        <tr th:each="item : ${bill.items}"
+            class="border-b border-elevated/40 last:border-0">
+          <td class="pl-4 pr-2 py-2.5">
+            <p class="text-ivory text-xs font-medium" th:text="${item.itemName}"></p>
+            <p class="text-sand text-xs" th:text="'₹' + ${#numbers.formatDecimal(item.unitPrice, 1, 2)} + ' each'"></p>
+          </td>
+
+          <!-- Quantity controls (DRAFT only) -->
+          <td class="px-2 py-2.5" th:if="${bill.status.name() == 'DRAFT'}">
+            <div class="flex items-center gap-1">
+              <button th:attr="hx-patch=@{/bills/{id}/items/{iid}/quantity(id=${bill.id},iid=${item.id},quantity=${item.quantity - 1})}"
+                      hx-target="#bill-panel"
+                      hx-swap="innerHTML"
+                      class="w-6 h-6 rounded border border-elevated/60 text-sand text-sm
+                             hover:border-accent/40 hover:text-ivory transition-colors
+                             flex items-center justify-center leading-none">−</button>
+              <span class="text-ivory text-xs w-5 text-center" th:text="${item.quantity}"></span>
+              <button th:attr="hx-patch=@{/bills/{id}/items/{iid}/quantity(id=${bill.id},iid=${item.id},quantity=${item.quantity + 1})}"
+                      hx-target="#bill-panel"
+                      hx-swap="innerHTML"
+                      class="w-6 h-6 rounded border border-elevated/60 text-sand text-sm
+                             hover:border-accent/40 hover:text-ivory transition-colors
+                             flex items-center justify-center leading-none">+</button>
+            </div>
+          </td>
+
+          <!-- Static quantity (non-DRAFT) -->
+          <td class="px-2 py-2.5 text-center" th:unless="${bill.status.name() == 'DRAFT'}">
+            <span class="text-ivory text-xs" th:text="${item.quantity}"></span>
+          </td>
+
+          <td class="px-2 py-2.5 text-right">
+            <span class="text-ivory text-xs font-medium"
+                  th:text="'₹' + ${#numbers.formatDecimal(item.lineTotal, 1, 2)}"></span>
+          </td>
+
+          <!-- Remove button (DRAFT only) -->
+          <td class="pr-3 py-2.5" th:if="${bill.status.name() == 'DRAFT'}">
+            <button th:attr="hx-delete=@{/bills/{id}/items/{iid}(id=${bill.id},iid=${item.id})}"
+                    hx-target="#bill-panel"
+                    hx-swap="innerHTML"
+                    class="text-sand/50 text-xs hover:text-red-400 transition-colors">×</button>
+          </td>
+          <td class="pr-3" th:unless="${bill.status.name() == 'DRAFT'}"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Totals -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-4 mb-3 space-y-1.5">
+    <div class="flex justify-between text-sm">
+      <span class="text-sand"
+            th:text="${bill.gstInclusive} ? 'Subtotal (incl. GST)' : 'Subtotal'"></span>
+      <span class="text-ivory"
+            th:text="'₹' + ${#numbers.formatDecimal(bill.subtotal, 1, 2)}"></span>
+    </div>
+    <div th:if="${bill.studentDiscountAmount != null and bill.studentDiscountAmount.signum() > 0}"
+         class="flex justify-between text-sm">
+      <span class="text-blue-400">Student Discount</span>
+      <span class="text-blue-400"
+            th:text="'−₹' + ${#numbers.formatDecimal(bill.studentDiscountAmount, 1, 2)}"></span>
+    </div>
+    <div th:with="managerDiscount=${bill.discountAmount.subtract(bill.studentDiscountAmount)}"
+         th:if="${managerDiscount != null and managerDiscount.signum() > 0}"
+         class="flex justify-between text-sm">
+      <span class="text-sand" th:text="'Discount (' + ${bill.discountType?.displayName} + ')'"></span>
+      <span class="text-emerald-400"
+            th:text="'−₹' + ${#numbers.formatDecimal(managerDiscount, 1, 2)}"></span>
+    </div>
+    <div class="flex justify-between text-sm">
+      <span class="text-sand"
+            th:with="rate=${bill.gstRate != null ? bill.gstRate.stripTrailingZeros().toPlainString() : '0'}"
+            th:text="${bill.gstInclusive} ? 'GST (' + ${rate} + '%, incl.)' : 'GST (' + ${rate} + '%)'"></span>
+      <span class="text-ivory"
+            th:text="'₹' + ${#numbers.formatDecimal(bill.gstAmount, 1, 2)}"></span>
+    </div>
+    <div class="flex justify-between text-base pt-1.5 border-t border-elevated/60 mt-1.5">
+      <span class="text-ivory font-medium">Total</span>
+      <span class="text-accent font-heading text-xl tracking-wide"
+            th:text="'₹' + ${#numbers.formatDecimal(bill.totalAmount, 1, 2)}"></span>
+    </div>
+  </div>
+
+  <!-- Discount section (manager+, DRAFT only) -->
+  <div th:if="${isManager and bill.status.name() == 'DRAFT'}"
+       class="bg-surface rounded-xl border border-elevated/60 p-4 mb-3">
+    <p class="text-sand text-xs uppercase tracking-widest mb-3">Apply Discount</p>
+
+    <form th:attr="hx-post=@{/bills/{id}/discount(id=${bill.id})}"
+          hx-target="#bill-panel"
+          hx-swap="innerHTML"
+          class="flex gap-2">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <select name="discountType"
+              class="bg-elevated rounded-lg px-3 py-2 text-ivory text-xs border border-elevated/60
+                     focus:border-accent outline-none transition-colors">
+        <option value="FIXED">₹ Fixed</option>
+        <option value="PERCENTAGE">% Off</option>
+      </select>
+      <input type="number" name="discountValue" min="0.01" step="0.01" placeholder="Amount"
+             class="flex-1 bg-elevated rounded-lg px-3 py-2 text-ivory text-xs border border-elevated/60
+                    focus:border-accent outline-none transition-colors placeholder-sand/40"/>
+      <button type="submit"
+              class="px-3 py-2 rounded-lg border border-accent/40 text-accent text-xs
+                     hover:bg-accent/10 transition-colors">
+        Apply
+      </button>
+    </form>
+
+    <div th:with="managerDiscount=${bill.discountAmount.subtract(bill.studentDiscountAmount)}"
+         th:if="${managerDiscount != null and managerDiscount.signum() > 0}"
+         class="mt-2 flex items-center gap-2">
+      <span class="text-sand text-xs">Current: </span>
+      <span class="text-emerald-400 text-xs"
+            th:text="'−₹' + ${#numbers.formatDecimal(managerDiscount, 1, 2)}"></span>
+      <button th:attr="hx-delete=@{/bills/{id}/discount(id=${bill.id})}"
+              hx-target="#bill-panel"
+              hx-swap="innerHTML"
+              class="text-sand/50 text-xs hover:text-red-400 transition-colors ml-1">
+        Remove
+      </button>
+    </div>
+  </div>
+
+  <!-- Student discount action (DRAFT, customer linked) -->
+  <div th:if="${bill.status.name() == 'DRAFT' and bill.customer != null}"
+       class="bg-surface rounded-xl border border-elevated/60 p-4 mb-3">
+
+    <div id="student-discount-error"></div>
+
+    <p class="text-sand text-xs uppercase tracking-widest mb-2">Student Discount</p>
+
+    <div th:unless="${bill.studentDiscountApplied}">
+      <!-- Customer is a student — show apply + unmark -->
+      <div th:if="${bill.customer.isStudent}"
+           class="flex items-center gap-3 flex-wrap">
+        <span class="text-sand text-xs">
+          <span th:text="${studentDiscountPercentage}">10</span>% off
+          · Min ₹<span th:text="${#numbers.formatDecimal(minBillAmount, 1, 0)}">200</span>
+        </span>
+        <button th:attr="hx-post=@{/bills/{id}/student-discount(id=${bill.id})}"
+                hx-target="#bill-panel"
+                hx-swap="innerHTML"
+                class="px-3 py-1.5 rounded-lg border border-blue-400/40 text-blue-400 text-xs
+                       hover:bg-blue-400/10 transition-colors">
+          Apply
+        </button>
+        <button th:attr="hx-post=@{/bills/{id}/customer/unmark-student(id=${bill.id})}"
+                hx-target="#bill-panel"
+                hx-swap="innerHTML"
+                class="text-sand/50 text-xs hover:text-red-400 transition-colors">
+          Unmark Student
+        </button>
+      </div>
+      <!-- Customer is not a student — show mark button (all roles) -->
+      <div th:unless="${bill.customer.isStudent}"
+           class="flex items-center gap-3 flex-wrap">
+        <span class="text-sand text-xs">Customer is not marked as a student.</span>
+        <button th:attr="hx-post=@{/bills/{id}/customer/mark-student(id=${bill.id})}"
+                hx-target="#bill-panel"
+                hx-swap="innerHTML"
+                th:disabled="${bill.customer.name == null}"
+                th:title="${bill.customer.name == null ? 'Add customer name first' : 'Mark as student'}"
+                class="px-3 py-1.5 rounded-lg border border-sand/30 text-sand text-xs
+                       hover:border-blue-400/40 hover:text-blue-400 transition-colors
+                       disabled:opacity-40 disabled:cursor-not-allowed">
+          Mark as Student
+        </button>
+      </div>
+    </div>
+
+    <div th:if="${bill.studentDiscountApplied}" class="space-y-2">
+      <div class="flex items-center gap-3">
+        <span class="text-blue-400 text-xs font-medium">
+          Applied — −₹<span th:text="${#numbers.formatDecimal(bill.studentDiscountAmount, 1, 2)}"></span>
+        </span>
+        <button th:attr="hx-delete=@{/bills/{id}/student-discount(id=${bill.id})}"
+                hx-target="#bill-panel"
+                hx-swap="innerHTML"
+                class="text-sand/50 text-xs hover:text-red-400 transition-colors">
+          Remove
+        </button>
+      </div>
+      <button th:attr="hx-post=@{/bills/{id}/customer/unmark-student(id=${bill.id})}"
+              hx-target="#bill-panel"
+              hx-swap="innerHTML"
+              class="text-sand/50 text-xs hover:text-red-400 transition-colors">
+        Unmark Student (removes discount)
+      </button>
+    </div>
+  </div>
+
+  <!-- Bill status section (confirm / pay / cancel) -->
+  <th:block th:replace="~{billing/fragments/bill-status :: bill-status}"/>
+
+</th:block>
+</body>
+</html>

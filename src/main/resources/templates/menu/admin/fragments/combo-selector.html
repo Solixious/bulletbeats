@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<select th:fragment="combo-selector"
+        id="comboId" name="comboId" required
+        class="w-full bg-elevated border border-elevated focus:border-accent
+               rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+               transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+  <option value="">Select a combo…</option>
+  <option th:each="c : ${combos}"
+          th:value="${c.id}"
+          th:text="${c.name}"
+          th:selected="${c.id == selectedComboId}">Combo</option>
+</select>
+</body>
+</html>

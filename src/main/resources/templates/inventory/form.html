@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${mode == 'edit'} ? 'Edit Item — Inventory' : 'New Item — Inventory'">
+    Item — Inventory
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-2xl mx-auto">
+
+  <a href="/inventory"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Inventory
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide"
+        th:text="${mode == 'edit'} ? 'Edit Item' : 'New Inventory Item'">Item</h1>
+    <p class="text-sand text-sm mt-0.5"
+       th:text="${mode == 'edit'} ? 'Update item details' : 'Add a new item to inventory'"></p>
+  </div>
+
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+    <form th:action="${mode == 'edit'}
+                    ? @{/inventory/{id}/edit(id=${item.id})}
+                    : @{/inventory/new}"
+          th:object="${dto}"
+          method="post"
+          class="space-y-5">
+
+      <!-- Name -->
+      <div>
+        <label for="name" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Name</label>
+        <input id="name" type="text" th:field="*{name}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('name')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="e.g. Whole Milk"/>
+        <p th:if="*{#fields.hasErrors('name')}" th:errors="*{name}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Unit with HTMX autocomplete -->
+      <div class="relative">
+        <label for="unit" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Unit</label>
+        <input id="unit" type="text" th:field="*{unit}" required
+               hx-get="/inventory/units/suggest"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#unit-suggestions"
+               hx-include="[name='unit']"
+               autocomplete="off"
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('unit')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="e.g. litre"/>
+        <div id="unit-suggestions" class="relative"></div>
+        <p th:if="*{#fields.hasErrors('unit')}" th:errors="*{unit}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Min threshold -->
+      <div>
+        <label for="minThreshold" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Min Threshold
+        </label>
+        <input id="minThreshold" type="number" step="0.001" min="0" th:field="*{minThreshold}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('minThreshold')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="0.000"/>
+        <p class="mt-1 text-sand/50 text-xs">Alert triggers when stock falls to or below this level</p>
+        <p th:if="*{#fields.hasErrors('minThreshold')}" th:errors="*{minThreshold}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Reorder quantity -->
+      <div>
+        <label for="reorderQuantity" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Reorder Quantity
+        </label>
+        <input id="reorderQuantity" type="number" step="0.001" min="0.001" th:field="*{reorderQuantity}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('reorderQuantity')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="0.000"/>
+        <p class="mt-1 text-sand/50 text-xs">Quantity used for replenishment requests</p>
+        <p th:if="*{#fields.hasErrors('reorderQuantity')}" th:errors="*{reorderQuantity}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Default supplier select -->
+      <div>
+        <label for="supplierId" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Default Supplier
+        </label>
+        <select id="supplierId" th:field="*{supplierId}"
+                class="w-full bg-elevated border border-elevated focus:border-accent
+                       rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                       transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+          <option value="">No default supplier</option>
+          <option th:each="s : ${suppliers}"
+                  th:value="${s.id}"
+                  th:text="${s.name}">Supplier</option>
+        </select>
+        <p class="mt-1 text-sand/50 text-xs">Pre-selected when creating a purchase order for this item</p>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-3 pt-2">
+        <button type="submit"
+                class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200"
+                th:text="${mode == 'edit'} ? 'UPDATE ITEM' : 'CREATE ITEM'">
+          Submit
+        </button>
+        <a href="/inventory" class="px-4 py-2.5 text-sand text-sm hover:text-ivory transition-colors">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      function dismissSuggestions(target) {
+        var input = document.getElementById('unit');
+        var box   = document.getElementById('unit-suggestions');
+        if (!box) return;
+        if (input && input.contains(target)) return;
+        if (box.contains(target)) return;
+        box.innerHTML = '';
+      }
+      document.addEventListener('click',      function (e) { dismissSuggestions(e.target); });
+      document.addEventListener('touchstart', function (e) { dismissSuggestions(e.target); }, { passive: true });
+    })();
+  </script>
+
+</main>
+</body>
+</html>

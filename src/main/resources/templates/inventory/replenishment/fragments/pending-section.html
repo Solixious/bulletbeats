@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="pending-section">
+
+  <!--
+    Invisible placeholder — keeps id in DOM so HTMX can find it for future events.
+    Rendered when the list is empty; takes up no visible space.
+  -->
+  <div th:if="${#lists.isEmpty(requests)}"
+       id="pending-section"
+       hx-get="/inventory/replenishment/pending-section"
+       hx-trigger="replenishmentApproved from:body, replenishmentCancelled from:body"
+       hx-swap="outerHTML">
+  </div>
+
+  <!-- Full section rendered when there are pending requests -->
+  <div th:unless="${#lists.isEmpty(requests)}"
+       id="pending-section"
+       hx-get="/inventory/replenishment/pending-section"
+       hx-trigger="replenishmentApproved from:body, replenishmentCancelled from:body"
+       hx-swap="outerHTML"
+       class="mb-8">
+    <h2 class="font-heading text-xl text-ivory tracking-wide mb-3">Pending Requests</h2>
+    <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+            <th class="px-4 py-3 font-medium">Item</th>
+            <th class="px-4 py-3 font-medium">Current Stock</th>
+            <th class="px-4 py-3 font-medium">Reorder Qty</th>
+            <th class="px-4 py-3 font-medium">Requested At</th>
+            <th class="px-4 py-3 font-medium">Supplier</th>
+            <th class="px-4 py-3 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <th:block th:each="request : ${requests}">
+            <tr th:replace="~{inventory/replenishment/fragments/request-row :: request-row}"></tr>
+          </th:block>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</th:block>
+</body>
+</html>

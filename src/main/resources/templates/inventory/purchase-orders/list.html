@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Purchase Orders — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Purchase Orders</h1>
+      <p class="text-sand text-sm mt-0.5">All orders grouped by status</p>
+    </div>
+    <a href="/inventory/replenishment"
+       class="text-xs px-3 py-1.5 border border-sand/30 text-sand rounded
+              hover:border-ivory/40 hover:text-ivory transition-colors">
+      ← Replenishment
+    </a>
+  </div>
+
+  <!-- Status groups -->
+  <th:block th:each="status : ${statuses}">
+    <th:block th:with="group=${grouped.get(status)}">
+      <div th:if="${group != null and !#lists.isEmpty(group)}" class="mb-7">
+
+        <!-- Group header -->
+        <div class="flex items-center gap-3 mb-3">
+          <span class="font-heading text-lg tracking-wide"
+                th:with="s=${status.name()}"
+                th:classappend="${s == 'RECEIVED'}  ? 'text-emerald-400' :
+                               (${s == 'ORDERED'}   ? 'text-blue-400' :
+                               (${s == 'APPROVED'}  ? 'text-accent' :
+                               (${s == 'CANCELLED'} ? 'text-sand' :
+                                                      'text-amber-400')))"
+                th:text="${status}">
+          </span>
+          <span class="text-sand text-xs" th:text="'(' + ${#lists.size(group)} + ')'"></span>
+        </div>
+
+        <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+                <th class="px-4 py-3 font-medium">PO #</th>
+                <th class="px-4 py-3 font-medium">Supplier</th>
+                <th class="px-4 py-3 font-medium">Expected</th>
+                <th class="px-4 py-3 font-medium">Created</th>
+                <th class="px-4 py-3 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="po : ${group}"
+                  class="border-b border-elevated/40 hover:bg-elevated/20 transition-colors">
+                <td class="px-4 py-3 text-sand text-xs font-mono"
+                    th:text="'PO-' + ${po.id}"></td>
+                <td class="px-4 py-3 text-ivory text-sm" th:text="${po.supplier.name}"></td>
+                <td class="px-4 py-3 text-sand text-sm"
+                    th:text="${po.expectedDeliveryDate != null} ? ${#temporals.format(po.expectedDeliveryDate, 'dd MMM yyyy')} : '—'">
+                </td>
+                <td class="px-4 py-3 text-sand text-xs"
+                    th:text="${#temporals.format(po.createdAt, 'dd MMM yyyy')}"></td>
+                <td class="px-4 py-3">
+                  <a th:href="@{/inventory/purchase-orders/{id}(id=${po.id})}"
+                     class="text-xs text-accent hover:underline">View →</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </th:block>
+  </th:block>
+
+  <!-- Truly empty -->
+  <div th:if="${grouped.isEmpty()}"
+       class="py-16 text-center text-sand text-sm">
+    No purchase orders yet.
+  </div>
+
+</main>
+</body>
+</html>

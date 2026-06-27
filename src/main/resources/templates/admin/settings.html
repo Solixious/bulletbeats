@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Settings — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-3xl mx-auto">
+
+  <div class="mb-6">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide">Settings</h1>
+    <p class="text-sand text-sm mt-0.5">Runtime configuration — changes take effect immediately</p>
+  </div>
+
+  <!-- Saved flash -->
+  <div th:if="${param.saved}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Settings saved.
+  </div>
+
+  <form th:action="@{/admin/settings}" method="post" th:object="${dto}" class="space-y-6">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+    <!-- ── Café Info ──────────────────────────────────────────────── -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <h2 class="font-heading text-lg text-ivory tracking-wide mb-4">Café Info</h2>
+      <div class="space-y-4">
+
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Café Name</label>
+          <input type="text" th:field="*{cafeName}" required maxlength="100"
+                 class="w-full bg-elevated rounded-lg px-3 py-2 text-ivory text-sm
+                        border border-elevated/60 focus:border-accent outline-none
+                        transition-colors placeholder-sand/40"/>
+          <p th:if="${#fields.hasErrors('cafeName')}" th:errors="*{cafeName}"
+             class="text-red-400 text-xs mt-1"></p>
+        </div>
+
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Address <span class="text-sand/50 normal-case">(optional)</span></label>
+          <input type="text" th:field="*{cafeAddress}" maxlength="255"
+                 placeholder="e.g. 42 Rock Street, Bengaluru"
+                 class="w-full bg-elevated rounded-lg px-3 py-2 text-ivory text-sm
+                        border border-elevated/60 focus:border-accent outline-none
+                        transition-colors placeholder-sand/40"/>
+        </div>
+
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">App Base URL <span class="text-sand/50 normal-case">(for QR codes)</span></label>
+          <input type="text" th:field="*{appBaseUrl}" maxlength="255"
+                 placeholder="https://yourapp.example.com"
+                 class="w-full bg-elevated rounded-lg px-3 py-2 text-ivory text-sm
+                        border border-elevated/60 focus:border-accent outline-none
+                        transition-colors placeholder-sand/40"/>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Tax (GST) ──────────────────────────────────────────────── -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <h2 class="font-heading text-lg text-ivory tracking-wide mb-4">Tax (GST)</h2>
+      <div class="space-y-4">
+
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">GST Rate (%)</label>
+          <input type="number" th:field="*{gstRate}" required
+                 min="0" max="100" step="0.01"
+                 class="w-40 bg-elevated rounded-lg px-3 py-2 text-ivory text-sm font-mono
+                        border border-elevated/60 focus:border-accent outline-none transition-colors"/>
+          <p th:if="${#fields.hasErrors('gstRate')}" th:errors="*{gstRate}"
+             class="text-red-400 text-xs mt-1"></p>
+        </div>
+
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-widest mb-2">GST Mode</label>
+          <div class="flex flex-col gap-3">
+
+            <label class="flex items-start gap-3 cursor-pointer group">
+              <input type="radio" th:field="*{gstInclusive}" th:value="${false}"
+                     class="mt-0.5 accent-[#00D4FF]"/>
+              <div>
+                <p class="text-ivory text-sm font-medium">Exclusive — add GST on top of price</p>
+                <p class="text-sand text-xs mt-0.5">
+                  Menu price ₹100 + 18% GST = ₹118 billed to customer.
+                  Use this when your menu prices are ex-GST.
+                </p>
+              </div>
+            </label>
+
+            <label class="flex items-start gap-3 cursor-pointer group">
+              <input type="radio" th:field="*{gstInclusive}" th:value="${true}"
+                     class="mt-0.5 accent-[#00D4FF]"/>
+              <div>
+                <p class="text-ivory text-sm font-medium">Inclusive — GST already in price</p>
+                <p class="text-sand text-xs mt-0.5">
+                  Menu price ₹118 already includes 18% GST (₹18 extracted, ₹100 base).
+                  Use this when your menu prices are MRP / all-inclusive.
+                </p>
+              </div>
+            </label>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Loyalty ─────────────────────────────────────────────────── -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <h2 class="font-heading text-lg text-ivory tracking-wide mb-4">Loyalty Programme</h2>
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Points earned per ₹10 spent</label>
+        <input type="number" th:field="*{loyaltyEarnRate}" required
+               min="0" step="0.01"
+               class="w-40 bg-elevated rounded-lg px-3 py-2 text-ivory text-sm font-mono
+                      border border-elevated/60 focus:border-accent outline-none transition-colors"/>
+        <p class="text-sand text-xs mt-1">Set to 0 to disable loyalty point accumulation.</p>
+        <p th:if="${#fields.hasErrors('loyaltyEarnRate')}" th:errors="*{loyaltyEarnRate}"
+           class="text-red-400 text-xs mt-1"></p>
+      </div>
+    </div>
+
+    <!-- Save -->
+    <div class="flex justify-end">
+      <button type="submit"
+              class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading
+                     tracking-widest text-sm hover:shadow-neon hover:brightness-110
+                     transition-all duration-200">
+        SAVE SETTINGS
+      </button>
+    </div>
+
+  </form>
+
+  <!-- ── Student Discount (inline-save, outside main form) ────────── -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-5 mt-6">
+    <h2 class="font-heading text-lg text-ivory tracking-wide mb-1">Student Discount</h2>
+    <p class="text-sand text-xs mb-4">Applied per-bill by managers when a verified student customer is linked — saved instantly</p>
+
+    <div class="space-y-4">
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">
+          Discount Percentage (%)
+        </label>
+        <form th:attr="hx-post=@{/admin/settings/key}"
+              hx-target="#student-pct-save-status"
+              hx-swap="innerHTML"
+              class="flex items-center gap-3">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <input type="hidden" name="key" value="student.discount.percentage"/>
+          <input type="number" name="value"
+                 th:value="${studentDiscountPercentage}" required min="0" max="100" step="0.01"
+                 class="w-32 bg-elevated rounded-lg px-3 py-2 text-ivory text-sm font-mono
+                        border border-elevated/60 focus:border-accent outline-none transition-colors"/>
+          <button type="submit"
+                  class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                         hover:border-ivory/40 hover:text-ivory transition-colors">
+            Save
+          </button>
+          <span id="student-pct-save-status"></span>
+        </form>
+      </div>
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">
+          Minimum Bill Amount (₹)
+        </label>
+        <form th:attr="hx-post=@{/admin/settings/key}"
+              hx-target="#student-min-save-status"
+              hx-swap="innerHTML"
+              class="flex items-center gap-3">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <input type="hidden" name="key" value="student.discount.min_bill_amount"/>
+          <input type="number" name="value"
+                 th:value="${studentMinBillAmount}" required min="0" step="0.01"
+                 class="w-32 bg-elevated rounded-lg px-3 py-2 text-ivory text-sm font-mono
+                        border border-elevated/60 focus:border-accent outline-none transition-colors"/>
+          <button type="submit"
+                  class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                         hover:border-ivory/40 hover:text-ivory transition-colors">
+            Save
+          </button>
+          <span id="student-min-save-status"></span>
+        </form>
+        <p class="text-sand text-xs mt-1">Student discount is only applicable when the bill subtotal meets this threshold.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Table & Ordering (inline-save, outside main form) ─────────── -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-5 mt-6">
+    <h2 class="font-heading text-lg text-ivory tracking-wide mb-1">Table &amp; Ordering</h2>
+    <p class="text-sand text-xs mb-4">QR session and table idle settings — saved instantly</p>
+
+    <div>
+      <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">
+        Table idle timeout (minutes)
+      </label>
+      <form th:attr="hx-post=@{/admin/settings/key}"
+            hx-target="#idle-save-status"
+            hx-swap="innerHTML"
+            class="flex items-center gap-3">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <input type="hidden" name="key" value="table.idle.timeout.minutes"/>
+        <input type="number" name="value"
+               th:value="${dto.idleTimeoutMinutes}" required min="1"
+               class="w-32 bg-elevated rounded-lg px-3 py-2 text-ivory text-sm font-mono
+                      border border-elevated/60 focus:border-accent outline-none transition-colors"/>
+        <button type="submit"
+                class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                       hover:border-ivory/40 hover:text-ivory transition-colors">
+          Save
+        </button>
+        <span id="idle-save-status"></span>
+      </form>
+      <p class="text-sand text-xs mt-1">Auto-free a table when it has had no QR activity for this long.</p>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

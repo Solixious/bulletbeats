@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="stock-info" id="stock-info">
+
+  <!-- Error banner -->
+  <div th:if="${adjustError}"
+       class="mb-3 px-3 py-2.5 rounded-lg bg-red-900/30 border border-red-500/40 text-red-400 text-sm"
+       th:text="${adjustError}">
+  </div>
+
+  <!-- Stock value -->
+  <div class="flex items-end gap-3 mb-1">
+    <span class="font-heading leading-none"
+          style="font-size:3.5rem"
+          th:classappend="${item.lowStock} ? 'text-red-400' : 'text-emerald-400'"
+          th:text="${#numbers.formatDecimal(item.quantityInStock, 1, 3)}">
+      0.000
+    </span>
+    <span class="text-sand text-base mb-2" th:text="${item.unit}">unit</span>
+  </div>
+
+  <!-- Low-stock pill -->
+  <span th:if="${item.lowStock}"
+        class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs border rounded-full
+               text-amber-400 border-amber-400/40 bg-amber-400/10">
+    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Low Stock
+  </span>
+  <span th:unless="${item.lowStock}"
+        class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs border rounded-full
+               text-emerald-400 border-emerald-400/40 bg-emerald-400/10">
+    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> OK
+  </span>
+
+</div>
+
+</body>
+</html>

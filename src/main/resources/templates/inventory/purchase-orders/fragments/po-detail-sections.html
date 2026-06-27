@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- ── Full items table card ─────────────────────────────────────────── -->
+<!-- Used: initial render (via th:replace in detail.html) + remove-item response -->
+<div th:fragment="po-items-section"
+     id="po-items-section"
+     th:with="canEdit=${po.status.name() == 'PENDING' or po.status.name() == 'APPROVED'}"
+     class="bg-surface rounded-xl overflow-hidden border border-elevated/60 mb-6">
+  <div class="px-5 py-4 border-b border-elevated/60">
+    <h2 class="font-heading text-xl text-ivory tracking-wide">Order Items</h2>
+  </div>
+
+  <div th:if="${#lists.isEmpty(po.items)}"
+       class="py-10 text-center text-sand text-sm">No items remaining in this order.</div>
+
+  <table th:unless="${#lists.isEmpty(po.items)}" class="w-full text-left">
+    <thead>
+      <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+        <th class="px-4 py-3 font-medium">Item</th>
+        <th class="px-4 py-3 font-medium">Unit</th>
+        <th class="px-4 py-3 font-medium">Ordered</th>
+        <th class="px-4 py-3 font-medium">Received</th>
+        <th th:if="${canEdit}" class="px-4 py-3 font-medium">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="item : ${po.items}"
+          th:id="'po-item-row-' + ${item.id}"
+          class="border-b border-elevated/40">
+        <td class="px-4 py-3 text-ivory text-sm" th:text="${item.groceryItem.name}"></td>
+        <td class="px-4 py-3 text-sand text-sm font-mono" th:text="${item.groceryItem.unit}"></td>
+        <td class="px-4 py-3">
+          <input th:if="${canEdit}"
+                 type="number" name="qty" step="0.001" min="0.001"
+                 th:value="${item.quantityOrdered}"
+                 th:attr="hx-post=@{/inventory/purchase-orders/{p}/items/{i}/update-qty(p=${po.id},i=${item.id})},
+                          hx-target='#po-item-row-' + ${item.id}"
+                 hx-trigger="change" hx-swap="outerHTML" hx-include="this"
+                 class="w-28 bg-base border border-elevated/60 focus:border-accent rounded
+                        px-2 py-1 text-ivory text-sm font-mono outline-none
+                        transition-colors focus:shadow-neon-sm"/>
+          <span th:unless="${canEdit}"
+                class="text-ivory text-sm font-mono"
+                th:text="${#numbers.formatDecimal(item.quantityOrdered, 1, 3)}"></span>
+        </td>
+        <td class="px-4 py-3 text-sm font-mono"
+            th:classappend="${item.quantityReceived.compareTo(item.quantityOrdered) >= 0} ? 'text-emerald-400' : 'text-sand'"
+            th:text="${#numbers.formatDecimal(item.quantityReceived, 1, 3)}"></td>
+        <td th:if="${canEdit}" class="px-4 py-3">
+          <button th:attr="hx-post=@{/inventory/purchase-orders/{p}/items/{i}/remove(p=${po.id},i=${item.id})},
+                           data-name=${item.groceryItem.name}"
+                  hx-trigger="confirmed"
+                  hx-target="#po-items-section"
+                  hx-swap="outerHTML"
+                  onclick="bbConfirmHtmx(this, 'Remove ' + this.dataset.name + ' from this order?')"
+                  class="text-xs px-2.5 py-1 rounded border border-red-500/40 text-red-400
+                         hover:bg-red-500/10 transition-colors cursor-pointer">
+            Remove
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Single row (returned for update-qty, always editable) ─────────── -->
+<table><tbody>
+<tr th:fragment="po-item-row"
+    th:id="'po-item-row-' + ${item.id}"
+    class="border-b border-elevated/40">
+  <td class="px-4 py-3 text-ivory text-sm" th:text="${item.groceryItem.name}"></td>
+  <td class="px-4 py-3 text-sand text-sm font-mono" th:text="${item.groceryItem.unit}"></td>
+  <td class="px-4 py-3">
+    <input type="number" name="qty" step="0.001" min="0.001"
+           th:value="${item.quantityOrdered}"
+           th:attr="hx-post=@{/inventory/purchase-orders/{p}/items/{i}/update-qty(p=${po.id},i=${item.id})},
+                    hx-target='#po-item-row-' + ${item.id}"
+           hx-trigger="change" hx-swap="outerHTML" hx-include="this"
+           class="w-28 bg-base border border-elevated/60 focus:border-accent rounded
+                  px-2 py-1 text-ivory text-sm font-mono outline-none
+                  transition-colors focus:shadow-neon-sm"/>
+  </td>
+  <td class="px-4 py-3 text-sm font-mono"
+      th:classappend="${item.quantityReceived.compareTo(item.quantityOrdered) >= 0} ? 'text-emerald-400' : 'text-sand'"
+      th:text="${#numbers.formatDecimal(item.quantityReceived, 1, 3)}"></td>
+  <td class="px-4 py-3">
+    <button th:attr="hx-post=@{/inventory/purchase-orders/{p}/items/{i}/remove(p=${po.id},i=${item.id})},
+                     data-name=${item.groceryItem.name}"
+            hx-trigger="confirmed"
+            hx-target="#po-items-section"
+            hx-swap="outerHTML"
+            onclick="bbConfirmHtmx(this, 'Remove ' + this.dataset.name + ' from this order?')"
+            class="text-xs px-2.5 py-1 rounded border border-red-500/40 text-red-400
+                   hover:bg-red-500/10 transition-colors cursor-pointer">
+      Remove
+    </button>
+  </td>
+</tr>
+</tbody></table>
+
+<!-- ── Cancel OOB response ────────────────────────────────────────────── -->
+<!-- Primary target: #po-actions (outerHTML → becomes empty div)          -->
+<!-- OOB: status badge + read-only items table                            -->
+<div th:fragment="po-cancel-oob">
+
+  <!-- Primary: replace #po-actions with empty div (no more buttons) -->
+  <div id="po-actions"></div>
+
+  <!-- OOB: update status badge -->
+  <span id="po-status-badge" hx-swap-oob="outerHTML">
+    <span id="po-status-badge">
+      <span class="px-3 py-1 text-sm border rounded-full font-bold uppercase text-sand border-sand/40 bg-sand/10"
+            th:text="${po.status}"></span>
+    </span>
+  </span>
+
+  <!-- OOB: items table — read-only (no edit/remove column) -->
+  <div id="po-items-section" hx-swap-oob="outerHTML"
+       class="bg-surface rounded-xl overflow-hidden border border-elevated/60 mb-6">
+    <div class="px-5 py-4 border-b border-elevated/60">
+      <h2 class="font-heading text-xl text-ivory tracking-wide">Order Items</h2>
+    </div>
+    <table class="w-full text-left">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-4 py-3 font-medium">Item</th>
+          <th class="px-4 py-3 font-medium">Unit</th>
+          <th class="px-4 py-3 font-medium">Ordered</th>
+          <th class="px-4 py-3 font-medium">Received</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="item : ${po.items}"
+            th:id="'po-item-row-' + ${item.id}"
+            class="border-b border-elevated/40">
+          <td class="px-4 py-3 text-ivory text-sm" th:text="${item.groceryItem.name}"></td>
+          <td class="px-4 py-3 text-sand text-sm font-mono" th:text="${item.groceryItem.unit}"></td>
+          <td class="px-4 py-3 text-ivory text-sm font-mono"
+              th:text="${#numbers.formatDecimal(item.quantityOrdered, 1, 3)}"></td>
+          <td class="px-4 py-3 text-sm font-mono"
+              th:classappend="${item.quantityReceived.compareTo(item.quantityOrdered) >= 0} ? 'text-emerald-400' : 'text-sand'"
+              th:text="${#numbers.formatDecimal(item.quantityReceived, 1, 3)}"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+</body>
+</html>

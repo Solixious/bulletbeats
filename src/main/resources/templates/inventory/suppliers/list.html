@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Suppliers — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-4xl mx-auto">
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Suppliers</h1>
+      <p class="text-sand text-sm mt-0.5">Manage ingredient suppliers</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="/inventory"
+         class="text-xs px-3 py-1.5 border border-sand/30 text-sand rounded
+                hover:border-ivory/40 hover:text-ivory transition-colors">
+        ← Inventory
+      </a>
+      <a href="/inventory/suppliers/new"
+         class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
+                font-heading tracking-widest text-sm
+                hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        + NEW SUPPLIER
+      </a>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  <div th:if="${param.created}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Supplier created.
+  </div>
+  <div th:if="${param.updated}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Supplier updated.
+  </div>
+  <div th:if="${param.deactivated}"
+       id="flash-deactivated"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-sand/30
+              text-sand text-xs font-medium whitespace-nowrap">
+    Supplier deactivated.
+  </div>
+  <script th:if="${param.deactivated}">
+    const _fd = document.getElementById('flash-deactivated');
+    if (_fd) setTimeout(() => { _fd.style.opacity = '0'; setTimeout(() => _fd.style.display = 'none', 400); }, 3000);
+  </script>
+  <div th:if="${param.reactivated}"
+       id="flash-reactivated"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-accent/30
+              text-accent text-xs font-medium shadow-neon-sm whitespace-nowrap">
+    <span>✓</span> Supplier reactivated.
+  </div>
+  <script th:if="${param.reactivated}">
+    const _fr = document.getElementById('flash-reactivated');
+    if (_fr) setTimeout(() => { _fr.style.opacity = '0'; setTimeout(() => _fr.style.display = 'none', 400); }, 3000);
+  </script>
+
+  <!-- Table -->
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+
+    <div th:if="${#lists.isEmpty(suppliers)}"
+         class="py-16 text-center text-sand text-sm">
+      No active suppliers.
+      <a href="/inventory/suppliers/new" class="text-accent hover:underline ml-1">Add one?</a>
+    </div>
+
+    <table th:unless="${#lists.isEmpty(suppliers)}" class="w-full text-left">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-4 py-3 font-medium">Name</th>
+          <th class="px-4 py-3 font-medium">Phone</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="s : ${suppliers}"
+            class="border-b border-elevated/40 hover:bg-elevated/20 transition-colors">
+
+          <td class="px-4 py-3 text-ivory text-sm font-medium" th:text="${s.name}"></td>
+
+          <td class="px-4 py-3 text-sand text-sm" th:text="${s.phone} ?: '—'"></td>
+
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs border rounded-full
+                         text-emerald-400 border-emerald-400/40 bg-emerald-400/10">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
+            </span>
+          </td>
+
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <a th:href="@{/inventory/suppliers/{id}/edit(id=${s.id})}"
+                 class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                        hover:border-ivory/40 hover:text-ivory transition-colors">
+                Edit
+              </a>
+              <form th:action="@{/inventory/suppliers/{id}/deactivate(id=${s.id})}" method="post"
+                    class="inline"
+                    onsubmit="return bbConfirm(this, 'Deactivate this supplier?')">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-red-500/40 text-red-400
+                               hover:bg-red-500/10 transition-colors cursor-pointer">
+                  Deactivate
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <p th:unless="${#lists.isEmpty(suppliers)}"
+     class="mt-3 text-sand text-xs text-right"
+     th:text="${#lists.size(suppliers)} + ' supplier' + (${#lists.size(suppliers)} == 1 ? '' : 's')">
+  </p>
+
+  <!-- Deactivated suppliers -->
+  <details th:if="${not #lists.isEmpty(inactiveSuppliers)}" class="mt-8 group">
+    <summary class="flex items-center gap-2 cursor-pointer list-none select-none
+                    text-sand text-sm hover:text-ivory transition-colors">
+      <svg class="w-3.5 h-3.5 transition-transform group-open:rotate-90" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+      </svg>
+      <span>Deactivated suppliers
+        (<span th:text="${#lists.size(inactiveSuppliers)}"></span>)
+      </span>
+    </summary>
+
+    <div class="mt-3 bg-surface rounded-xl overflow-hidden border border-elevated/40 opacity-75">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+            <th class="px-4 py-3 font-medium">Name</th>
+            <th class="px-4 py-3 font-medium">Phone</th>
+            <th class="px-4 py-3 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="s : ${inactiveSuppliers}"
+              class="border-b border-elevated/30 last:border-0">
+            <td class="px-4 py-3 text-sand text-sm font-medium" th:text="${s.name}"></td>
+            <td class="px-4 py-3 text-sand/60 text-sm" th:text="${s.phone} ?: '—'"></td>
+            <td class="px-4 py-3">
+              <form th:action="@{/inventory/suppliers/{id}/reactivate(id=${s.id})}" method="post"
+                    class="inline">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-accent/40 text-accent
+                               hover:bg-accent/10 transition-colors cursor-pointer">
+                  Reactivate
+                </button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+</main>
+</body>
+</html>

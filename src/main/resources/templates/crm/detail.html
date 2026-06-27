@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${customer.name} + ' — Customers — Bullet Beats Café'">Customer</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <a href="/customers"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Customers
+  </a>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- ── LEFT COLUMN ─────────────────────────────────────────────── -->
+    <div class="space-y-5">
+
+      <!-- Customer header card -->
+      <div class="bg-surface rounded-xl border border-elevated/60 p-6 space-y-4">
+        <h1 class="font-heading text-3xl text-ivory tracking-wide" th:text="${customer.name}">Name</h1>
+        <div class="flex flex-wrap items-center gap-2">
+          <th:block th:replace="~{crm/fragments/vip-badge :: vip-badge}"></th:block>
+          <th:block th:replace="~{crm/fragments/student-badge :: student-badge}"></th:block>
+        </div>
+        <div th:if="${customer.isStudent}"
+             class="px-4 py-3 rounded-lg bg-blue-400/10 border border-blue-400/20 text-blue-400 text-xs">
+          <span class="font-medium">Student discount eligible.</span>
+          <span th:text="${studentDiscountPercentage}">10</span>% off bills over
+          ₹<span th:text="${#numbers.formatDecimal(minBillAmount, 1, 0)}">200</span>
+          · Used <span th:text="${customer.studentDiscountCount}">0</span> time(s).
+        </div>
+      </div>
+
+      <!-- Info grid -->
+      <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+        <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div>
+            <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Phone</p>
+            <p class="text-ivory text-sm font-mono" th:text="${customer.phone}"></p>
+          </div>
+          <div th:if="${customer.email != null}">
+            <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Email</p>
+            <p class="text-ivory text-sm" th:text="${customer.email}"></p>
+          </div>
+          <div th:if="${customer.dob != null}">
+            <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Date of Birth</p>
+            <p class="text-ivory text-sm"
+               th:text="${#temporals.format(customer.dob, 'dd MMM yyyy')}"></p>
+          </div>
+          <div>
+            <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Member Since</p>
+            <p class="text-ivory text-sm"
+               th:text="${customer.createdAt != null ? #temporals.format(customer.createdAt, 'dd MMM yyyy') : '—'}"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div th:class="${customer.isStudent} ? 'grid grid-cols-4 gap-3' : 'grid grid-cols-3 gap-3'">
+        <div class="bg-surface rounded-xl border border-elevated/60 p-4 text-center">
+          <p class="text-sand text-xs uppercase tracking-widest mb-1">Visits</p>
+          <p class="font-heading text-3xl text-ivory" th:text="${customer.visitCount}">0</p>
+        </div>
+        <div class="bg-surface rounded-xl border border-elevated/60 p-4 text-center">
+          <p class="text-sand text-xs uppercase tracking-widest mb-1">Total Spend</p>
+          <p class="font-heading text-2xl text-ivory"
+             th:text="'₹' + ${#numbers.formatDecimal(customer.totalSpend, 1, 0)}">₹0</p>
+        </div>
+        <div class="bg-surface rounded-xl border border-elevated/60 border-accent/20 p-4 text-center">
+          <p class="text-sand text-xs uppercase tracking-widest mb-1">Points</p>
+          <p class="font-heading text-3xl text-accent" th:text="${loyaltyPoints}">0</p>
+        </div>
+        <div th:if="${customer.isStudent}"
+             class="bg-surface rounded-xl border border-elevated/60 border-blue-400/20 p-4 text-center">
+          <p class="text-sand text-xs uppercase tracking-widest mb-1">Discounts Used</p>
+          <p class="font-heading text-3xl text-blue-400" th:text="${customer.studentDiscountCount}">0</p>
+        </div>
+      </div>
+
+      <!-- Recent bills stub -->
+      <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+        <div class="px-5 py-3 border-b border-elevated/60 flex items-center justify-between">
+          <h2 class="font-heading text-lg text-ivory tracking-wide">Recent Bills</h2>
+          <a th:href="@{/bills(customerId=${customer.id})}"
+             class="text-xs text-sand hover:text-ivory transition-colors">View all →</a>
+        </div>
+        <div class="px-5 py-8 text-center text-sand text-sm">
+          No bills yet.
+          <!-- Wire up in billing module -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── RIGHT COLUMN ────────────────────────────────────────────── -->
+    <div class="space-y-5">
+
+      <!-- Notes section -->
+      <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+        <div class="px-5 py-3 border-b border-elevated/60 flex items-center gap-2" id="notes">
+          <h2 class="font-heading text-lg text-ivory tracking-wide">Notes</h2>
+          <span th:if="${customer.notesCount > 0}"
+                class="px-2 py-0.5 text-xs rounded-full font-bold bg-elevated
+                       border border-elevated/60 text-sand"
+                th:text="${customer.notesCount}"></span>
+        </div>
+
+        <!-- Add note form -->
+        <div class="px-5 py-4 border-b border-elevated/40">
+          <form th:action="@{/customers/{id}/notes(id=${customer.id})}"
+                method="post"
+                th:attr="hx-post=@{/customers/{id}/notes(id=${customer.id})}"
+                hx-target="#notes-list"
+                hx-swap="outerHTML"
+                hx-on--after-request="this.reset()"
+                class="space-y-3">
+            <textarea name="note"
+                      placeholder="Add a note..."
+                      rows="3"
+                      required
+                      class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                             rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                             outline-none transition-all duration-200 focus:shadow-neon-sm resize-none"></textarea>
+            <button type="submit"
+                    class="px-4 py-2 rounded-lg bg-accent text-base font-heading tracking-widest
+                           text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200">
+              ADD NOTE
+            </button>
+          </form>
+        </div>
+
+        <!-- Notes list (swapped by HTMX after note submission) -->
+        <div class="px-5 py-4">
+          <th:block th:replace="~{crm/fragments/notes-list :: notes-list}"></th:block>
+        </div>
+      </div>
+
+      <!-- Loyalty section -->
+      <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+        <div class="px-5 py-3 border-b border-elevated/60">
+          <h2 class="font-heading text-lg text-ivory tracking-wide">Loyalty Points</h2>
+        </div>
+
+        <div class="p-5">
+
+          <!-- Balance: all roles -->
+          <div class="flex items-baseline gap-2 mb-5">
+            <span class="font-heading text-5xl text-accent" th:text="${loyaltyPoints}">0</span>
+            <span class="text-sand text-sm">pts</span>
+          </div>
+
+          <!-- Manager+: transaction log -->
+          <div th:if="${isManager}">
+            <h3 class="text-sand text-xs uppercase tracking-widest mb-3">Transaction History</h3>
+
+            <div th:if="${loyaltyTransactions == null or loyaltyTransactions.isEmpty()}"
+                 class="py-4 text-center text-sand text-sm">
+              No loyalty transactions yet.
+            </div>
+
+            <table th:unless="${loyaltyTransactions == null or loyaltyTransactions.isEmpty()}"
+                   class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b border-elevated/40 text-sand text-xs uppercase tracking-widest">
+                  <th class="pb-2 font-medium">Date</th>
+                  <th class="pb-2 font-medium">Type</th>
+                  <th class="pb-2 font-medium text-right">Points</th>
+                  <th class="pb-2 font-medium">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="tx : ${loyaltyTransactions.content}"
+                    class="border-b border-elevated/30 last:border-0">
+                  <td class="py-2.5 text-sand text-xs whitespace-nowrap"
+                      th:text="${#temporals.format(tx.createdAt, 'dd MMM, HH:mm')}"></td>
+                  <td class="py-2.5">
+                    <span class="px-2 py-0.5 text-xs font-bold rounded-full border uppercase"
+                          th:with="t=${tx.transactionType.name()}"
+                          th:classappend="${t == 'EARN'}
+                            ? 'text-emerald-400 border-emerald-400/40 bg-emerald-400/10'
+                            : (${t == 'REDEEM'}
+                               ? 'text-red-400 border-red-400/40 bg-red-400/10'
+                               : 'text-amber-400 border-amber-400/40 bg-amber-400/10')"
+                          th:text="${tx.transactionType.displayName}">
+                    </span>
+                  </td>
+                  <td class="py-2.5 text-right font-mono font-bold"
+                      th:with="t=${tx.transactionType.name()}"
+                      th:classappend="${t == 'EARN'} ? 'text-emerald-400'
+                                     : (${t == 'REDEEM'} ? 'text-red-400' : 'text-amber-400')"
+                      th:text="${t == 'EARN'} ? '+' + ${tx.points}
+                               : (${t == 'REDEEM'} ? '-' + ${tx.points} : ${tx.points})">
+                  </td>
+                  <td class="py-2.5 text-sand text-xs truncate max-w-xs"
+                      th:text="${tx.description} ?: '—'"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Staff: balance-only view -->
+          <p th:unless="${isManager}" class="text-sand text-sm">
+            This customer has
+            <span class="text-accent font-bold" th:text="${loyaltyPoints}">0</span>
+            loyalty points.
+          </p>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Relative time for notes -->
+  <script>
+    (function () {
+      document.querySelectorAll('time[data-ts]').forEach(function (el) {
+        var diff = Date.now() - new Date(el.getAttribute('data-ts')).getTime();
+        var mins = Math.floor(diff / 60000);
+        if (mins < 1)    el.textContent = 'just now';
+        else if (mins < 60)   el.textContent = mins + ' min ago';
+        else if (mins < 1440) el.textContent = Math.floor(mins / 60) + ' hr ago';
+        else              el.textContent = Math.floor(mins / 1440) + 'd ago';
+      });
+    })();
+  </script>
+
+</main>
+</body>
+</html>

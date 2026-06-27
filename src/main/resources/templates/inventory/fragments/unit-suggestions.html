@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="suggestions" id="unit-suggestions">
+  <div th:if="${!#lists.isEmpty(units)}"
+       class="absolute z-50 mt-1 w-full bg-elevated border border-elevated/60 rounded-lg
+              shadow-lg overflow-hidden">
+    <div th:each="unit : ${units}"
+         th:text="${unit}"
+         class="px-3 py-2 text-ivory text-sm hover:bg-accent/10 hover:text-accent
+                cursor-pointer transition-colors"
+         onclick="document.getElementById('unit').value = this.textContent.trim();
+                  document.getElementById('unit-suggestions').innerHTML = '';">
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

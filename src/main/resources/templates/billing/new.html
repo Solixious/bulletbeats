@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>New Bill — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-2xl mx-auto">
+
+  <a href="/bills"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Billing
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide">New Bill</h1>
+    <p class="text-sand text-sm mt-0.5">Select a table and optionally link a customer</p>
+  </div>
+
+  <form th:action="@{/bills}" th:object="${dto}" method="post" class="space-y-6">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <input type="hidden" id="cafeTableId" name="cafeTableId" th:field="*{cafeTableId}"/>
+    <input type="hidden" id="customerPhone" name="customerPhone" th:field="*{customerPhone}"/>
+    <input type="hidden" id="customerName" name="customerName" th:field="*{customerName}"/>
+
+    <!-- Step 1: Table selection -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">Step 1 — Select Table</p>
+
+      <div th:if="${#lists.isEmpty(tables)}"
+           class="py-8 text-center text-sand text-sm">
+        No tables configured.
+        <a href="/admin/tables/new" class="text-accent hover:underline">Add one?</a>
+      </div>
+
+      <div th:unless="${#lists.isEmpty(tables)}"
+           class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <th:block th:each="t : ${tables}">
+          <button type="button"
+                  th:data-id="${t.id}"
+                  th:data-status="${t.status.name()}"
+                  th:data-name="${t.name}"
+                  onclick="selectTable(this.dataset.id, this.dataset.status, this.dataset.name)"
+                  th:classappend="${t.status.name() == 'FREE'} ? '' : 'opacity-80'"
+                  class="relative text-left p-3 rounded-lg border border-elevated/60
+                         hover:border-accent/40 transition-all duration-150 cursor-pointer
+                         bg-elevated/30 hover:bg-elevated/60 focus:outline-none">
+
+            <span th:if="${t.status.name() == 'FREE'}"
+                  class="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span th:unless="${t.status.name() == 'FREE'}"
+                  class="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+
+            <p class="text-ivory text-sm font-medium" th:text="${t.name}"></p>
+            <p class="text-sand text-xs mt-0.5"
+               th:text="${t.capacity != null} ? ${t.capacity} + ' seats' : ''"></p>
+            <p th:if="${t.status.name() != 'FREE'}"
+               class="text-amber-400 text-xs mt-1">
+              Occupied
+              <th:block th:with="cnt=${activeBillsByTable[t.id]}">
+                <span th:if="${cnt != null}" th:text="' · ' + ${cnt} + ' bill' + (${cnt} == 1 ? '' : 's')"></span>
+              </th:block>
+            </p>
+          </button>
+        </th:block>
+      </div>
+
+      <!-- Selected table display -->
+      <div id="selected-table-display" class="hidden mt-4 flex items-center gap-2">
+        <span class="text-accent text-sm">✓ Selected:</span>
+        <span id="selected-table-name" class="text-ivory text-sm font-medium"></span>
+        <button type="button" onclick="clearTable()"
+                class="text-sand text-xs hover:text-ivory ml-2">× clear</button>
+      </div>
+
+      <!-- Occupied table info banner -->
+      <div id="occupied-banner" class="hidden mt-4 px-4 py-3 rounded-lg
+                                       border border-amber-400/30 bg-amber-400/5 text-amber-400 text-sm">
+        <p><strong id="occupied-table-name"></strong> already has active bills.</p>
+        <p class="text-xs text-amber-400/70 mt-0.5">A new bill will be added alongside existing ones.</p>
+      </div>
+
+      <p th:if="*{#fields.hasErrors('cafeTableId')}" th:errors="*{cafeTableId}"
+         class="mt-2 text-red-400 text-xs"></p>
+    </div>
+
+    <!-- Step 2: Customer (optional) -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">
+        Step 2 — Customer <span class="normal-case text-sand/50">(optional)</span>
+      </p>
+
+      <!-- Search box -->
+      <div class="relative mb-3">
+        <input type="text"
+               id="customerSearchInput"
+               placeholder="Search by name or phone..."
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none border border-elevated
+                      focus:border-accent focus:shadow-neon-sm transition-all duration-200"
+               hx-get="/bills/customer-search"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#customer-results"
+               name="q"/>
+      </div>
+
+      <div id="customer-results" class="mb-3"></div>
+
+      <!-- Selected customer display -->
+      <div id="selected-customer-display"
+           class="hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-elevated/50 border border-elevated/60">
+        <span class="text-accent text-xs">✓</span>
+        <span id="selected-customer-name" class="text-ivory text-sm"></span>
+        <span id="selected-customer-phone" class="text-sand text-xs"></span>
+        <span id="selected-customer-vip"
+              class="hidden px-1.5 py-0.5 text-xs rounded-full font-bold
+                     text-amber-400 border border-amber-400/40 bg-amber-400/10">VIP</span>
+        <button type="button" onclick="clearCustomer()"
+                class="ml-auto text-sand text-xs hover:text-ivory">× clear</button>
+      </div>
+
+      <p class="text-sand/60 text-xs mt-2">
+        Leave blank for a walk-in. If the phone isn't found, a new customer record will be created.
+      </p>
+    </div>
+
+    <!-- Submit -->
+    <div class="flex items-center gap-3">
+      <button type="submit"
+              class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                     text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        START BILL
+      </button>
+      <a href="/bills" class="text-sand text-sm hover:text-ivory transition-colors">Cancel</a>
+    </div>
+  </form>
+
+<script>
+function selectTable(id, status, name) {
+  document.querySelectorAll('[data-id]').forEach(function(el) {
+    el.classList.remove('ring-2', 'ring-accent', 'border-accent');
+    el.classList.add('border-elevated/60');
+  });
+  var card = document.querySelector('[data-id="' + id + '"]');
+  if (card) {
+    card.classList.remove('border-elevated/60');
+    card.classList.add('ring-2', 'ring-accent', 'border-accent');
+  }
+  document.getElementById('cafeTableId').value = id;
+  document.getElementById('selected-table-name').textContent = name;
+  document.getElementById('selected-table-display').classList.remove('hidden');
+
+  var banner = document.getElementById('occupied-banner');
+  if (status === 'OCCUPIED') {
+    document.getElementById('occupied-table-name').textContent = name;
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+function clearTable() {
+  document.querySelectorAll('[data-id]').forEach(function(el) {
+    el.classList.remove('ring-2', 'ring-accent', 'border-accent');
+    el.classList.add('border-elevated/60');
+  });
+  document.getElementById('cafeTableId').value = '';
+  document.getElementById('selected-table-display').classList.add('hidden');
+  document.getElementById('occupied-banner').classList.add('hidden');
+}
+
+function selectCustomer(phone, name, isVip) {
+  document.getElementById('customerPhone').value = phone;
+  document.getElementById('customerName').value = name;
+  document.getElementById('selected-customer-name').textContent = name;
+  document.getElementById('selected-customer-phone').textContent = phone;
+  var vipBadge = document.getElementById('selected-customer-vip');
+  if (isVip) { vipBadge.classList.remove('hidden'); } else { vipBadge.classList.add('hidden'); }
+  document.getElementById('selected-customer-display').classList.remove('hidden');
+  document.getElementById('customerSearchInput').value = '';
+  document.getElementById('customer-results').innerHTML = '';
+}
+
+function clearCustomer() {
+  document.getElementById('customerPhone').value = '';
+  document.getElementById('customerName').value = '';
+  document.getElementById('selected-customer-display').classList.add('hidden');
+}
+
+function createNewCustomer() {
+  var phone = (document.getElementById('new-cust-phone') || {}).value || '';
+  var name = (document.getElementById('new-cust-name') || {}).value || '';
+  phone = phone.trim();
+  name = name.trim();
+  if (!phone) { alert('Phone number is required'); return; }
+  if (!name) { alert('Customer name is required'); return; }
+  selectCustomer(phone, name, false);
+  document.getElementById('customerSearchInput').value = '';
+  document.getElementById('customer-results').innerHTML = '';
+}
+</script>
+
+</main>
+</body>
+</html>

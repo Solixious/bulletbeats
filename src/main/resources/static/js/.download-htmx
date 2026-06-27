@@ -1,0 +1,3 @@
+# htmx
+# Download from https://unpkg.com/htmx.org/dist/htmx.min.js
+# and place at src/main/resources/static/js/htmx.min.js

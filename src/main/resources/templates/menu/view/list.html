@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Menu — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-5xl mx-auto">
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide">Menu</h1>
+    <p class="text-sand text-sm mt-0.5">What's available today</p>
+  </div>
+
+  <!-- Category filter tabs -->
+  <div id="category-tabs" class="flex items-center gap-2 mb-5 flex-wrap">
+    <button hx-get="/menu"
+            hx-target="#menu-table"
+            hx-swap="innerHTML"
+            onclick="setActiveTab(this)"
+            th:classappend="${selectedCategoryId == null}
+                            ? 'bg-accent/20 text-accent border-accent/50'
+                            : 'text-sand border-elevated/60 hover:text-ivory hover:border-sand/50'"
+            class="category-tab px-3 py-1.5 text-xs rounded-full border transition-colors">
+      All
+    </button>
+    <button th:each="cat : ${categories}"
+            th:attr="hx-get='/menu?categoryId=' + ${cat.id}"
+            hx-target="#menu-table"
+            hx-swap="innerHTML"
+            onclick="setActiveTab(this)"
+            th:classappend="${selectedCategoryId == cat.id}
+                            ? 'bg-accent/20 text-accent border-accent/50'
+                            : 'text-sand border-elevated/60 hover:text-ivory hover:border-sand/50'"
+            class="category-tab px-3 py-1.5 text-xs rounded-full border transition-colors"
+            th:text="${cat.name}">Category</button>
+  </div>
+
+  <script>
+    function setActiveTab(btn) {
+      document.querySelectorAll('#category-tabs .category-tab').forEach(function (b) {
+        b.classList.remove('bg-accent/20', 'text-accent', 'border-accent/50');
+        b.classList.add('text-sand', 'border-elevated/60');
+      });
+      btn.classList.add('bg-accent/20', 'text-accent', 'border-accent/50');
+      btn.classList.remove('text-sand', 'border-elevated/60');
+    }
+  </script>
+
+  <!-- Table (HTMX target + fragment for partial return) -->
+  <div id="menu-table" th:fragment="menu-table">
+
+    <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+
+      <div th:if="${#lists.isEmpty(items)}"
+           class="py-16 text-center text-sand text-sm">
+        No items available at the moment.
+      </div>
+
+      <table th:unless="${#lists.isEmpty(items)}" class="w-full text-left">
+        <thead>
+          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+            <th class="px-5 py-3 font-medium">Name</th>
+            <th class="px-5 py-3 font-medium">Type</th>
+            <th class="px-5 py-3 font-medium">Category</th>
+            <th class="px-5 py-3 font-medium text-right">Price</th>
+            <th class="px-5 py-3 font-medium text-center">Availability</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="item : ${items}"
+              class="border-b border-elevated/40 last:border-0
+                     hover:bg-elevated/10 transition-colors duration-100"
+              th:classappend="${!item.available} ? 'opacity-60' : ''">
+
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-2.5">
+                <img th:if="${item.imagePath != null}"
+                     th:src="'/uploads/' + ${item.imagePath}"
+                     alt=""
+                     class="w-9 h-9 rounded-md object-cover border border-elevated/60 flex-shrink-0"/>
+                <div th:unless="${item.imagePath != null}"
+                     class="w-9 h-9 rounded-md bg-elevated border border-elevated/60
+                            flex items-center justify-center text-sand/30 text-base flex-shrink-0">
+                  ☕
+                </div>
+                <span class="text-ivory text-sm font-medium" th:text="${item.name}">Name</span>
+              </div>
+            </td>
+
+            <td class="px-5 py-3">
+              <span th:if="${item.type.name() == 'DISH'}"
+                    class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                           text-accent border-accent/40 bg-accent/10">Dish</span>
+              <span th:if="${item.type.name() == 'COMBO'}"
+                    class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                           text-amber-400 border-amber-400/40 bg-amber-400/10">Combo</span>
+            </td>
+
+            <td class="px-5 py-3 text-sand text-sm" th:text="${item.category.name}"></td>
+
+            <td class="px-5 py-3 text-right">
+              <span class="text-accent font-heading text-base"
+                    th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}"></span>
+            </td>
+
+            <td class="px-5 py-3 text-center">
+              <span th:if="${item.available}"
+                    class="inline-flex items-center gap-1 text-xs text-emerald-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                Available
+              </span>
+              <span th:unless="${item.available}"
+                    class="inline-flex items-center gap-1 text-xs text-red-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0"></span>
+                Unavailable
+              </span>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p th:unless="${#lists.isEmpty(items)}"
+       class="mt-3 text-sand text-xs text-right"
+       th:text="${#lists.size(items)} + ' item' + (${#lists.size(items)} == 1 ? '' : 's')">
+    </p>
+
+  </div>
+
+</main>
+</body>
+</html>

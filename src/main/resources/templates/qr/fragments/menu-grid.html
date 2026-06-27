@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!-- ── Full grid (returned by category filter endpoint) ─────────────── -->
+<th:block th:fragment="qr-menu-grid">
+  <div th:if="${#lists.isEmpty(items)}"
+       class="py-16 text-center text-sand text-sm">
+    No items available in this category.
+  </div>
+  <div th:unless="${#lists.isEmpty(items)}" class="space-y-3">
+    <th:block th:each="item : ${items}">
+      <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId})}"/>
+    </th:block>
+  </div>
+</th:block>
+
+<!-- ── Single item card (reused from menu.html too) ─────────────────── -->
+<th:block th:fragment="qr-menu-item(item, bill, billId, qrCode, customerName, customerId)">
+
+  <!-- Find how many of this item are already in the cart -->
+  <th:block th:with="matchedItems=${bill.items.?[menuItem.id == __${item.id}__]},
+                     cartQty=${#lists.isEmpty(matchedItems) ? 0 : matchedItems[0].quantity}">
+
+  <div th:classappend="${!item.available} ? 'opacity-50' : ''"
+       class="bg-surface rounded-xl border border-elevated/60 overflow-hidden flex gap-3 p-3">
+
+    <!-- Thumbnail -->
+    <div class="flex-shrink-0 w-20 h-20">
+      <img th:if="${item.imagePath != null}"
+           th:src="@{/uploads/{p}(p=${item.imagePath})}"
+           th:alt="${item.name}"
+           th:attr="data-src=@{/uploads/{p}(p=${item.imagePath})}"
+           class="w-20 h-20 object-cover rounded-lg cursor-pointer"
+           onclick="openLightbox(this.dataset.src)"/>
+      <!-- Tyre-tread placeholder -->
+      <div th:unless="${item.imagePath != null}"
+           class="w-20 h-20 rounded-lg flex items-center justify-center bg-elevated/60"
+           style="background: repeating-linear-gradient(45deg,#2A2A2A 0,#2A2A2A 4px,#333 4px,#333 8px)">
+        <span class="text-2xl">🍽</span>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="flex-1 flex flex-col justify-between min-w-0">
+      <div>
+        <p class="font-bold text-ivory text-sm leading-tight truncate" th:text="${item.name}">Item</p>
+        <p th:unless="${item.available}"
+           class="text-xs text-amber-400/80 mt-0.5">Currently Unavailable</p>
+      </div>
+      <div class="flex items-end justify-between mt-1">
+        <span class="font-heading text-accent text-xl tracking-wide"
+              th:text="'₹' + ${item.price}">₹0</span>
+
+        <!-- Add / Qty stepper -->
+        <div th:if="${item.available}">
+
+          <!-- Item not in cart: show Add button -->
+          <form th:unless="${cartQty != null and cartQty > 0}"
+                th:id="'af-' + ${item.id}"
+                style="display:inline">
+            <input type="hidden" name="billId"       th:value="${billId}"/>
+            <input type="hidden" name="menuItemId"   th:value="${item.id}"/>
+            <input type="hidden" name="quantity"     value="1"/>
+            <input type="hidden" name="customerName" th:value="${customerName}"/>
+            <input type="hidden" name="customerId"   th:value="${customerId}"/>
+            <button type="button"
+                    th:attr="hx-post=@{/qr/{c}/items(c=${qrCode})},
+                             hx-include='#af-' + ${item.id}"
+                    hx-target="#order-panel"
+                    hx-swap="innerHTML"
+                    class="px-4 py-2 bg-accent rounded-lg text-base text-xs font-bold
+                           hover:brightness-110 transition-all active:scale-95">
+              + Add
+            </button>
+          </form>
+
+          <!-- Item already in cart: show qty stepper -->
+          <div th:if="${cartQty > 0}"
+               class="flex items-center gap-2">
+            <th:block th:with="billItemId=${matchedItems[0].id}">
+            <!-- Decrease -->
+            <button th:attr="hx-patch=@{/qr/{c}/items/{i}/quantity(c=${qrCode},i=${billItemId},billId=${billId},quantity=${cartQty - 1},customerName=${customerName})}"
+                    hx-target="#order-panel"
+                    hx-swap="innerHTML"
+                    class="w-8 h-8 rounded-lg border border-elevated/60 text-ivory text-lg
+                           hover:border-red-400/40 hover:text-red-400 transition-colors flex items-center justify-center">−</button>
+            <span class="text-ivory font-bold text-sm w-5 text-center" th:text="${cartQty}">1</span>
+            <!-- Increase -->
+            <button th:attr="hx-patch=@{/qr/{c}/items/{i}/quantity(c=${qrCode},i=${billItemId},billId=${billId},quantity=${cartQty + 1},customerName=${customerName})}"
+                    hx-target="#order-panel"
+                    hx-swap="innerHTML"
+                    class="w-8 h-8 rounded-lg bg-accent text-base text-lg font-bold
+                           hover:brightness-110 transition-all flex items-center justify-center">+</button>
+            </th:block>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </th:block>
+</th:block>
+
+</body>
+</html>

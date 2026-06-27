@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="'Bill #' + ${bill.billNumber} + ' — Bullet Beats Café'">Bill</title>
+</head>
+<body>
+<main class="p-6">
+
+  <!-- Header row -->
+  <div class="flex items-start justify-between mb-6 max-w-7xl mx-auto">
+    <div>
+      <a href="/bills"
+         class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-2">
+        ← All Bills
+      </a>
+      <h1 class="font-heading text-2xl text-ivory tracking-wide"
+          th:text="'Bill #' + ${bill.billNumber}"></h1>
+      <p class="text-sand text-sm mt-0.5"
+         th:text="${bill.cafeTable.name}
+                  + (${bill.customer != null} ? ' · ' + ${bill.customer.name} : ' · Walk-in')
+                  + (${bill.createdAt != null} ? ' · ' + ${#temporals.format(bill.createdAt, 'dd MMM, HH:mm')} : '')">
+      </p>
+    </div>
+    <!-- Header actions (manager+) -->
+    <div class="flex items-center gap-2" sec:authorize="hasAnyRole('MANAGER','ADMIN')">
+      <!-- Transfer Table button -->
+      <div id="bill-transfer-btn">
+        <button th:if="${bill.status.name() == 'DRAFT' or bill.status.name() == 'CONFIRMED'}"
+                th:attr="hx-get=@{/bills/{id}/transfer-form(id=${bill.id})}"
+                hx-target="#transfer-panel"
+                hx-swap="innerHTML"
+                class="px-3 py-1.5 text-xs rounded border border-sand/30 text-sand
+                       hover:border-ivory/40 hover:text-ivory transition-colors">
+          Transfer Table
+        </button>
+      </div>
+      <!-- Cancel button -->
+      <div id="bill-cancel-btn">
+        <form th:if="${bill.status.name() == 'DRAFT' or bill.status.name() == 'CONFIRMED'}"
+              th:action="@{/bills/{id}/cancel(id=${bill.id})}" method="post"
+              onsubmit="return bbConfirm(this, 'Cancel this bill?')">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button type="submit"
+                  class="px-3 py-1.5 text-xs rounded border border-red-500/40 text-red-400
+                         hover:bg-red-500/10 transition-colors">
+            Cancel Bill
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transfer panel (populated by HTMX) -->
+  <div id="transfer-panel" class="max-w-7xl mx-auto"></div>
+
+  <!-- Two-column layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start max-w-7xl mx-auto">
+
+    <!-- ── LEFT: persistent container; content switches between menu and kitchen ── -->
+    <div id="detail-left-col">
+
+      <!-- DRAFT: poll for DRAFT→CONFIRMED transition + menu browser -->
+      <th:block th:if="${bill.status.name() == 'DRAFT'}">
+
+        <!-- h-0 so HTMX won't pause the every-trigger (display:none would pause it) -->
+        <div th:attr="hx-get=@{/bills/{id}/left-panel(id=${bill.id})}"
+             hx-trigger="every 5s"
+             hx-target="#detail-left-col"
+             hx-swap="innerHTML"
+             class="h-0 overflow-hidden pointer-events-none" aria-hidden="true"></div>
+
+        <!-- Search -->
+        <div class="mb-3">
+          <input type="text"
+                 placeholder="Search menu items..."
+                 class="w-full bg-surface rounded-lg px-4 py-2.5 text-ivory text-sm
+                        placeholder-sand/40 outline-none border border-elevated/60
+                        focus:border-accent focus:shadow-neon-sm transition-all duration-200"
+                 th:attr="hx-get=@{/bills/{id}/menu-search(id=${bill.id})}"
+                 hx-trigger="keyup changed delay:300ms"
+                 hx-target="#menu-items-grid"
+                 name="q"/>
+        </div>
+
+        <!-- Category tabs -->
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button th:attr="hx-get=@{/bills/{id}/menu(id=${bill.id})}"
+                  hx-target="#menu-items-grid"
+                  class="px-3 py-1.5 text-xs rounded-lg border border-accent/40 text-accent
+                         bg-accent/10 hover:bg-accent/20 transition-colors">
+            All
+          </button>
+          <button th:each="cat : ${categories}"
+                  th:text="${cat.name}"
+                  th:attr="hx-get=@{/bills/{id}/menu(id=${bill.id},categoryId=${cat.id})}"
+                  hx-target="#menu-items-grid"
+                  class="px-3 py-1.5 text-xs rounded-lg border border-elevated/60 text-sand
+                         hover:border-accent/40 hover:text-ivory transition-colors">
+          </button>
+        </div>
+
+        <!-- Menu grid -->
+        <div id="menu-items-grid">
+          <th:block th:replace="~{billing/fragments/menu-grid :: menu-grid}"/>
+        </div>
+
+      </th:block>
+
+      <!-- CONFIRMED: kitchen order view -->
+      <th:block th:if="${bill.status.name() == 'CONFIRMED'}">
+        <th:block th:replace="~{billing/fragments/kitchen-left-col :: kitchen-left-col}"/>
+      </th:block>
+
+    </div>
+
+    <!-- ── RIGHT: Bill panel ──────────────────────────────────────────── -->
+    <div id="bill-panel" class="space-y-0">
+      <th:block th:replace="~{billing/fragments/bill-panel :: bill-panel}"/>
+    </div>
+
+  </div>
+
+  <!-- Activity log (full width, below grid) -->
+  <div class="max-w-7xl mx-auto mt-8">
+    <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+      <div class="px-4 py-3 border-b border-elevated/60">
+        <h2 class="font-heading text-base text-ivory tracking-wide">Activity Log</h2>
+      </div>
+      <div class="px-4 py-4"
+           id="activity-log-wrap"
+           th:attr="hx-get=@{/bills/{id}/activity-log(id=${bill.id})}"
+           hx-trigger="every 10s"
+           hx-target="#activity-log-inner"
+           hx-swap="outerHTML">
+        <th:block th:replace="~{billing/fragments/activity-log :: activity-log}"/>
+      </div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

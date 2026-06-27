@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="shell(title, content)">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="_csrf"        th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  <title th:replace="${title}">Bullet Beats Café</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base:     '#1C1C1C',
+            surface:  '#2A2A2A',
+            elevated: '#333333',
+            accent:   '#00D4FF',
+            ivory:    '#F5F0E8',
+            sand:     '#9A9080',
+          },
+          fontFamily: {
+            heading: ['"Bebas Neue"', 'cursive'],
+            body:    ['Lato', 'sans-serif'],
+          },
+          boxShadow: {
+            neon:      '0 0 24px rgba(0,212,255,0.45), 0 0 48px rgba(0,212,255,0.15)',
+            'neon-sm': '0 0 8px rgba(0,212,255,0.4)',
+          },
+        }
+      }
+    };
+  </script>
+  <style>
+    @media (max-width: 1024px) {
+      table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+  </style>
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script>
+    // Forward CSRF token on every HTMX request
+    document.addEventListener('htmx:configRequest', function (e) {
+      var header = document.querySelector('meta[name="_csrf_header"]').content;
+      var token  = document.querySelector('meta[name="_csrf"]').content;
+      e.detail.headers[header] = token;
+    });
+    // Allow 422 responses to swap (used for validation errors like student discount)
+    document.addEventListener('htmx:beforeSwap', function (e) {
+      if (e.detail.xhr.status === 422) {
+        e.detail.shouldSwap = true;
+        e.detail.isError = false;
+      }
+    });
+    // Mobile sidebar toggle
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    }
+  </script>
+</head>
+
+<body class="bg-base font-body text-ivory h-screen flex overflow-hidden">
+
+  <!-- ── Sidebar ────────────────────────────────────────────────── -->
+  <aside id="sidebar"
+         class="fixed lg:relative z-30 inset-y-0 left-0
+                w-60 bg-surface flex flex-col flex-shrink-0
+                -translate-x-full lg:translate-x-0
+                transition-transform duration-200 ease-in-out">
+
+    <!-- Logo -->
+    <div class="px-4 py-5 border-b border-elevated/60">
+      <a href="/dashboard" class="block">
+        <span class="font-heading text-2xl text-accent tracking-widest leading-none">BULLET BEATS</span>
+        <span class="font-heading text-2xl text-ivory tracking-widest leading-none block">CAFÉ</span>
+      </a>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 py-4 overflow-y-auto">
+
+      <!-- helper: active class block for repeated use -->
+      <th:block th:with="
+        uri=${requestURI},
+        activeClass='border-l-4 border-accent bg-accent/10 text-ivory shadow-neon-sm',
+        inactiveClass='border-l-4 border-transparent text-sand hover:text-ivory hover:bg-elevated/40'">
+
+        <a href="/dashboard"
+           th:classappend="${uri == '/dashboard'} ? ${activeClass} : ${inactiveClass}"
+           class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+          <span class="text-base">📊</span> Dashboard
+        </a>
+
+        <a href="/bills"
+           th:classappend="${uri.startsWith('/bills')} ? ${activeClass} : ${inactiveClass}"
+           class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+          <span class="text-base">💳</span>
+          <span class="flex-1">Billing</span>
+          <span th:if="${activeBillCount != null and activeBillCount > 0}"
+                th:text="${activeBillCount}"
+                class="px-1.5 py-0.5 text-xs rounded-full font-bold
+                       bg-amber-400/20 text-amber-400 border border-amber-400/40">
+          </span>
+        </a>
+
+        <a href="/menu"
+           th:classappend="${uri.startsWith('/menu')} ? ${activeClass} : ${inactiveClass}"
+           class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+          <span class="text-base">☕</span> Menu
+        </a>
+
+        <a href="/inventory"
+           th:classappend="${uri.startsWith('/inventory')} ? ${activeClass} : ${inactiveClass}"
+           class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+          <span class="text-base">📦</span>
+          <span class="flex-1">Inventory</span>
+          <span id="nav-low-stock-badge">
+            <span th:if="${lowStockCount != null and lowStockCount > 0}"
+                  th:text="${lowStockCount}"
+                  class="px-1.5 py-0.5 text-xs rounded-full font-bold
+                         bg-amber-400/20 text-amber-400 border border-amber-400/40">
+            </span>
+          </span>
+        </a>
+
+        <a href="/customers"
+           th:classappend="${uri.startsWith('/customers')} ? ${activeClass} : ${inactiveClass}"
+           class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+          <span class="text-base">👥</span> Customers
+        </a>
+
+        <!-- Share menu — visible to Manager+ -->
+        <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+           href="/admin/share"
+           th:classappend="${uri.startsWith('/admin/share')} ? ${activeClass} : ${inactiveClass}"
+           class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+          <span class="text-base">📲</span> Share Menu
+        </a>
+
+        <!-- Admin-only section -->
+        <div sec:authorize="hasRole('ADMIN')" class="mt-4 pt-4 border-t border-elevated/60">
+          <p class="px-5 mb-1 text-xs text-sand/60 uppercase tracking-widest">Admin</p>
+          <a href="/admin/users"
+             th:classappend="${uri.startsWith('/admin/users')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">⚙️</span> Team Members
+          </a>
+          <a href="/admin/menu"
+             th:classappend="${uri.startsWith('/admin/menu')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">🍽️</span> Menu Mgmt
+          </a>
+          <a href="/admin/dishes"
+             th:classappend="${uri.startsWith('/admin/dishes')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">🍲</span> Dishes
+          </a>
+          <a href="/admin/combos"
+             th:classappend="${uri.startsWith('/admin/combos')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">🧺</span> Combos
+          </a>
+          <a href="/admin/categories"
+             th:classappend="${uri.startsWith('/admin/categories')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">📋</span> Categories
+          </a>
+          <a href="/admin/tables"
+             th:classappend="${uri.startsWith('/admin/tables')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">🪑</span> Tables
+          </a>
+          <a href="/admin/settings"
+             th:classappend="${uri.startsWith('/admin/settings')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">⚙</span> Settings
+          </a>
+        </div>
+
+      </th:block>
+    </nav>
+
+    <!-- tyre-tread footer stripe -->
+    <div class="h-1.5 w-full flex-shrink-0"
+         style="background: repeating-linear-gradient(90deg,
+                  #00D4FF 0,#00D4FF 6px, transparent 6px, transparent 14px)"></div>
+  </aside>
+
+  <!-- Mobile overlay -->
+  <div id="sidebar-overlay"
+       class="fixed inset-0 z-20 bg-black/50 lg:hidden hidden"
+       onclick="toggleSidebar(); this.classList.add('hidden')"></div>
+
+  <!-- ── Main area ──────────────────────────────────────────────── -->
+  <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+    <!-- Top bar -->
+    <header class="flex-shrink-0 h-12 bg-elevated border-b border-surface
+                   flex items-center justify-between px-4 lg:px-6">
+
+      <!-- Mobile hamburger -->
+      <button onclick="toggleSidebar(); document.getElementById('sidebar-overlay').classList.remove('hidden')"
+              class="lg:hidden text-sand hover:text-ivory p-1 -ml-1 text-xl">
+        ☰
+      </button>
+
+      <!-- Café name (desktop left) -->
+      <span class="hidden lg:block font-heading text-sand tracking-widest text-sm">
+        BULLET BEATS CAFÉ
+      </span>
+
+      <!-- Right: user info + logout -->
+      <div class="flex items-center gap-3 ml-auto">
+        <div class="flex items-center gap-2">
+          <span class="text-ivory text-sm font-medium"
+                sec:authentication="name">username</span>
+          <span class="px-2 py-0.5 text-xs border rounded-full font-bold tracking-wide uppercase
+                       text-accent border-accent/40 bg-accent/10"
+                sec:authentication="principal.role.displayName">role</span>
+        </div>
+
+        <form th:action="@{/logout}" method="post" class="flex">
+          <button type="submit"
+                  class="text-sand text-xs hover:text-ivory transition-colors
+                         border border-sand/30 hover:border-ivory/30
+                         rounded px-2.5 py-1 leading-none">
+            Sign out
+          </button>
+        </form>
+      </div>
+    </header>
+
+    <!-- Page content slot -->
+    <div class="flex-1 overflow-auto">
+      <th:block th:replace="${content}"/>
+    </div>
+
+  </div>
+
+  <!-- ── Confirm modal ────────────────────────────────────────────── -->
+  <div id="bb-confirm-modal"
+       class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div id="bb-confirm-backdrop" class="absolute inset-0 bg-black/60"></div>
+    <div class="relative bg-surface border border-elevated/60 rounded-xl p-6 w-80 max-w-full shadow-2xl">
+      <h3 class="font-heading text-xl text-ivory tracking-wide mb-2">Confirm</h3>
+      <p id="bb-confirm-message" class="text-sand text-sm leading-relaxed mb-6"></p>
+      <div class="flex gap-3 justify-end">
+        <button id="bb-confirm-cancel" type="button"
+                class="px-4 py-2 rounded-lg border border-elevated/60 text-sand font-heading
+                       tracking-widest text-xs hover:border-sand/40 hover:text-ivory transition-all">
+          CANCEL
+        </button>
+        <button id="bb-confirm-ok" type="button"
+                class="px-4 py-2 rounded-lg bg-red-500/80 text-ivory font-heading
+                       tracking-widest text-xs hover:bg-red-500 transition-all">
+          CONFIRM
+        </button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var _pf  = null;  // pending form (onsubmit path)
+      var _pel = null;  // pending htmx element (bbConfirmHtmx path)
+
+      function bbShow(message) {
+        document.getElementById('bb-confirm-message').textContent = message;
+        document.getElementById('bb-confirm-modal').classList.remove('hidden');
+      }
+      function bbClose() {
+        document.getElementById('bb-confirm-modal').classList.add('hidden');
+        _pf = null; _pel = null;
+      }
+
+      // For form onsubmit="return bbConfirm(this, '...')"
+      window.bbConfirm = function (form, message) {
+        _pf = form; _pel = null;
+        bbShow(message);
+        return false;
+      };
+
+      // For htmx buttons with hx-trigger="confirmed"
+      window.bbConfirmHtmx = function (el, message) {
+        _pel = el; _pf = null;
+        bbShow(message);
+      };
+
+      document.getElementById('bb-confirm-ok').addEventListener('click', function () {
+        if (_pf)  { var f = _pf;   f.onsubmit = null; bbClose(); f.submit(); }
+        if (_pel) { var el = _pel; bbClose(); htmx.trigger(el, 'confirmed'); }
+      });
+      document.getElementById('bb-confirm-cancel').addEventListener('click', bbClose);
+      document.getElementById('bb-confirm-backdrop').addEventListener('click', bbClose);
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') bbClose(); });
+    })();
+  </script>
+
+</body>
+</html>

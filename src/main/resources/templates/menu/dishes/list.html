@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Dishes — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Dishes</h1>
+      <p class="text-sand text-sm mt-0.5">Single-preparation menu items and their ingredients</p>
+    </div>
+    <a href="/admin/dishes/new"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
+              font-heading tracking-widest text-sm
+              hover:shadow-neon hover:brightness-110 transition-all duration-200">
+      + ADD DISH
+    </a>
+  </div>
+
+  <div th:if="${param.created}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Dish created successfully.
+  </div>
+  <div th:if="${param.deactivated}"
+       id="flash-deactivated"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-sand/30
+              text-sand text-xs font-medium whitespace-nowrap">
+    Dish deactivated.
+  </div>
+  <script th:if="${param.deactivated}">
+    const _fd = document.getElementById('flash-deactivated');
+    if (_fd) setTimeout(() => { _fd.style.opacity = '0'; setTimeout(() => _fd.style.display = 'none', 400); }, 3000);
+  </script>
+  <div th:if="${param.reactivated}"
+       id="flash-reactivated"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-accent/30
+              text-accent text-xs font-medium whitespace-nowrap">
+    ✓ Dish reactivated.
+  </div>
+  <script th:if="${param.reactivated}">
+    const _fr = document.getElementById('flash-reactivated');
+    if (_fr) setTimeout(() => { _fr.style.opacity = '0'; setTimeout(() => _fr.style.display = 'none', 400); }, 3000);
+  </script>
+  <div th:if="${param.inUse}"
+       id="flash-in-use"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-red-500/30
+              text-red-400 text-xs font-medium whitespace-nowrap">
+    ⚠ This dish is part of an active menu item and cannot be deactivated.
+  </div>
+  <script th:if="${param.inUse}">
+    const _fiu = document.getElementById('flash-in-use');
+    if (_fiu) setTimeout(() => { _fiu.style.opacity = '0'; setTimeout(() => _fiu.style.display = 'none', 400); }, 5000);
+  </script>
+
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+
+    <div th:if="${#lists.isEmpty(dishes)}"
+         class="py-16 text-center text-sand text-sm">
+      No active dishes. <a href="/admin/dishes/new" class="text-accent hover:underline ml-1">Add one?</a>
+    </div>
+
+    <table th:unless="${#lists.isEmpty(dishes)}" class="w-full text-left">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-4 py-3 font-medium">Name</th>
+          <th class="px-4 py-3 font-medium">Prep Time</th>
+          <th class="px-4 py-3 font-medium">Ingredients</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="dish : ${dishes}"
+            class="border-b border-elevated/40 hover:bg-elevated/20 transition-colors duration-100">
+
+          <td class="px-4 py-3">
+            <a th:href="@{/admin/dishes/{id}(id=${dish.id})}"
+               class="text-ivory text-sm font-medium hover:text-accent transition-colors"
+               th:text="${dish.name}">Dish Name</a>
+          </td>
+
+          <td class="px-4 py-3 text-sand text-sm"
+              th:text="${dish.prepTimeMinutes != null} ? ${dish.prepTimeMinutes} + ' min' : '—'"></td>
+
+          <td class="px-4 py-3">
+            <span class="px-2 py-0.5 text-xs border rounded-full font-bold
+                         text-accent border-accent/40 bg-accent/10"
+                  th:text="${#lists.size(dish.ingredients)} + ' item' + (${#lists.size(dish.ingredients)} == 1 ? '' : 's')">
+            </span>
+          </td>
+
+          <td class="px-4 py-3">
+            <span th:if="${dish.active}"
+                  class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                         text-emerald-400 border-emerald-400/40 bg-emerald-400/10">Active</span>
+            <span th:unless="${dish.active}"
+                  class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                         text-sand border-sand/40 bg-sand/10">Inactive</span>
+          </td>
+
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <a th:href="@{/admin/dishes/{id}(id=${dish.id})}"
+                 class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                        hover:border-ivory/40 hover:text-ivory transition-colors">View</a>
+              <a th:href="@{/admin/dishes/{id}/edit(id=${dish.id})}"
+                 class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                        hover:border-ivory/40 hover:text-ivory transition-colors">Edit</a>
+              <form th:action="@{/admin/dishes/{id}/deactivate(id=${dish.id})}"
+                    method="post" class="inline"
+                    onsubmit="return bbConfirm(this, 'Deactivate this dish?')">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-red-500/30 text-red-400
+                               hover:border-red-500/60 hover:bg-red-500/10 transition-colors">
+                  Deactivate
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p th:unless="${#lists.isEmpty(dishes)}"
+     class="mt-3 text-sand text-xs text-right"
+     th:text="${#lists.size(dishes)} + ' dish' + (${#lists.size(dishes)} == 1 ? '' : 'es')">
+  </p>
+
+  <!-- Inactive dishes -->
+  <div th:if="${not #lists.isEmpty(inactiveDishes)}" class="mt-10">
+
+    <h2 class="font-heading text-lg text-sand/60 tracking-wide mb-3">Deactivated Dishes</h2>
+
+    <div class="bg-surface rounded-xl overflow-hidden border border-elevated/40 opacity-60">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="border-b border-elevated/40 text-sand/50 text-xs uppercase tracking-widest">
+            <th class="px-4 py-3 font-medium">Name</th>
+            <th class="px-4 py-3 font-medium">Prep Time</th>
+            <th class="px-4 py-3 font-medium">Ingredients</th>
+            <th class="px-4 py-3 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="dish : ${inactiveDishes}"
+              class="border-b border-elevated/30 last:border-0">
+            <td class="px-4 py-3">
+              <a th:href="@{/admin/dishes/{id}(id=${dish.id})}"
+                 class="text-sand/70 text-sm hover:text-ivory transition-colors"
+                 th:text="${dish.name}"></a>
+            </td>
+            <td class="px-4 py-3 text-sand/50 text-sm"
+                th:text="${dish.prepTimeMinutes != null} ? ${dish.prepTimeMinutes} + ' min' : '—'"></td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 text-xs border rounded-full font-bold
+                           text-sand/50 border-sand/20 bg-sand/5"
+                    th:text="${#lists.size(dish.ingredients)} + ' item' + (${#lists.size(dish.ingredients)} == 1 ? '' : 's')">
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <a th:href="@{/admin/dishes/{id}(id=${dish.id})}"
+                   class="text-xs px-2.5 py-1 rounded border border-sand/20 text-sand/50
+                          hover:border-sand/40 hover:text-sand transition-colors">View</a>
+                <form th:action="@{/admin/dishes/{id}/reactivate(id=${dish.id})}"
+                      method="post" class="inline"
+                      onsubmit="return bbConfirm(this, 'Reactivate this dish?')">
+                  <button type="submit"
+                          class="text-xs px-2.5 py-1 rounded border border-emerald-500/30 text-emerald-400/70
+                                 hover:border-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+                    Reactivate
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-3 text-sand/40 text-xs text-right"
+       th:text="${#lists.size(inactiveDishes)} + ' deactivated'"></p>
+
+  </div>
+
+</main>
+</body>
+</html>

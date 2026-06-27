@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="ingredient-row"
+     class="ingredient-row grid grid-cols-[1fr_160px_36px] gap-2 px-3 py-2 border-b border-elevated/30 items-center">
+  <select th:name="'ingredients[' + ${index} + '].groceryItemId'"
+          required
+          class="bg-elevated border border-elevated/80 focus:border-accent
+                 rounded px-3 py-1.5 text-ivory text-sm outline-none
+                 focus:shadow-neon-sm cursor-pointer transition-all">
+    <option value="">Select item…</option>
+    <option th:each="gi : ${groceryItems}"
+            th:value="${gi.id}"
+            th:text="${gi.name + ' (' + gi.unit + ')'}">Item</option>
+  </select>
+  <input type="number" step="0.001" min="0.001" required
+         th:name="'ingredients[' + ${index} + '].quantityRequired'"
+         class="bg-elevated border border-elevated/80 focus:border-accent
+                rounded px-3 py-1.5 text-ivory text-sm outline-none
+                focus:shadow-neon-sm transition-all"
+         placeholder="0.000"/>
+  <button type="button" onclick="removeRow(this)"
+          class="text-sand/40 hover:text-red-400 text-xl leading-none transition-colors"
+          title="Remove">×</button>
+</div>
+</body>
+</html>

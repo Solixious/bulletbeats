@@ -1,0 +1,17 @@
+# Overrides for local development
+# Activate with: -Dspring.profiles.active=dev
+# Or in IntelliJ: Run config → Active profiles: dev
+
+spring:
+  thymeleaf:
+    cache: false  # hot reload templates
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bulletbeats_dev
+    username: bulletbeats
+    password: bulletbeats
+
+logging:
+  level:
+    in.bulletbeats: DEBUG
+    org.springframework.security: DEBUG

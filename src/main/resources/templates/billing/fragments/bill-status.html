@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<div th:fragment="bill-status" id="bill-status" class="space-y-3 pt-4 border-t border-elevated/60">
+
+  <!-- DRAFT -->
+  <th:block th:if="${bill.status.name() == 'DRAFT'}">
+    <button th:attr="hx-post=@{/bills/{id}/confirm(id=${bill.id})}"
+            hx-target="#bill-status"
+            hx-swap="outerHTML"
+            th:disabled="${#lists.isEmpty(bill.items)}"
+            class="w-full py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                   text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200
+                   disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none">
+      CONFIRM ORDER
+    </button>
+    <p th:if="${#lists.isEmpty(bill.items)}"
+       class="text-sand text-xs text-center">Add items to confirm</p>
+  </th:block>
+
+  <!-- CONFIRMED -->
+  <th:block th:if="${bill.status.name() == 'CONFIRMED'}">
+    <div class="px-3 py-2 rounded-lg border border-amber-400/30 bg-amber-400/5 text-amber-400 text-xs text-center">
+      Order confirmed — awaiting payment
+    </div>
+
+    <form sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+          th:action="@{/bills/{id}/reopen(id=${bill.id})}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <button type="submit"
+              class="w-full py-2 rounded-lg border border-sand/30 text-sand text-sm
+                     hover:border-ivory/40 hover:text-ivory transition-colors">
+        + Add More Items
+      </button>
+    </form>
+
+    <form id="bill-pay-form"
+          hx-preserve
+          th:attr="hx-post=@{/bills/{id}/pay(id=${bill.id})}"
+          hx-target="#bill-status"
+          hx-swap="outerHTML"
+          class="space-y-3">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Payment Method
+        </label>
+        <select name="method" required
+                class="w-full bg-elevated rounded-lg px-3 py-2 text-ivory text-sm
+                       border border-elevated/60 focus:border-accent outline-none transition-colors">
+          <option value="">Select method…</option>
+          <option value="CASH">Cash</option>
+          <option value="CARD">Card</option>
+          <option value="UPI">UPI</option>
+          <option value="OTHER">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Reference / Note <span class="text-sand/50 normal-case">(optional)</span>
+        </label>
+        <input type="text" name="referenceNote" maxlength="120"
+               placeholder="e.g. UPI ref#, card last 4…"
+               class="w-full bg-elevated rounded-lg px-3 py-2 text-ivory text-sm
+                      placeholder-sand/40 border border-elevated/60
+                      focus:border-accent outline-none transition-colors"/>
+      </div>
+
+      <button type="submit"
+              class="w-full py-2.5 rounded-lg bg-emerald-600 text-ivory font-heading
+                     tracking-widest text-sm hover:bg-emerald-500 transition-colors">
+        MARK AS PAID
+      </button>
+    </form>
+  </th:block>
+
+  <!-- PAID -->
+  <th:block th:if="${bill.status.name() == 'PAID'}">
+    <div class="px-4 py-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10
+                text-emerald-400 text-center">
+      <p class="font-heading tracking-wide text-lg">Payment Received</p>
+      <p class="text-xs mt-0.5 text-emerald-400/70">Bill closed</p>
+    </div>
+
+    <div id="whatsapp-section">
+      <form th:attr="hx-post=@{/bills/{id}/whatsapp-send(id=${bill.id})}"
+            hx-target="#whatsapp-section"
+            hx-swap="innerHTML">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <button type="submit"
+                class="w-full py-2 rounded-lg border border-emerald-400/30 text-emerald-400
+                       text-sm hover:bg-emerald-400/10 transition-colors">
+          Send WhatsApp Receipt
+        </button>
+      </form>
+    </div>
+
+    <a href="/bills"
+       class="block text-center text-sand text-xs hover:text-ivory transition-colors mt-1">
+      Back to all bills →
+    </a>
+  </th:block>
+
+  <!-- CANCELLED -->
+  <th:block th:if="${bill.status.name() == 'CANCELLED'}">
+    <div class="px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10
+                text-red-400 text-center text-sm">
+      Bill cancelled
+    </div>
+    <a href="/bills"
+       class="block text-center text-sand text-xs hover:text-ivory transition-colors">
+      Back to all bills →
+    </a>
+  </th:block>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Share Menu — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-2xl mx-auto">
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide">Share Menu</h1>
+    <p class="text-sand text-sm mt-0.5">Public read-only link and QR code for your menu</p>
+  </div>
+
+  <!-- Warning: base URL not configured -->
+  <div th:unless="${baseUrlConfigured}"
+       class="mb-6 px-4 py-3 rounded-lg bg-amber-400/10 border border-amber-400/30 text-amber-400 text-sm">
+    <strong>Set your café's base URL first.</strong>
+    The QR code needs a full URL to work outside your local network.
+    Go to <a href="/admin/settings" class="underline hover:text-amber-300">Settings → App Base URL</a>
+    and enter your public address (e.g. <span class="font-mono">https://cafe.example.com</span>).
+  </div>
+
+  <!-- Link card -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6 mb-6">
+    <p class="text-sand text-xs uppercase tracking-widest mb-3">Public Menu URL</p>
+
+    <div th:if="${baseUrlConfigured}" class="flex items-center gap-3">
+      <code class="flex-1 bg-elevated rounded-lg px-4 py-2.5 text-accent text-sm font-mono
+                   border border-elevated/60 truncate"
+            th:text="${menuUrl}">https://example.com/public/menu</code>
+      <button type="button"
+              th:attr="data-url=${menuUrl}"
+              onclick="navigator.clipboard.writeText(this.dataset.url).then(() => {
+                         this.textContent = '✓ Copied';
+                         setTimeout(() => this.textContent = 'Copy', 2000);
+                       })"
+              class="px-4 py-2.5 rounded-lg border border-accent/40 text-accent text-sm
+                     hover:bg-accent/10 transition-colors flex-shrink-0 cursor-pointer">
+        Copy
+      </button>
+      <a th:href="${menuUrl}" target="_blank" rel="noopener"
+         class="px-4 py-2.5 rounded-lg border border-elevated/60 text-sand text-sm
+                hover:text-ivory hover:border-sand/50 transition-colors flex-shrink-0">
+        Open ↗
+      </a>
+    </div>
+
+    <div th:unless="${baseUrlConfigured}"
+         class="flex items-center gap-3">
+      <code class="flex-1 bg-elevated rounded-lg px-4 py-2.5 text-sand/50 text-sm font-mono
+                   border border-elevated/60">/public/menu</code>
+      <span class="text-sand/40 text-sm">Configure base URL to get full link</span>
+    </div>
+  </div>
+
+  <!-- QR card -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+    <p class="text-sand text-xs uppercase tracking-widest mb-4">QR Code</p>
+
+    <div class="flex flex-col items-center gap-5">
+      <div class="bg-white rounded-xl p-3">
+        <img src="/admin/share/qr.png" alt="Menu QR code" class="w-56 h-56 block"/>
+      </div>
+
+      <div th:if="${baseUrlConfigured}" class="flex gap-3">
+        <a href="/admin/share/qr.png" download="menu-qr.png"
+           class="px-4 py-2 rounded-lg border border-accent/40 text-accent text-sm
+                  hover:bg-accent/10 transition-colors">
+          Download PNG
+        </a>
+        <a th:href="${menuUrl}" target="_blank" rel="noopener"
+           class="px-4 py-2 rounded-lg border border-elevated/60 text-sand text-sm
+                  hover:text-ivory transition-colors">
+          Preview Menu ↗
+        </a>
+      </div>
+
+      <p th:unless="${baseUrlConfigured}"
+         class="text-sand/50 text-xs italic text-center">
+        QR encodes <span class="font-mono">http://localhost:8080/public/menu</span> until you set a base URL.
+      </p>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

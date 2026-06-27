@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${mode == 'edit'} ? 'Edit Table — Bullet Beats Café' : 'New Table — Bullet Beats Café'">
+    Table
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-xl mx-auto">
+
+  <a href="/admin/tables"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Tables
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide"
+        th:text="${mode == 'edit'} ? 'Edit Table' : 'New Table'">Table</h1>
+    <p class="text-sand text-sm mt-0.5"
+       th:text="${mode == 'edit'} ? 'Update table details' : 'Add a new café table'"></p>
+  </div>
+
+  <!-- Flash: QR regenerated -->
+  <div th:if="${param.qrRegenerated}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    QR code regenerated successfully.
+  </div>
+
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+    <form th:action="${mode == 'edit'}
+                    ? @{/admin/tables/{id}/edit(id=${table.id})}
+                    : @{/admin/tables/new}"
+          th:object="${dto}"
+          method="post"
+          class="space-y-5">
+
+      <!-- Name -->
+      <div>
+        <label for="name" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Table Name
+        </label>
+        <input id="name" type="text" th:field="*{name}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('name')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="e.g. Table 1, Takeaway Counter"/>
+        <p th:if="*{#fields.hasErrors('name')}" th:errors="*{name}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Capacity -->
+      <div>
+        <label for="capacity" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Capacity <span class="text-sand/50 normal-case">(optional)</span>
+        </label>
+        <input id="capacity" type="number" th:field="*{capacity}" min="1"
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200
+                      border border-elevated focus:border-accent focus:shadow-neon-sm"
+               placeholder="Number of seats"/>
+      </div>
+
+      <!-- QR note on create -->
+      <p th:if="${mode == 'create'}"
+         class="text-sand/70 text-xs flex items-center gap-1.5">
+        <span class="text-accent">✦</span>
+        QR code will be generated automatically on save.
+      </p>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-3 pt-2">
+        <button type="submit"
+                class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200"
+                th:text="${mode == 'edit'} ? 'UPDATE TABLE' : 'CREATE TABLE'">
+          Submit
+        </button>
+        <a href="/admin/tables"
+           class="px-4 py-2.5 text-sand text-sm hover:text-ivory transition-colors">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- QR code section (edit only) -->
+  <div th:if="${mode == 'edit' and table.qrImagePath != null}"
+       class="mt-6 bg-surface rounded-xl border border-elevated/60 p-6">
+
+    <h2 class="font-heading text-lg text-ivory tracking-wide mb-4">QR Code</h2>
+
+    <div class="flex items-start gap-6">
+      <img th:src="@{/admin/tables/{id}/qr(id=${table.id})}"
+           width="160" height="160"
+           class="rounded-lg border border-elevated/60"
+           alt="Table QR Code"/>
+
+      <div class="flex flex-col gap-3 pt-1">
+        <a th:href="@{/admin/tables/{id}/qr/download(id=${table.id})}"
+           class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg
+                  border border-accent/40 text-accent hover:bg-accent/10 transition-colors">
+          Download PNG
+        </a>
+
+        <form th:action="@{/admin/tables/{id}/qr/regenerate(id=${table.id})}" method="post"
+              onsubmit="return bbConfirm(this, 'Regenerate QR code? The old code will stop working.')">
+          <button type="submit"
+                  class="w-full px-4 py-2 text-sm rounded-lg
+                         border border-sand/30 text-sand hover:border-ivory/40 hover:text-ivory
+                         transition-colors cursor-pointer">
+            Regenerate QR
+          </button>
+        </form>
+
+        <p class="text-sand/60 text-xs max-w-48">
+          Regenerating issues a new token. Print and replace the old QR at the table.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

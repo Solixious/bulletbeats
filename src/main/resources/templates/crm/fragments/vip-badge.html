@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="vip-badge" id="vip-badge" class="flex items-center gap-3 flex-wrap">
+
+  <span th:if="${customer.isVip}"
+        class="px-3 py-1 font-heading tracking-widest text-sm border rounded-full
+               text-accent border-accent/40 bg-accent/10 shadow-neon-sm">
+    ⭐ VIP MEMBER
+  </span>
+
+  <form th:if="${isManager}"
+        th:action="@{/customers/{id}/toggle-vip(id=${customer.id})}"
+        method="post"
+        class="inline"
+        th:attr="hx-post=@{/customers/{id}/toggle-vip(id=${customer.id})}"
+        hx-target="#vip-badge"
+        hx-swap="outerHTML">
+    <button type="submit"
+            class="text-xs px-3 py-1.5 rounded border transition-colors"
+            th:classappend="${customer.isVip}
+              ? 'border-red-500/30 text-red-400 hover:border-red-500/60 hover:bg-red-500/10'
+              : 'border-accent/30 text-accent hover:border-accent/60 hover:bg-accent/10'"
+            th:text="${customer.isVip} ? 'Remove VIP' : 'Mark as VIP'">
+    </button>
+  </form>
+
+</div>
+
+</body>
+</html>

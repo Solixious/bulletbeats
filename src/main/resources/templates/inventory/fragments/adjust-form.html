@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- ── Inline adjust form (list page panel) ─────────────────────── -->
+<form th:fragment="adjust-form"
+      th:attr="hx-post='/inventory/' + ${item.id} + '/adjust', hx-target='#adjust-panel-' + ${item.id}"
+      hx-swap="outerHTML"
+      class="p-4 bg-elevated rounded-b-lg border-x border-b border-elevated/60 space-y-3">
+
+  <div class="flex items-center justify-between mb-1">
+    <p class="text-sand text-xs uppercase tracking-widest">Adjust Stock — <span class="text-ivory" th:text="${item.name}"></span></p>
+    <button type="button"
+            th:attr="onclick='document.getElementById(\'adjust-panel-\' + ' + ${item.id} + ').innerHTML=\'\''"
+            class="text-sand/50 hover:text-sand text-lg leading-none">&times;</button>
+  </div>
+
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="block text-sand text-xs uppercase tracking-[0.15em] mb-1">Type</label>
+      <select name="movementType"
+              class="w-full bg-base border border-elevated/60 focus:border-accent rounded-lg
+                     px-3 py-2 text-ivory text-sm outline-none">
+        <option th:each="type : ${movementTypes}"
+                th:value="${type}"
+                th:text="${type.displayName}">Type</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sand text-xs uppercase tracking-[0.15em] mb-1">Quantity</label>
+      <input type="number" name="quantity" step="0.001" min="0.001" required
+             class="w-full bg-base border border-elevated/60 focus:border-accent rounded-lg
+                    px-3 py-2 text-ivory text-sm outline-none"
+             placeholder="0.000"/>
+    </div>
+  </div>
+
+  <div>
+    <label class="block text-sand text-xs uppercase tracking-[0.15em] mb-1">Notes</label>
+    <input type="text" name="notes"
+           class="w-full bg-base border border-elevated/60 focus:border-accent rounded-lg
+                  px-3 py-2 text-ivory text-sm outline-none"
+           placeholder="Optional"/>
+  </div>
+
+  <div class="flex gap-2 pt-1">
+    <button type="submit"
+            class="px-4 py-2 rounded-lg bg-accent text-base font-heading tracking-widest
+                   text-xs hover:shadow-neon hover:brightness-110 transition-all">
+      APPLY
+    </button>
+    <button type="button"
+            th:attr="onclick='document.getElementById(\'adjust-panel-\' + ' + ${item.id} + ').innerHTML=\'\''"
+            class="px-4 py-2 rounded-lg border border-elevated/60 text-sand font-heading
+                   tracking-widest text-xs hover:border-sand/40 hover:text-ivory transition-all">
+      CANCEL
+    </button>
+  </div>
+</form>
+
+<!-- ── Result panel returned after inline adjustment ────────────── -->
+<div th:fragment="adjust-result"
+     th:id="'adjust-panel-' + ${item.id}"
+     class="px-4 py-3 border-x border-b border-elevated/60 rounded-b-lg">
+
+  <div th:if="${adjustError}"
+       class="flex items-center gap-2 text-red-400 text-sm">
+    <span>⚠</span>
+    <span th:text="${adjustError}"></span>
+  </div>
+
+  <div th:unless="${adjustError}" class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-emerald-400 text-lg">✓</span>
+      <span class="text-ivory text-sm">Stock updated —
+        <strong class="font-heading text-xl"
+                th:text="${#numbers.formatDecimal(item.quantityInStock, 1, 3)}"></strong>
+        <span class="text-sand" th:text="${item.unit}"></span>
+      </span>
+    </div>
+    <button type="button"
+            th:attr="onclick='document.getElementById(\'adjust-panel-\' + ' + ${item.id} + ').outerHTML=\'<td colspan=7 id=\\\'adjust-panel-' + ${item.id} + '\\\'></td>\''"
+            class="text-sand/50 hover:text-sand text-xs">Close</button>
+  </div>
+
+  <!-- OOB: update stock quantity display in the row -->
+  <th:block th:if="${adjustError == null}" th:with="isOnOrder=${item.lowStock and onOrderItemIds != null and onOrderItemIds.contains(item.id)}">
+    <span th:id="'stock-qty-' + ${item.id}"
+          hx-swap-oob="outerHTML"
+          class="font-mono text-sm font-bold"
+          th:classappend="${item.lowStock and not isOnOrder} ? 'text-red-400' : (${isOnOrder} ? 'text-blue-400' : 'text-ivory')"
+          th:text="${#numbers.formatDecimal(item.quantityInStock, 1, 3)}"></span>
+
+    <!-- OOB: update status badge in the row -->
+    <div th:id="'stock-status-' + ${item.id}" hx-swap-oob="outerHTML">
+      <span th:if="${item.lowStock and not isOnOrder}"
+            class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                   text-amber-400 border-amber-400/40 bg-amber-400/10">
+        Low Stock
+      </span>
+      <span th:if="${isOnOrder}"
+            class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                   text-blue-400 border-blue-400/40 bg-blue-400/10">
+        On Order
+      </span>
+      <span th:unless="${item.lowStock}"
+            class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                   text-emerald-400 border-emerald-400/40 bg-emerald-400/10">
+        OK
+      </span>
+    </div>
+
+    <!-- OOB: update sidebar inventory badge -->
+    <span id="nav-low-stock-badge" hx-swap-oob="outerHTML">
+      <span th:if="${lowStockCount != null and lowStockCount > 0}"
+            th:text="${lowStockCount}"
+            class="px-1.5 py-0.5 text-xs rounded-full font-bold
+                   bg-amber-400/20 text-amber-400 border border-amber-400/40">
+      </span>
+    </span>
+
+    <!-- OOB: update low stock banner -->
+    <div id="low-stock-banner" hx-swap-oob="outerHTML">
+      <div th:if="${lowStockCount != null and lowStockCount > 0}"
+           class="mb-5 flex items-center gap-3 px-4 py-3 rounded-lg
+                  bg-amber-400/10 border border-amber-400/40 text-amber-400 text-sm"
+           style="box-shadow: 0 0 16px rgba(251,191,36,0.15)">
+        <span class="text-base">⚠</span>
+        <span><strong th:text="${lowStockCount}"></strong> item<span th:if="${lowStockCount > 1}">s</span> running low — check replenishment.</span>
+        <a href="/inventory/replenishment"
+           class="ml-auto text-xs underline hover:no-underline">
+          View requests →
+        </a>
+      </div>
+    </div>
+  </th:block>
+
+</div>
+
+</body>
+</html>

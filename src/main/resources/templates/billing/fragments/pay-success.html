@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="pay-success">
+
+  <!-- Main response: replaces #bill-status via outerHTML -->
+  <th:block th:replace="~{billing/fragments/bill-status :: bill-status}"/>
+
+  <!-- OOB: hide header action buttons now that bill is paid -->
+  <div id="bill-cancel-btn" hx-swap-oob="innerHTML"></div>
+  <div id="bill-transfer-btn" hx-swap-oob="innerHTML"></div>
+
+</th:block>
+</body>
+</html>

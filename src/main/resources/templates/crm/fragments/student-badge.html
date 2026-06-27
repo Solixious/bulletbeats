@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="student-badge" id="student-badge" class="inline-flex items-center gap-2">
+
+  <span th:if="${customer.isStudent}"
+        class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full border
+               text-blue-400 border-blue-400/40 bg-blue-400/10 uppercase tracking-wide">
+    🎓 Student
+  </span>
+
+  <div th:if="${isManager}" class="inline-flex">
+    <button th:unless="${customer.isStudent}"
+            th:attr="hx-post=@{/customers/{id}/mark-student(id=${customer.id})}"
+            hx-target="#student-badge"
+            hx-swap="outerHTML"
+            th:disabled="${customer.name == null or customer.name.isBlank()}"
+            th:title="${(customer.name == null or customer.name.isBlank()) ? 'Add customer name first' : 'Mark as student'}"
+            class="px-2.5 py-1 text-xs rounded border border-sand/30 text-sand
+                   hover:border-blue-400/40 hover:text-blue-400 transition-colors
+                   disabled:opacity-40 disabled:cursor-not-allowed">
+      Mark Student
+    </button>
+    <button th:if="${customer.isStudent}"
+            th:attr="hx-post=@{/customers/{id}/unmark-student(id=${customer.id})}"
+            hx-target="#student-badge"
+            hx-swap="outerHTML"
+            class="px-2.5 py-1 text-xs rounded border border-sand/30 text-sand
+                   hover:border-red-400/40 hover:text-red-400 transition-colors">
+      Remove
+    </button>
+  </div>
+
+</div>
+</body>
+</html>

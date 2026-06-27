@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${mode == 'edit'} ? 'Edit Member — Bullet Beats Café' : 'New Member — Bullet Beats Café'">
+    Member — Bullet Beats Café
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-2xl mx-auto">
+
+  <!-- Back link -->
+  <a href="/admin/users"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory
+            transition-colors mb-6">
+    ← Back to Team Members
+  </a>
+
+  <!-- Page title -->
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide"
+        th:text="${mode == 'edit'} ? 'Edit Member' : 'New Team Member'">
+      Member
+    </h1>
+    <p class="text-sand text-sm mt-0.5"
+       th:text="${mode == 'edit'} ? 'Update account details below' : 'Fill in the details to create a new account'">
+    </p>
+  </div>
+
+  <!-- Flash: password error -->
+  <div th:if="${param.passwordError}"
+       class="mb-5 px-4 py-3 rounded-lg bg-red-900/30 border border-red-500/40 text-red-400 text-sm">
+    Password must be at least 6 characters.
+  </div>
+
+  <!-- ── Main form ────────────────────────────────────────────── -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6 mb-6">
+
+    <form th:action="${mode == 'edit'}
+                    ? @{/admin/users/{id}/edit(id=${user.id})}
+                    : @{/admin/users/new}"
+          th:object="${dto}"
+          method="post"
+          class="space-y-5">
+
+      <!-- Full Name -->
+      <div>
+        <label for="fullName"
+               class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Full Name
+        </label>
+        <input id="fullName" type="text" th:field="*{fullName}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('fullName')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="Jane Smith"/>
+        <p th:if="*{#fields.hasErrors('fullName')}"
+           th:errors="*{fullName}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Username: bound in create, display-only in edit -->
+      <div th:if="${mode == 'create'}">
+        <label for="username"
+               class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Username
+        </label>
+        <input id="username" type="text" th:field="*{username}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('username')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="jsmith"/>
+        <p th:if="*{#fields.hasErrors('username')}"
+           th:errors="*{username}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <div th:if="${mode == 'edit'}">
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Username
+        </label>
+        <input type="text" th:value="${user.username}" disabled
+               class="w-full bg-base border border-elevated/40 rounded-lg px-4 py-2.5
+                      text-sand text-sm cursor-not-allowed"/>
+        <p class="mt-1 text-sand/50 text-xs">Username cannot be changed</p>
+      </div>
+
+      <!-- Password: create only -->
+      <div th:if="${mode == 'create'}">
+        <label for="password"
+               class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Password
+        </label>
+        <input id="password" type="password" th:field="*{password}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('password')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="minimum 6 characters"/>
+        <p th:if="*{#fields.hasErrors('password')}"
+           th:errors="*{password}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Role select -->
+      <div>
+        <div class="flex items-center gap-2 mb-1.5">
+          <label for="role" class="text-sand text-xs uppercase tracking-[0.2em]">Role</label>
+          <span id="role-dot" class="w-2.5 h-2.5 rounded-full bg-accent
+                                     flex-shrink-0 transition-colors duration-150"></span>
+        </div>
+        <select id="role" th:field="*{role}"
+                onchange="updateRoleDot(this.value)"
+                class="w-full bg-elevated border border-elevated focus:border-accent
+                       rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                       transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+          <option th:each="r : ${roles}"
+                  th:value="${r}"
+                  th:text="${r.displayName}">Role</option>
+        </select>
+      </div>
+
+      <!-- Active toggle: edit only -->
+      <div th:if="${mode == 'edit'}" class="space-y-1.5">
+        <div class="flex items-center gap-3">
+          <input id="active" type="checkbox" th:field="*{active}"
+                 class="w-4 h-4 rounded border-sand/50 bg-elevated accent-accent cursor-pointer"/>
+          <label for="active" class="text-ivory text-sm cursor-pointer select-none">
+            Account is active
+          </label>
+        </div>
+        <p th:if="*{#fields.hasErrors('active')}"
+           th:errors="*{active}"
+           class="text-red-400 text-xs ml-7"></p>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-3 pt-2">
+        <button type="submit"
+                class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading
+                       tracking-widest text-sm hover:shadow-neon hover:brightness-110
+                       transition-all duration-200 focus:outline-none focus:ring-2
+                       focus:ring-accent/40"
+                th:text="${mode == 'edit'} ? 'UPDATE MEMBER' : 'CREATE MEMBER'">
+          Submit
+        </button>
+        <a href="/admin/users"
+           class="px-4 py-2.5 text-sand text-sm hover:text-ivory transition-colors">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ── Password reset (edit mode only) ──────────────────────── -->
+  <div th:if="${mode == 'edit'}"
+       class="bg-surface rounded-xl border border-elevated/60 p-6">
+    <h2 class="font-heading text-xl text-ivory tracking-wide mb-1">Reset Password</h2>
+    <p class="text-sand text-xs mb-4">Set a new password for this account</p>
+
+    <form th:action="@{/admin/users/{id}/reset-password(id=${user.id})}" method="post"
+          class="flex gap-3">
+      <input type="password" name="newPassword" required minlength="6"
+             class="flex-1 bg-elevated border border-elevated focus:border-accent
+                    rounded-lg px-4 py-2 text-ivory text-sm placeholder-sand/40
+                    outline-none transition-all duration-200 focus:shadow-neon-sm"
+             placeholder="New password (min 6 characters)"/>
+      <button type="submit"
+              class="px-4 py-2 rounded-lg border border-sand/30 text-sand text-sm
+                     hover:border-ivory/40 hover:text-ivory transition-colors flex-shrink-0">
+        Reset
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const roleColors = { ADMIN: '#00D4FF', MANAGER: '#fbbf24', STAFF: '#34d399' };
+    function updateRoleDot(val) {
+      document.getElementById('role-dot').style.backgroundColor = roleColors[val] || '#9A9080';
+    }
+    const sel = document.getElementById('role');
+    if (sel) updateRoleDot(sel.value);
+  </script>
+
+</main>
+
+</body>
+</html>

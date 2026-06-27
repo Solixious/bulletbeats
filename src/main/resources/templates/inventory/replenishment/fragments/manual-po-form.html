@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- ── Manual PO form panel ──────────────────────────────────────────── -->
+<div th:fragment="manual-po-form"
+     class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+
+  <div class="px-5 py-4 border-b border-elevated/60 flex items-center justify-between">
+    <h2 class="font-heading text-xl text-ivory tracking-wide">New Purchase Order</h2>
+    <button type="button"
+            onclick="document.getElementById('manual-po-panel').innerHTML=''"
+            class="text-sand/50 hover:text-sand text-2xl leading-none transition-colors">&times;</button>
+  </div>
+
+  <form hx-post="/inventory/replenishment/manual-po"
+        hx-target="#po-card"
+        hx-swap="innerHTML"
+        class="p-5">
+
+    <div class="overflow-x-auto mb-3">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+            <th class="px-3 py-2 font-medium">Item</th>
+            <th class="px-3 py-2 font-medium">Current Stock</th>
+            <th class="px-3 py-2 font-medium">Order Qty</th>
+            <th class="px-3 py-2 font-medium">Supplier</th>
+            <th class="px-3 py-2"></th>
+          </tr>
+        </thead>
+        <tbody id="manual-po-rows">
+          <!-- rows inserted by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <button type="button" id="add-mpo-row"
+            class="text-xs px-3 py-1.5 rounded border border-accent/40 text-accent
+                   hover:bg-accent/10 transition-colors">
+      + Add Item
+    </button>
+
+    <div class="flex gap-3 mt-5 pt-4 border-t border-elevated/60">
+      <button type="submit"
+              class="px-5 py-2 rounded-lg bg-accent text-base font-heading tracking-widest
+                     text-xs hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        CREATE ORDERS
+      </button>
+      <button type="button"
+              onclick="document.getElementById('manual-po-panel').innerHTML=''"
+              class="px-4 py-2 rounded-lg border border-elevated/60 text-sand font-heading
+                     tracking-widest text-xs hover:border-sand/40 hover:text-ivory transition-all">
+        CANCEL
+      </button>
+    </div>
+  </form>
+
+  <!--
+    Row template — Thymeleaf renders th:each server-side so options are
+    fully populated; JS clones this node to add new rows without an extra
+    network request.
+  -->
+  <template id="mpo-row-tpl">
+    <tr class="border-b border-elevated/40">
+      <td class="px-3 py-2">
+        <select name="groceryItemId"
+                onchange="mpoItemChanged(this)"
+                required
+                class="bg-base border border-elevated/60 focus:border-accent rounded
+                       px-2 py-1.5 text-ivory text-sm outline-none transition-colors
+                       focus:shadow-neon-sm w-48">
+          <option value="0">Select item…</option>
+          <option th:each="item : ${items}"
+                  th:value="${item.id}"
+                  th:text="${item.name}"
+                  th:attr="data-stock=${#numbers.formatDecimal(item.quantityInStock, 1, 3)},
+                           data-unit=${item.unit},
+                           data-supplier=${item.defaultSupplier != null ? item.defaultSupplier.id : 0}">
+          </option>
+        </select>
+      </td>
+      <td class="px-3 py-2 text-sand text-sm font-mono mpo-stock-cell">—</td>
+      <td class="px-3 py-2">
+        <input type="number" name="qty" step="0.001" min="0.001" placeholder="0.000"
+               required
+               class="w-28 bg-base border border-elevated/60 focus:border-accent rounded
+                      px-2 py-1.5 text-ivory text-sm font-mono outline-none
+                      transition-colors focus:shadow-neon-sm"/>
+      </td>
+      <td class="px-3 py-2">
+        <select name="supplierId"
+                required
+                class="bg-base border border-elevated/60 focus:border-accent rounded
+                       px-2 py-1.5 text-ivory text-sm outline-none transition-colors
+                       focus:shadow-neon-sm w-40">
+          <option value="0">Select supplier…</option>
+          <option th:each="s : ${suppliers}"
+                  th:value="${s.id}"
+                  th:text="${s.name}">
+          </option>
+        </select>
+      </td>
+      <td class="px-3 py-2">
+        <button type="button"
+                onclick="this.closest('tr').remove()"
+                class="text-sand/40 hover:text-red-400 text-xl leading-none transition-colors">
+          &times;
+        </button>
+      </td>
+    </tr>
+  </template>
+
+  <script>
+    (function () {
+      var tpl = document.getElementById('mpo-row-tpl');
+      var tbody = document.getElementById('manual-po-rows');
+
+      function addRow() {
+        tbody.appendChild(tpl.content.cloneNode(true));
+      }
+
+      document.getElementById('add-mpo-row').addEventListener('click', addRow);
+
+      window.mpoItemChanged = function (select) {
+        var row = select.closest('tr');
+        var opt = select.options[select.selectedIndex];
+        var stock = opt.getAttribute('data-stock');
+        var unit = opt.getAttribute('data-unit');
+        var supId = opt.getAttribute('data-supplier');
+
+        var stockCell = row.querySelector('.mpo-stock-cell');
+        stockCell.textContent = (opt.value !== '0' && stock) ? stock + ' ' + unit : '—';
+
+        if (supId && supId !== '0') {
+          var supSelect = row.querySelector('select[name="supplierId"]');
+          supSelect.value = supId;
+        }
+      };
+
+      addRow();
+    })();
+  </script>
+</div>
+
+<!-- ── Response after successful creation ────────────────────────────── -->
+<!--
+  Primary content goes into #po-card (hx-swap="innerHTML").
+  OOB clears #manual-po-panel.
+-->
+<th:block th:fragment="manual-po-created">
+  <div th:replace="~{inventory/replenishment/fragments/po-section :: po-section}"></div>
+  <div id="manual-po-panel" hx-swap-oob="innerHTML"></div>
+</th:block>
+
+</body>
+</html>

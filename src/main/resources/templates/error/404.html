@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>404 — Bullet Beats Café</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@400;700&display=swap"
+        rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base:    '#1C1C1C',
+            surface: '#2A2A2A',
+            accent:  '#00D4FF',
+            ivory:   '#F5F0E8',
+            sand:    '#9A9080',
+          },
+          fontFamily: {
+            heading: ['"Bebas Neue"', 'sans-serif'],
+            body:    ['Lato', 'sans-serif'],
+          },
+        }
+      }
+    };
+  </script>
+  <style>
+    body { background-color: #1C1C1C; }
+    .tyre-tread {
+      height: 3px;
+      background: repeating-linear-gradient(
+        90deg,
+        #00D4FF 0px, #00D4FF 8px,
+        transparent 8px, transparent 16px
+      );
+      opacity: 0.35;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-base font-body flex items-center justify-center p-6">
+
+  <div class="text-center max-w-lg w-full">
+
+    <p class="font-heading text-sand/50 text-sm tracking-widest mb-6">
+      🏍 BULLET BEATS CAFÉ
+    </p>
+
+    <h1 class="font-heading leading-none text-accent select-none"
+        style="font-size: clamp(8rem, 25vw, 180px);
+               text-shadow: 0 0 40px rgba(0,212,255,0.3);">
+      404
+    </h1>
+
+    <div class="tyre-tread my-6 mx-auto w-48"></div>
+
+    <h2 class="font-heading text-3xl text-ivory tracking-widest mb-3">
+      YOU'VE RIDDEN OFF THE MAP.
+    </h2>
+
+    <p class="text-sand text-lg">
+      Nothing here but open road.
+    </p>
+
+    <p th:if="${message}" th:text="${message}"
+       class="text-sand/50 text-sm font-mono mt-3"></p>
+
+    <div class="flex flex-col sm:flex-row gap-3 justify-center items-center mt-10">
+      <a href="/dashboard"
+         class="px-6 py-3 rounded-xl bg-accent text-base font-heading text-lg
+                tracking-widest font-bold transition-all duration-200
+                hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] hover:brightness-110">
+        ← BACK TO DASHBOARD
+      </a>
+      <a href="/bills"
+         class="px-6 py-3 rounded-xl border border-accent/40 text-accent
+                font-heading text-lg tracking-widest transition-all duration-200
+                hover:bg-accent/10">
+        GO TO BILLING
+      </a>
+    </div>
+
+  </div>
+
+</body>
+</html>

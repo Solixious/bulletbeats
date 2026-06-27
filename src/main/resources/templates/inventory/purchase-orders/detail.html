@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="'PO-' + ${po.id} + ' — Purchase Orders'">Purchase Order</title>
+</head>
+<body>
+<main class="p-6 max-w-4xl mx-auto">
+
+  <a href="/inventory/purchase-orders"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Purchase Orders
+  </a>
+
+  <!-- Flash -->
+  <div th:if="${param.updated}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Order updated.
+  </div>
+  <div th:if="${param.received}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-emerald-500/30 text-emerald-400 text-sm">
+    Stock updated from received quantities.
+  </div>
+
+  <!-- PO header card -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6 mb-6">
+    <div class="flex items-start justify-between flex-wrap gap-4">
+      <div>
+        <p class="text-sand text-xs uppercase tracking-widest mb-1">Purchase Order</p>
+        <h1 class="font-heading text-3xl text-ivory tracking-wide"
+            th:text="'PO-' + ${po.id}">PO-1</h1>
+      </div>
+
+      <!-- Status badge — wrapped for HTMX OOB targeting -->
+      <span id="po-status-badge">
+        <span class="px-3 py-1 text-sm border rounded-full font-bold uppercase"
+              th:with="s=${po.status.name()}"
+              th:classappend="${s == 'RECEIVED'}  ? 'text-emerald-400 border-emerald-400/40 bg-emerald-400/10' :
+                             (${s == 'ORDERED'}   ? 'text-blue-400 border-blue-400/40 bg-blue-400/10' :
+                             (${s == 'APPROVED'}  ? 'text-accent border-accent/40 bg-accent/10' :
+                             (${s == 'CANCELLED'} ? 'text-sand border-sand/40 bg-sand/10' :
+                                                    'text-amber-400 border-amber-400/40 bg-amber-400/10')))"
+              th:text="${po.status}">
+        </span>
+      </span>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-5 mt-5 pt-5 border-t border-elevated/40">
+      <div>
+        <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Supplier</p>
+        <p class="text-ivory text-sm font-medium" th:text="${po.supplier.name}"></p>
+        <p class="text-sand text-xs" th:text="${po.supplier.phone} ?: ''"></p>
+      </div>
+      <div>
+        <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Created</p>
+        <p class="text-ivory text-sm"
+           th:text="${#temporals.format(po.createdAt, 'dd MMM yyyy, HH:mm')}"></p>
+      </div>
+      <div th:if="${po.totalAmount != null}">
+        <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Total Spend</p>
+        <p class="text-ivory text-sm font-mono font-medium"
+           th:text="'₹' + ${#numbers.formatDecimal(po.totalAmount, 1, 'COMMA', 2, 'POINT')}"></p>
+      </div>
+      <div th:if="${po.orderedAt != null}">
+        <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Ordered On</p>
+        <p class="text-ivory text-sm"
+           th:text="${#temporals.format(po.orderedAt, 'dd MMM yyyy, HH:mm')}"></p>
+      </div>
+    </div>
+
+    <!-- WhatsApp copy button -->
+    <div th:if="${po.whatsappText != null}" class="mt-5 pt-5 border-t border-elevated/40">
+      <button type="button"
+              th:attr="data-text=${po.whatsappText}"
+              onclick="navigator.clipboard.writeText(this.dataset.text).then(() => {
+                         this.textContent = '✓ Copied!';
+                         setTimeout(() => this.textContent = '📋 Copy WhatsApp Text', 2000);
+                       })"
+              class="px-4 py-2 rounded-lg border border-emerald-500/40 text-emerald-400 text-sm
+                     hover:bg-emerald-500/10 transition-colors cursor-pointer">
+        📋 Copy WhatsApp Text
+      </button>
+    </div>
+  </div>
+
+  <!-- Items table (fragment, supports HTMX OOB targeting via id="po-items-section") -->
+  <div th:replace="~{inventory/purchase-orders/fragments/po-detail-sections :: po-items-section}"></div>
+
+  <!-- Action area (OOB-targetable via id) -->
+  <div id="po-actions" th:with="s=${po.status.name()}">
+
+    <!-- Order cost card — independent section -->
+    <div th:if="${s == 'PENDING' or s == 'APPROVED'}"
+         class="bg-surface rounded-xl border border-elevated/60 p-5 mb-4">
+      <p class="text-ivory text-sm font-medium mb-0.5">Record Order Cost</p>
+      <p class="text-sand text-xs mb-4">Total invoice amount is required to mark this order as placed.</p>
+      <form th:action="@{/inventory/purchase-orders/{id}/mark-ordered(id=${po.id})}" method="post"
+            class="flex items-center gap-3">
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sand/60 text-sm font-mono pointer-events-none">₹</span>
+          <input type="number" name="totalAmount" step="0.01" min="0.01" placeholder="0.00" required
+                 class="pl-7 w-44 bg-elevated border border-elevated/80 focus:border-blue-400/60
+                        rounded-lg px-3 py-2 text-ivory text-sm font-mono outline-none transition-colors"/>
+        </div>
+        <button type="submit"
+                class="px-4 py-2 rounded-lg border border-blue-400/40 text-blue-400 text-sm
+                       hover:bg-blue-400/10 transition-colors">
+          Mark as Ordered
+        </button>
+      </form>
+    </div>
+
+    <!-- Destructive actions -->
+    <div th:if="${s == 'PENDING' or s == 'APPROVED'}" class="flex gap-3">
+      <button th:attr="hx-post=@{/inventory/purchase-orders/{id}/cancel(id=${po.id})}"
+              hx-trigger="confirmed"
+              hx-target="#po-actions"
+              hx-swap="outerHTML"
+              onclick="bbConfirmHtmx(this, 'Cancel this purchase order? This cannot be undone.')"
+              class="px-4 py-2 rounded-lg border border-red-500/40 text-red-400 text-sm
+                     hover:bg-red-500/10 transition-colors cursor-pointer">
+        Cancel Order
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Receive form (ORDERED status only) -->
+  <div th:if="${po.status.name() == 'ORDERED'}"
+       class="mt-6 bg-surface rounded-xl border border-elevated/60 p-6">
+    <h2 class="font-heading text-xl text-ivory tracking-wide mb-1">Mark as Received</h2>
+    <p class="text-sand text-xs mb-5">Enter quantities received for each item</p>
+
+    <form th:action="@{/inventory/purchase-orders/{id}/receive(id=${po.id})}" method="post">
+      <div class="space-y-3 mb-5">
+        <th:block th:each="item : ${po.items}">
+          <div class="flex items-center gap-4">
+            <span class="text-ivory text-sm flex-1" th:text="${item.groceryItem.name}"></span>
+            <input type="hidden" name="itemId" th:value="${item.id}"/>
+            <input type="number" name="received"
+                   th:value="${item.quantityOrdered}"
+                   step="0.001" min="0"
+                   class="w-32 bg-elevated border border-elevated focus:border-accent rounded-lg
+                          px-3 py-2 text-ivory text-sm font-mono outline-none
+                          transition-all focus:shadow-neon-sm"/>
+            <span class="text-sand text-sm font-mono w-12" th:text="${item.groceryItem.unit}"></span>
+          </div>
+        </th:block>
+      </div>
+      <button type="submit"
+              class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                     text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        CONFIRM RECEIPT
+      </button>
+    </form>
+  </div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Dashboard — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-7xl mx-auto">
+
+  <!-- ── Page header ──────────────────────────────────────────────── -->
+  <div class="mb-8">
+    <h1 class="font-heading text-4xl text-ivory tracking-widest">Dashboard</h1>
+    <p class="text-sand text-sm mt-1" th:text="${pageDate}"></p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- SECTION A — Manager / Admin only                               -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div th:if="${isManager}">
+
+    <!-- ── Row 1: Today KPIs + Alert cards ──────────────────────── -->
+    <div class="grid grid-cols-5 gap-4 mb-4">
+
+      <!-- Today Revenue -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-5 flex flex-col gap-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sand text-xs uppercase tracking-widest">Today's Revenue</p>
+            <p class="font-heading text-4xl text-accent tracking-wide mt-1"
+               th:text="'₹' + ${#numbers.formatDecimal(stats.todayRevenue, 1, 'COMMA', 2, 'POINT')}">
+            </p>
+          </div>
+          <!-- Banknote icon -->
+          <svg class="w-6 h-6 text-accent/60 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+               stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="12" x="2" y="6" rx="2"/>
+            <circle cx="12" cy="12" r="2"/>
+            <path d="M6 12h.01M18 12h.01"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Bills Today -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-5 flex flex-col gap-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sand text-xs uppercase tracking-widest">Bills Today</p>
+            <p class="font-heading text-4xl text-ivory tracking-wide mt-1"
+               th:text="${stats.todayBillCount}">
+            </p>
+          </div>
+          <!-- Receipt icon -->
+          <svg class="w-6 h-6 text-sand/40 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+               stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+            <path d="M14 8H8M16 12H8M13 16H8"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- AOV -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-5 flex flex-col gap-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sand text-xs uppercase tracking-widest">Avg Order Value</p>
+            <p class="font-heading text-4xl text-ivory tracking-wide mt-1"
+               th:text="'₹' + ${#numbers.formatDecimal(stats.todayAov, 1, 'COMMA', 2, 'POINT')}">
+            </p>
+          </div>
+          <!-- Bar chart icon -->
+          <svg class="w-6 h-6 text-sand/40 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+               stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" x2="18" y1="20" y2="10"/>
+            <line x1="12" x2="12" y1="20" y2="4"/>
+            <line x1="6" x2="6" y1="20" y2="14"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Low Stock alert -->
+      <div th:with="hasAlert=${stats.lowStockCount > 0}"
+           th:classappend="${hasAlert} ? 'border-amber-500/40' : 'border-elevated/60'"
+           class="bg-surface rounded-2xl border p-5 flex flex-col gap-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sand text-xs uppercase tracking-widest">Low Stock</p>
+            <p class="font-heading text-4xl tracking-wide mt-1"
+               th:classappend="${stats.lowStockCount > 0} ? 'text-amber-400' : 'text-emerald-400'"
+               th:text="${stats.lowStockCount}">
+            </p>
+          </div>
+          <!-- Alert triangle icon -->
+          <svg class="w-6 h-6 flex-shrink-0 mt-0.5"
+               th:classappend="${stats.lowStockCount > 0} ? 'text-amber-400/70' : 'text-emerald-400/50'"
+               fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+            <line x1="12" x2="12" y1="9" y2="13"/>
+            <line x1="12" x2="12.01" y1="17" y2="17"/>
+          </svg>
+        </div>
+        <a th:if="${stats.lowStockCount > 0}" href="/inventory"
+           class="text-xs text-amber-400/70 hover:text-amber-400 transition-colors">
+          View inventory →
+        </a>
+        <span th:unless="${stats.lowStockCount > 0}"
+              class="text-xs text-emerald-400/50">All stocked</span>
+      </div>
+
+      <!-- Pending Replenishments alert -->
+      <div th:classappend="${stats.pendingReplenishmentCount > 0} ? 'border-amber-500/40' : 'border-elevated/60'"
+           class="bg-surface rounded-2xl border p-5 flex flex-col gap-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sand text-xs uppercase tracking-widest">Replenishments</p>
+            <p class="font-heading text-4xl tracking-wide mt-1"
+               th:classappend="${stats.pendingReplenishmentCount > 0} ? 'text-amber-400' : 'text-emerald-400'"
+               th:text="${stats.pendingReplenishmentCount}">
+            </p>
+          </div>
+          <!-- Package icon -->
+          <svg class="w-6 h-6 flex-shrink-0 mt-0.5"
+               th:classappend="${stats.pendingReplenishmentCount > 0} ? 'text-amber-400/70' : 'text-emerald-400/50'"
+               fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" x2="12" y1="22.08" y2="12"/>
+          </svg>
+        </div>
+        <a th:if="${stats.pendingReplenishmentCount > 0}" href="/inventory/replenishment"
+           class="text-xs text-amber-400/70 hover:text-amber-400 transition-colors">
+          View requests →
+        </a>
+        <span th:unless="${stats.pendingReplenishmentCount > 0}"
+              class="text-xs text-emerald-400/50">None pending</span>
+      </div>
+
+    </div><!-- /Row 1 -->
+
+    <!-- ── Row 2: Monthly comparison cards ───────────────────────── -->
+    <div class="grid grid-cols-3 gap-4 mb-4">
+
+      <!-- Monthly Revenue card -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-6">
+
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sand text-xs uppercase tracking-widest">Revenue</p>
+          <p class="text-sand text-xs"
+             th:text="${currentMonth} + ' ' + ${currentYear}"></p>
+        </div>
+
+        <p class="font-heading text-5xl text-ivory leading-none"
+           th:text="'₹' + ${#numbers.formatDecimal(stats.monthRevenue, 1, 'COMMA', 2, 'POINT')}">
+        </p>
+        <p class="text-sand text-sm mt-2"
+           th:text="${stats.monthBillCount} + ' bills this month'"></p>
+
+        <!-- vs Last Month comparison -->
+        <div class="mt-4 pt-4 border-t border-elevated/60">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sand text-xs">vs Last Month</span>
+            <span th:if="${stats.vsLastMonthPercent != null}"
+                  th:classappend="${stats.vsLastMonthPositive} ? 'text-emerald-400' : 'text-red-400'"
+                  class="text-xs font-medium">
+              <th:block th:if="${stats.vsLastMonthPositive}">▲</th:block>
+              <th:block th:unless="${stats.vsLastMonthPositive}">▼</th:block>
+              ₹<th:block th:text="${#numbers.formatDecimal(stats.vsLastMonthAmount.abs(), 1, 'COMMA', 2, 'POINT')}"></th:block>
+              (<th:block th:text="${stats.vsLastMonthPercent.abs()}"></th:block>%)
+            </span>
+            <span th:unless="${stats.vsLastMonthPercent != null}" class="text-sand text-xs">No data yet</span>
+          </div>
+          <!-- Comparison bars -->
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2">
+              <div class="h-2 rounded-full bg-accent transition-all"
+                   th:style="'width:' + ${stats.thisMonthBarWidth} + '%'"></div>
+              <span class="text-accent text-xs"
+                    th:text="'₹' + ${#numbers.formatDecimal(stats.monthRevenue, 1, 'COMMA', 2, 'POINT')}"></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="h-2 rounded-full bg-elevated transition-all"
+                   th:style="'width:' + ${stats.lastMonthBarWidth} + '%'"></div>
+              <span class="text-sand text-xs"
+                    th:text="'₹' + ${#numbers.formatDecimal(stats.lastMonthRevenue, 1, 'COMMA', 2, 'POINT')}"></span>
+            </div>
+            <div class="flex justify-between text-xs text-sand/50 mt-1">
+              <span th:text="${currentMonth}"></span>
+              <span>Last Month</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Monthly AOV + Year comparison card -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-6">
+
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sand text-xs uppercase tracking-widest">Avg Order Value</p>
+          <p class="text-sand text-xs"
+             th:text="${currentMonth} + ' ' + ${currentYear}"></p>
+        </div>
+
+        <p class="font-heading text-5xl text-ivory leading-none"
+           th:text="'₹' + ${#numbers.formatDecimal(stats.monthAov, 1, 'COMMA', 2, 'POINT')}">
+        </p>
+        <p class="text-sand text-sm mt-2"
+           th:text="${stats.monthBillCount} + ' bills this month'"></p>
+
+        <!-- vs Last Year YTD -->
+        <div class="mt-4 pt-4 border-t border-elevated/60">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sand text-xs">vs Last Year (YTD)</span>
+            <span th:if="${stats.vsLastYearPercent != null}"
+                  th:classappend="${stats.vsLastYearPositive} ? 'text-emerald-400' : 'text-red-400'"
+                  class="text-xs font-medium">
+              <th:block th:if="${stats.vsLastYearPositive}">▲</th:block>
+              <th:block th:unless="${stats.vsLastYearPositive}">▼</th:block>
+              ₹<th:block th:text="${#numbers.formatDecimal(stats.vsLastYearAmount.abs(), 1, 'COMMA', 2, 'POINT')}"></th:block>
+              (<th:block th:text="${stats.vsLastYearPercent.abs()}"></th:block>%)
+            </span>
+            <span th:unless="${stats.vsLastYearPercent != null}" class="text-sand text-xs">No data yet</span>
+          </div>
+          <!-- Comparison bars -->
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2">
+              <div class="h-2 rounded-full bg-accent transition-all"
+                   th:style="'width:' + ${stats.thisYearBarWidth} + '%'"></div>
+              <span class="text-accent text-xs"
+                    th:text="'₹' + ${#numbers.formatDecimal(stats.monthRevenue, 1, 'COMMA', 2, 'POINT')}"></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="h-2 rounded-full bg-elevated transition-all"
+                   th:style="'width:' + ${stats.lastYearBarWidth} + '%'"></div>
+              <span class="text-sand text-xs"
+                    th:text="'₹' + ${#numbers.formatDecimal(stats.lastYearYtdRevenue, 1, 'COMMA', 2, 'POINT')}"></span>
+            </div>
+            <div class="flex justify-between text-xs text-sand/50 mt-1">
+              <span th:text="'Jan–today ' + ${currentYear}"></span>
+              <span th:text="'Jan–today ' + ${lastYear}"></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Grocery Spend card -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-6">
+
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sand text-xs uppercase tracking-widest">Grocery Spend</p>
+          <p class="text-sand text-xs"
+             th:text="${currentMonth} + ' ' + ${currentYear}"></p>
+        </div>
+
+        <p class="font-heading text-5xl text-ivory leading-none"
+           th:text="'₹' + ${#numbers.formatDecimal(stats.thisMonthGrocerySpend, 1, 'COMMA', 2, 'POINT')}">
+        </p>
+        <p class="text-sand text-sm mt-2">In purchase orders this month</p>
+
+        <!-- vs Last Month comparison -->
+        <div class="mt-4 pt-4 border-t border-elevated/60">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sand text-xs">vs Last Month</span>
+            <span th:if="${stats.vsGrocerySpendPercent != null}"
+                  th:classappend="${stats.vsGrocerySpendUp} ? 'text-red-400' : 'text-emerald-400'"
+                  class="text-xs font-medium">
+              <th:block th:if="${stats.vsGrocerySpendUp}">▲</th:block>
+              <th:block th:unless="${stats.vsGrocerySpendUp}">▼</th:block>
+              ₹<th:block th:text="${#numbers.formatDecimal(stats.vsGrocerySpendAmount.abs(), 1, 'COMMA', 2, 'POINT')}"></th:block>
+              (<th:block th:text="${stats.vsGrocerySpendPercent.abs()}"></th:block>%)
+            </span>
+            <span th:unless="${stats.vsGrocerySpendPercent != null}" class="text-sand text-xs">No data yet</span>
+          </div>
+          <!-- Comparison bars -->
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2">
+              <div class="h-2 rounded-full bg-amber-500/70 transition-all"
+                   th:style="'width:' + ${stats.groceryBarThisWidth} + '%'"></div>
+              <span class="text-amber-400/80 text-xs"
+                    th:text="'₹' + ${#numbers.formatDecimal(stats.thisMonthGrocerySpend, 1, 'COMMA', 2, 'POINT')}"></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="h-2 rounded-full bg-elevated transition-all"
+                   th:style="'width:' + ${stats.groceryBarLastWidth} + '%'"></div>
+              <span class="text-sand text-xs"
+                    th:text="'₹' + ${#numbers.formatDecimal(stats.lastMonthGrocerySpend, 1, 'COMMA', 2, 'POINT')}"></span>
+            </div>
+            <div class="flex justify-between text-xs text-sand/50 mt-1">
+              <span th:text="${currentMonth}"></span>
+              <span>Last Month</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /Row 2 -->
+
+    <!-- ── Row 3: Top 5 Items Today ──────────────────────────────── -->
+    <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
+
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-heading text-2xl text-ivory tracking-widest">Top Items Today</h2>
+        <a href="/reports"
+           class="text-sand text-xs hover:text-ivory transition-colors">
+          View Reports →
+        </a>
+      </div>
+
+      <!-- Empty state -->
+      <div th:if="${#lists.isEmpty(stats.topItemsToday)}"
+           class="py-8 text-center text-sand/50 text-sm">
+        No sales recorded today yet.
+      </div>
+
+      <!-- Top items table -->
+      <table th:unless="${#lists.isEmpty(stats.topItemsToday)}" class="w-full">
+        <thead>
+          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+            <th class="pb-3 text-left w-12">Rank</th>
+            <th class="pb-3 text-left">Item</th>
+            <th class="pb-3 text-right">Qty Today</th>
+            <th class="pb-3 text-right">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="item, iterStat : ${stats.topItemsToday}"
+              class="border-b border-elevated/30 last:border-0">
+            <td class="py-3 pr-4">
+              <span class="font-heading text-xl"
+                    th:with="rank=${iterStat.count}"
+                    th:classappend="${rank == 1} ? 'text-amber-400' : (${rank == 2} ? 'text-slate-300' : (${rank == 3} ? 'text-amber-700' : 'text-sand/50'))"
+                    th:text="${iterStat.count}">
+              </span>
+            </td>
+            <td class="py-3">
+              <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
+            </td>
+            <td class="py-3 text-right">
+              <span class="font-heading text-2xl text-accent" th:text="${item.quantityToday}"></span>
+            </td>
+            <td class="py-3 text-right">
+              <span class="text-ivory text-sm"
+                    th:text="'₹' + ${#numbers.formatDecimal(item.revenueToday, 1, 'COMMA', 2, 'POINT')}">
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div><!-- /Row 3 -->
+
+  </div><!-- /Section A -->
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- SECTION B — Active operations (all roles)                      -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div>
+
+    <h2 class="font-heading text-2xl text-ivory tracking-widest mb-4">Active Operations</h2>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+      <!-- Active Bills card -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-6 flex flex-col justify-center">
+        <p class="text-sand text-xs uppercase tracking-widest mb-2">Active Bills</p>
+        <p class="font-heading text-5xl leading-none"
+           th:classappend="${stats.activeBillCount > 0} ? 'text-accent' : 'text-sand'"
+           th:text="${stats.activeBillCount}">
+        </p>
+        <p class="text-sand/50 text-xs mt-2">Draft + Confirmed</p>
+      </div>
+
+      <!-- Tables Occupied card -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-6 flex flex-col justify-center">
+        <p class="text-sand text-xs uppercase tracking-widest mb-2">Tables Occupied</p>
+        <p class="font-heading text-5xl leading-none"
+           th:classappend="${stats.occupiedTableCount > 0} ? 'text-amber-400' : 'text-emerald-400'">
+          <th:block th:text="${stats.occupiedTableCount}"></th:block>
+          <span class="text-2xl text-sand/50">/<th:block th:text="${stats.totalTableCount}"></th:block></span>
+        </p>
+        <p class="text-sand/50 text-xs mt-2">Active tables</p>
+      </div>
+
+      <!-- Table grid -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-5 lg:col-span-1">
+        <p class="text-sand text-xs uppercase tracking-widest mb-3">Floor Status</p>
+
+        <!-- Empty state -->
+        <div th:if="${#lists.isEmpty(stats.tableStatuses)}"
+             class="text-sand/50 text-sm py-4 text-center">No active tables.</div>
+
+        <div th:unless="${#lists.isEmpty(stats.tableStatuses)}"
+             class="flex flex-wrap gap-2">
+          <a th:each="t : ${stats.tableStatuses}"
+             th:href="@{/bills(tableId=${t.tableId})}"
+             th:classappend="${t.status.name() == 'FREE'}
+               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+               : 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'"
+             class="border rounded-lg px-3 py-2 text-xs font-medium transition-colors min-w-[5rem] text-center">
+            <div th:text="${t.tableName}" class="font-heading text-sm tracking-wide"></div>
+            <div th:if="${t.activeCustomerName != null}"
+                 th:text="${t.activeCustomerName}"
+                 class="text-xs truncate max-w-[6rem] opacity-70 mt-0.5">
+            </div>
+          </a>
+        </div>
+
+      </div>
+
+    </div><!-- /operations grid -->
+
+  </div><!-- /Section B -->
+
+</main>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Oops — Bullet Beats Café</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@400;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { base:'#1C1C1C', surface:'#2A2A2A', accent:'#00D4FF', sand:'#9A9080', ivory:'#F5F0E8' },
+          fontFamily: { heading:['"Bebas Neue"','cursive'], body:['Lato','sans-serif'] }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-base font-body text-ivory min-h-screen flex flex-col items-center justify-center p-6 text-center">
+  <p class="font-heading text-5xl text-accent tracking-widest mb-4">Oops!</p>
+  <p class="text-sand mb-2" th:text="${error}">Something went wrong.</p>
+  <p class="text-sand/50 text-sm">Please scan the QR code again or ask a staff member for help.</p>
+</body>
+</html>

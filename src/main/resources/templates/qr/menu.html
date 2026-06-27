@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="_csrf"        th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  <title th:text="${cafeName + ' — ' + bill.cafeTable.name}">Bullet Beats Café</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base:     '#1C1C1C',
+            surface:  '#2A2A2A',
+            elevated: '#333333',
+            accent:   '#00D4FF',
+            ivory:    '#F5F0E8',
+            sand:     '#9A9080',
+          },
+          fontFamily: {
+            heading: ['"Bebas Neue"', 'cursive'],
+            body:    ['Lato', 'sans-serif'],
+          },
+          boxShadow: {
+            neon:      '0 0 24px rgba(0,212,255,0.45), 0 0 48px rgba(0,212,255,0.15)',
+            'neon-sm': '0 0 8px rgba(0,212,255,0.4)',
+          },
+        }
+      }
+    };
+  </script>
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script>
+    document.addEventListener('htmx:configRequest', function(e) {
+      var header = document.querySelector('meta[name="_csrf_header"]').content;
+      var token  = document.querySelector('meta[name="_csrf"]').content;
+      e.detail.headers[header] = token;
+    });
+  </script>
+  <style>
+    /* Smooth panel slide */
+    #order-panel-wrap { transition: transform 0.3s ease; }
+    /* Hide scrollbar on category tabs but keep scrollable */
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tabs { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-base font-body text-ivory min-h-screen" style="padding-bottom: 80px;">
+
+  <!-- ── Fixed top bar ──────────────────────────────────────────────── -->
+  <header class="fixed top-0 left-0 right-0 z-50 h-14 bg-surface border-b border-elevated/60
+                 flex items-center px-4 gap-3">
+    <span class="font-heading text-accent text-xl tracking-widest leading-none flex-shrink-0">🏍</span>
+    <span class="font-heading text-accent text-lg tracking-widest leading-none flex-shrink-0"
+          th:text="${cafeName}">Bullet Beats</span>
+    <span class="flex-1 text-center text-ivory text-sm truncate"
+          th:text="${bill.cafeTable.name}">Table 1</span>
+    <span th:if="${returning and customerName != 'Guest'}"
+          class="flex-shrink-0 text-accent text-xs font-bold"
+          th:text="'👋 ' + ${customerName}">Guest</span>
+  </header>
+
+  <!-- ── Category tabs (sticky below topbar) ───────────────────────── -->
+  <div class="fixed top-14 left-0 right-0 z-40 bg-base border-b border-elevated/40
+              cat-tabs overflow-x-auto flex items-center gap-1 px-3 py-2">
+    <!-- "All" tab -->
+    <button id="tab-all"
+            class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold
+                   bg-accent text-base transition-all"
+            th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},billId=${billId},customerName=${customerName},customerId=${customerId})}"
+            hx-target="#menu-grid"
+            hx-swap="innerHTML"
+            onclick="setActiveTab(this)">
+      All
+    </button>
+    <button th:each="dto : ${menuDto.categories}"
+            th:id="'tab-' + ${dto.category.id}"
+            class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm border border-elevated/60
+                   text-sand hover:text-ivory hover:border-accent/40 transition-all"
+            th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},categoryId=${dto.category.id},billId=${billId},customerName=${customerName},customerId=${customerId})}"
+            hx-target="#menu-grid"
+            hx-swap="innerHTML"
+            th:onclick="'setActiveTab(this)'"
+            th:text="${dto.category.name}">
+      Category
+    </button>
+  </div>
+
+  <!-- ── Menu grid ──────────────────────────────────────────────────── -->
+  <div id="menu-grid" class="px-4 pt-32 pb-4">
+    <th:block th:each="dto : ${menuDto.categories}">
+      <div th:unless="${#lists.isEmpty(dto.items)}" class="mb-6">
+        <h3 class="font-heading text-xl text-sand tracking-widest mb-3 uppercase"
+            th:text="${dto.category.name}">Category</h3>
+        <div class="space-y-3">
+          <th:block th:each="item : ${dto.items}">
+            <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId})}"/>
+          </th:block>
+        </div>
+      </div>
+    </th:block>
+  </div>
+
+  <!-- ── Order panel wrapper (fixed bottom, always present) ─────────── -->
+  <div class="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom" id="order-panel-wrap">
+    <div id="order-panel">
+      <th:block th:replace="~{qr/fragments/order-panel :: order-panel}"/>
+    </div>
+  </div>
+
+  <!-- ── Image lightbox ─────────────────────────────────────────────── -->
+  <div id="lightbox"
+       class="fixed inset-0 z-[100] bg-black/90 items-center justify-center p-4"
+       style="display:none"
+       onclick="closeLightbox()">
+    <img id="lightbox-img" src="" alt="Menu item"
+         class="max-w-full max-h-full object-contain rounded-xl"/>
+    <button class="absolute top-4 right-4 text-white/60 hover:text-white text-3xl leading-none"
+            onclick="closeLightbox()">×</button>
+  </div>
+
+  <script th:inline="javascript">
+    // Session storage — save session data on first load
+    const _billId    = /*[[${bill.id}]]*/ 0;
+    const _custName  = /*[[${customerName}]]*/ 'Guest';
+    const _custId    = /*[[${customerId}]]*/ null;
+    const _qrCode    = /*[[${qrCode}]]*/ '';
+
+    if (!sessionStorage.getItem('bb_bill_id') || sessionStorage.getItem('bb_bill_id') !== String(_billId)) {
+      sessionStorage.setItem('bb_bill_id',       String(_billId));
+      sessionStorage.setItem('bb_customer_name', _custName);
+      sessionStorage.setItem('bb_customer_id',   _custId ? String(_custId) : '');
+      sessionStorage.setItem('bb_qr_code',       _qrCode);
+    }
+
+    // Category tab active state
+    function setActiveTab(el) {
+      document.querySelectorAll('.cat-tab').forEach(t => {
+        t.classList.remove('bg-accent', 'text-base', 'font-bold');
+        t.classList.add('border', 'border-elevated/60', 'text-sand');
+      });
+      el.classList.add('bg-accent', 'text-base', 'font-bold');
+      el.classList.remove('border', 'border-elevated/60', 'text-sand');
+    }
+
+    // Lightbox
+    function openLightbox(src) {
+      document.getElementById('lightbox-img').src = src;
+      document.getElementById('lightbox').style.display = 'flex';
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').style.display = 'none';
+    }
+
+    // Preserve bottom-sheet open state across order-panel HTMX swaps.
+    // Without this, every qty change re-renders panel-body as hidden (default)
+    // and collapses the sheet mid-interaction.
+    var _panelWasOpen = false;
+    document.addEventListener('htmx:beforeRequest', function(e) {
+      if (e.detail.target && e.detail.target.id === 'order-panel') {
+        var body = document.getElementById('panel-body');
+        _panelWasOpen = body && !body.classList.contains('hidden');
+      }
+    });
+    document.addEventListener('htmx:afterSettle', function(e) {
+      if (e.detail.target && e.detail.target.id === 'order-panel' && _panelWasOpen) {
+        var body = document.getElementById('panel-body');
+        var chev = document.getElementById('panel-chevron');
+        if (body) body.classList.remove('hidden');
+        if (chev) chev.classList.add('rotate-180');
+        _panelWasOpen = false;
+      }
+    });
+  </script>
+
+</body>
+</html>

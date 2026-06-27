@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<th:block th:fragment="confirm-result">
+  <div class="bg-surface border-t border-elevated/60 rounded-t-2xl shadow-2xl">
+
+    <!-- HTMX polling — continue refreshing in case staff make updates -->
+    <div th:attr="hx-get=@{/qr/{c}/poll(c=${qrCode},billId=${bill.id},customerName=${customerName})}"
+         hx-trigger="every 5s"
+         hx-target="#order-panel"
+         hx-swap="innerHTML">
+    </div>
+
+    <!-- Success card -->
+    <div class="px-5 pt-6 pb-4">
+      <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-5 text-center">
+        <div class="text-3xl mb-2">✅</div>
+        <p class="font-heading text-emerald-400 text-2xl tracking-wide">Order Sent to Kitchen!</p>
+        <p class="text-emerald-400/70 text-sm mt-1">Your order has been received. Staff will take care of the rest.</p>
+      </div>
+    </div>
+
+    <!-- Order summary -->
+    <div class="px-5 pb-3 space-y-1 text-sm border-t border-elevated/40 pt-3">
+      <div class="flex justify-between text-sand">
+        <span>Total</span>
+        <span class="text-accent font-heading text-lg" th:text="'₹' + ${bill.totalAmount}">₹0</span>
+      </div>
+      <div class="flex justify-between text-sand/60 text-xs">
+        <span th:text="'Bill #' + ${bill.billNumber}">Bill #BB-</span>
+        <span>Awaiting payment at the counter</span>
+      </div>
+    </div>
+
+    <!-- Activity log (last 5 entries) -->
+    <div th:if="${logs != null and !#lists.isEmpty(logs)}"
+         class="px-5 pb-4 border-t border-elevated/40 pt-3">
+      <p class="text-sand/60 text-xs uppercase tracking-widest mb-2">Activity</p>
+      <div class="space-y-1">
+        <div th:each="log : ${logs}"
+             class="text-sand/50 text-xs leading-relaxed"
+             th:text="${log.message}">log entry</div>
+      </div>
+    </div>
+
+    <!-- Add more items button -->
+    <div class="px-5 pb-6 pt-2">
+      <button onclick="document.getElementById('menu-grid').scrollIntoView({behavior:'smooth'});
+                       document.getElementById('panel-body').classList.remove('hidden');"
+              class="w-full py-3 rounded-xl border border-sand/30 text-sand text-sm
+                     hover:border-ivory/40 hover:text-ivory transition-colors">
+        + Add More Items
+      </button>
+    </div>
+
+  </div>
+</th:block>
+
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<th:block th:fragment="order-panel">
+
+  <!-- DRAFT sync poll: placed before the empty/has-items split so even a phone with an empty
+       cart detects items added by another device. Reuses the poll endpoint which returns this
+       same fragment for any non-PAID status.
+       Condition: pause while panel is expanded so the swap doesn't collapse it mid-view. -->
+  <div th:if="${bill.status.name() == 'DRAFT'}"
+       th:attr="hx-get=@{/qr/{c}/poll(c=${qrCode},billId=${bill.id},customerName=${customerName})}"
+       hx-trigger="every 5s [!document.getElementById('panel-body') || document.getElementById('panel-body').classList.contains('hidden')]"
+       hx-target="#order-panel"
+       hx-swap="innerHTML"
+       class="h-0 overflow-hidden pointer-events-none" aria-hidden="true"></div>
+
+  <!-- Empty state: nothing rendered -->
+  <div th:if="${#lists.isEmpty(bill.items)}"
+       class="pointer-events-none h-0">
+  </div>
+
+  <!-- Has items: slim collapsed bar, expands on tap -->
+  <div th:unless="${#lists.isEmpty(bill.items)}"
+       class="bg-surface border-t border-elevated/60 rounded-t-2xl shadow-2xl">
+
+    <!-- CONFIRMED poll: outside panel-body so display:none doesn't pause it.
+         Same condition: pause while expanded so the swap doesn't collapse it. -->
+    <div th:if="${bill.status.name() == 'CONFIRMED'}"
+         th:attr="hx-get=@{/qr/{c}/poll(c=${qrCode},billId=${bill.id},customerName=${customerName})}"
+         hx-trigger="every 5s [!document.getElementById('panel-body') || document.getElementById('panel-body').classList.contains('hidden')]"
+         hx-target="#order-panel"
+         hx-swap="innerHTML"
+         class="h-0 overflow-hidden pointer-events-none" aria-hidden="true"></div>
+
+    <!-- ── Slim header (always visible, tap to expand) ──── -->
+    <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
+         onclick="(function(el){
+           var body = document.getElementById('panel-body');
+           var chev = document.getElementById('panel-chevron');
+           var isHidden = body.classList.contains('hidden');
+           body.classList.toggle('hidden');
+           chev.classList.toggle('rotate-180');
+         })(this)">
+
+      <!-- Item count badge -->
+      <span class="flex-shrink-0 w-6 h-6 rounded-full bg-accent text-base text-xs font-bold
+                   flex items-center justify-center leading-none"
+            th:text="${#lists.size(bill.items)}">0</span>
+
+      <span class="font-heading text-ivory text-base tracking-wide flex-1 leading-none">Your Order</span>
+
+      <span class="font-heading text-accent text-lg leading-none"
+            th:text="'₹' + ${bill.totalAmount}">₹0</span>
+
+      <span id="panel-chevron"
+            th:class="${stockError != null}
+                      ? 'text-sand transition-transform duration-200 text-sm leading-none rotate-180'
+                      : 'text-sand transition-transform duration-200 text-sm leading-none'">▲</span>
+    </div>
+
+    <!-- ── Collapsible body (hidden by default, auto-open on stock error) ── -->
+    <div id="panel-body"
+         th:class="${stockError != null}
+                   ? 'px-4 pb-5 space-y-3 border-t border-elevated/40'
+                   : 'hidden px-4 pb-5 space-y-3 border-t border-elevated/40'">
+
+      <!-- Stock error (if any) -->
+      <div th:if="${stockError}"
+           class="mt-3 px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30
+                  text-red-400 text-sm"
+           th:text="${stockError}"></div>
+
+      <!-- Items list -->
+      <div class="space-y-2 max-h-44 overflow-y-auto mt-3">
+        <div th:each="item : ${bill.items}"
+             class="flex items-center gap-2 py-1.5 border-b border-elevated/30 last:border-0">
+
+          <!-- Name + line total -->
+          <div class="flex-1 min-w-0">
+            <p class="text-ivory text-sm truncate" th:text="${item.itemName}">Item</p>
+            <p class="text-sand text-xs" th:text="'₹' + ${item.lineTotal}">₹0</p>
+          </div>
+
+          <!-- Qty stepper -->
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <button th:attr="hx-patch=@{/qr/{c}/items/{i}/quantity(c=${qrCode},i=${item.id},billId=${bill.id},quantity=${item.quantity - 1},customerName=${customerName})}"
+                    hx-target="#order-panel"
+                    hx-swap="innerHTML"
+                    class="w-7 h-7 rounded-lg border border-elevated/60 text-ivory text-base
+                           hover:border-red-400/40 hover:text-red-400 transition-colors
+                           flex items-center justify-center leading-none">−</button>
+            <span class="text-ivory text-sm font-bold w-5 text-center"
+                  th:text="${item.quantity}">1</span>
+            <button th:attr="hx-patch=@{/qr/{c}/items/{i}/quantity(c=${qrCode},i=${item.id},billId=${bill.id},quantity=${item.quantity + 1},customerName=${customerName})}"
+                    hx-target="#order-panel"
+                    hx-swap="innerHTML"
+                    class="w-7 h-7 rounded-lg bg-elevated text-ivory text-base
+                           hover:bg-accent/20 transition-colors
+                           flex items-center justify-center leading-none">+</button>
+          </div>
+
+          <!-- Remove -->
+          <button th:attr="hx-delete=@{/qr/{c}/items/{i}(c=${qrCode},i=${item.id},billId=${bill.id},customerName=${customerName})}"
+                  hx-target="#order-panel"
+                  hx-swap="innerHTML"
+                  class="w-7 h-7 flex-shrink-0 text-sand/50 hover:text-red-400 transition-colors
+                         flex items-center justify-center text-lg leading-none">×</button>
+        </div>
+      </div>
+
+      <!-- Totals (compact) -->
+      <div class="space-y-1 text-xs border-t border-elevated/40 pt-2">
+        <div class="flex justify-between text-sand">
+          <span>Subtotal</span>
+          <span th:text="'₹' + ${bill.subtotal}">₹0</span>
+        </div>
+        <div class="flex justify-between text-sand" th:if="${bill.discountAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+          <span>Discount</span>
+          <span class="text-emerald-400" th:text="'−₹' + ${bill.discountAmount}">₹0</span>
+        </div>
+        <div class="flex justify-between text-sand">
+          <span th:text="'GST (' + ${bill.gstRate.stripTrailingZeros().toPlainString()} + '%)'">GST</span>
+          <span th:text="'₹' + ${bill.gstAmount}">₹0</span>
+        </div>
+        <div class="flex justify-between text-ivory font-bold text-sm pt-1.5 border-t border-elevated/40">
+          <span>Total</span>
+          <span class="text-accent font-heading text-lg" th:text="'₹' + ${bill.totalAmount}">₹0</span>
+        </div>
+        <p class="text-sand/50 text-xs">Discounts applied by staff if applicable</p>
+      </div>
+
+      <!-- CTA: DRAFT → send to kitchen -->
+      <div th:if="${bill.status.name() == 'DRAFT'}">
+        <form th:id="'confirm-form-' + ${bill.id}">
+          <input type="hidden" name="billId"       th:value="${bill.id}"/>
+          <input type="hidden" name="customerName" th:value="${customerName}"/>
+        </form>
+        <button th:attr="hx-post=@{/qr/{c}/confirm(c=${qrCode})},
+                         hx-include='#confirm-form-' + ${bill.id}"
+                hx-target="#order-panel"
+                hx-swap="innerHTML"
+                class="w-full py-3.5 rounded-xl bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200
+                       active:scale-95">
+          SEND TO KITCHEN 🍽
+        </button>
+      </div>
+
+      <!-- CTA: CONFIRMED -->
+      <div th:if="${bill.status.name() == 'CONFIRMED'}">
+        <div class="w-full py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10
+                    text-emerald-400 text-center text-sm font-bold">
+          ✓ Order Sent — You Can Still Add Items
+        </div>
+      </div>
+
+    </div><!-- /panel-body -->
+  </div>
+</th:block>
+
+</body>
+</html>

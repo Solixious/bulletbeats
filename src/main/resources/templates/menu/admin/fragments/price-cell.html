@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Display cell -->
+<td th:fragment="price-cell"
+    th:id="'price-cell-' + ${item.id}"
+    class="px-4 py-3">
+  <div class="flex items-center gap-1.5">
+    <span class="font-mono text-ivory text-sm"
+          th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}"></span>
+    <button th:attr="hx-get='/admin/menu/' + ${item.id} + '/price-edit',
+                     hx-target='#price-cell-' + ${item.id}"
+            hx-swap="outerHTML"
+            title="Edit price"
+            class="text-sand/40 hover:text-accent text-xs transition-colors cursor-pointer">✏</button>
+  </div>
+</td>
+
+<!-- Edit cell -->
+<td th:fragment="price-edit"
+    th:id="'price-cell-' + ${item.id}"
+    class="px-4 py-3">
+  <form th:attr="hx-patch='/admin/menu/' + ${item.id} + '/price',
+                 hx-target='#price-cell-' + ${item.id}"
+        hx-swap="outerHTML"
+        class="flex items-center gap-1.5">
+    <span class="text-sand text-xs">₹</span>
+    <input type="number" name="price" step="0.01" min="0.01" required
+           th:value="${#numbers.formatDecimal(item.price, 1, 2)}"
+           class="w-24 bg-base border border-accent/60 focus:border-accent
+                  rounded px-2 py-1 text-ivory text-sm outline-none
+                  focus:shadow-neon-sm transition-all font-mono"
+           autofocus/>
+    <button type="submit"
+            class="text-xs px-2 py-1 rounded bg-accent/20 text-accent
+                   hover:bg-accent/30 transition-colors font-bold">✓</button>
+    <button type="button"
+            th:attr="hx-get='/admin/menu/' + ${item.id} + '/price-cell',
+                     hx-target='#price-cell-' + ${item.id}"
+            hx-swap="outerHTML"
+            class="text-xs px-2 py-1 rounded border border-sand/30 text-sand
+                   hover:text-ivory transition-colors">✕</button>
+  </form>
+</td>
+
+</body>
+</html>

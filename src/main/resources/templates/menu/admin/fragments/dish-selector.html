@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<select th:fragment="dish-selector"
+        id="dishId" name="dishId" required
+        class="w-full bg-elevated border border-elevated focus:border-accent
+               rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+               transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+  <option value="">Select a dish…</option>
+  <option th:each="d : ${dishes}"
+          th:value="${d.id}"
+          th:text="${d.name} + (${d.prepTimeMinutes != null} ? ' (' + ${d.prepTimeMinutes} + ' min)' : '')"
+          th:selected="${d.id == selectedDishId}">Dish</option>
+</select>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title th:text="${cafeName} + ' — Menu'">Café Menu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base:     '#1C1C1C',
+            surface:  '#2A2A2A',
+            elevated: '#333333',
+            accent:   '#00D4FF',
+            ivory:    '#F5F0E8',
+            sand:     '#9A9080',
+          },
+          fontFamily: {
+            heading: ['"Bebas Neue"', 'cursive'],
+            body:    ['Lato', 'sans-serif'],
+          },
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-base font-body text-ivory min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-surface border-b border-elevated/60 px-5 py-5 text-center">
+    <div class="h-1 w-24 mx-auto mb-4 rounded"
+         style="background: repeating-linear-gradient(90deg, #00D4FF 0, #00D4FF 6px, transparent 6px, transparent 14px)"></div>
+    <h1 class="font-heading text-4xl text-ivory tracking-widest" th:text="${cafeName}">Bullet Beats Café</h1>
+    <p class="text-sand text-xs tracking-widest uppercase mt-1">Our Menu</p>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-4 py-8">
+
+    <!-- Category filter -->
+    <div th:if="${!#lists.isEmpty(categories)}"
+         class="flex flex-wrap gap-2 mb-6 justify-center">
+      <a href="/public/menu"
+         th:classappend="${selectedCategoryId == null}
+                         ? 'bg-accent/20 text-accent border-accent/50'
+                         : 'text-sand border-elevated/60 hover:text-ivory'"
+         class="px-4 py-1.5 text-xs rounded-full border transition-colors">All</a>
+      <a th:each="cat : ${categories}"
+         th:href="@{/public/menu(categoryId=${cat.id})}"
+         th:text="${cat.name}"
+         th:classappend="${selectedCategoryId == cat.id}
+                         ? 'bg-accent/20 text-accent border-accent/50'
+                         : 'text-sand border-elevated/60 hover:text-ivory'"
+         class="px-4 py-1.5 text-xs rounded-full border transition-colors">Category</a>
+    </div>
+
+    <!-- Item list -->
+    <div th:if="${#lists.isEmpty(items)}"
+         class="text-center text-sand text-sm py-16">Nothing on the menu right now.</div>
+
+    <div th:unless="${#lists.isEmpty(items)}" class="space-y-2">
+      <div th:each="item : ${items}"
+           th:classappend="${!item.available} ? 'opacity-50' : ''"
+           class="bg-surface rounded-xl border border-elevated/60 px-5 py-4
+                  flex items-center gap-4">
+
+        <!-- Image or placeholder -->
+        <img th:if="${item.imagePath != null}"
+             th:src="'/uploads/' + ${item.imagePath}"
+             alt=""
+             class="w-14 h-14 rounded-lg object-cover border border-elevated/60 flex-shrink-0"/>
+        <div th:unless="${item.imagePath != null}"
+             class="w-14 h-14 rounded-lg bg-elevated border border-elevated/60
+                    flex items-center justify-center text-2xl flex-shrink-0">☕</div>
+
+        <!-- Name + category -->
+        <div class="flex-1 min-w-0">
+          <p class="text-ivory font-medium text-sm leading-tight" th:text="${item.name}">Item</p>
+          <p class="text-sand text-xs mt-0.5" th:text="${item.category.name}">Category</p>
+          <span th:unless="${item.available}"
+                class="inline-block mt-1 px-2 py-0.5 text-xs border rounded-full
+                       text-red-400 border-red-400/40 bg-red-400/10">Unavailable</span>
+        </div>
+
+        <!-- Price -->
+        <span class="font-heading text-xl text-accent flex-shrink-0"
+              th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}">₹0</span>
+      </div>
+    </div>
+
+    <p th:unless="${#lists.isEmpty(items)}"
+       class="mt-5 text-center text-sand/50 text-xs"
+       th:text="${#lists.size(items)} + ' item' + (${#lists.size(items)} == 1 ? '' : 's')"></p>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center text-sand/40 text-xs pb-8 mt-4">
+    <div class="h-px w-16 bg-elevated/60 mx-auto mb-4"></div>
+    Prices inclusive of all taxes &nbsp;·&nbsp; Subject to availability
+  </footer>
+
+</body>
+</html>

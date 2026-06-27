@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${item.name} + ' — Bullet Beats Café'">Menu Item — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-7xl mx-auto">
+
+  <a href="/admin/menu"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Menu Management
+  </a>
+
+  <div class="flex items-start justify-between mb-7">
+    <div class="flex items-center gap-4">
+      <div>
+        <h1 class="font-heading text-3xl text-ivory tracking-wide" th:text="${item.name}">Item</h1>
+        <p class="text-sand text-sm mt-0.5" th:text="${item.category.name}"></p>
+      </div>
+      <!-- Type badge -->
+      <span th:if="${item.type.name() == 'DISH'}"
+            class="px-3 py-1 text-xs border rounded-full font-bold uppercase
+                   text-accent border-accent/40 bg-accent/10">Dish</span>
+      <span th:if="${item.type.name() == 'COMBO'}"
+            class="px-3 py-1 text-xs border rounded-full font-bold uppercase
+                   text-amber-400 border-amber-400/40 bg-amber-400/10">Combo</span>
+      <!-- Active badge -->
+      <span th:if="${item.isActive}"
+            class="px-3 py-1 text-xs border rounded-full uppercase font-bold
+                   text-emerald-400 border-emerald-400/40 bg-emerald-400/10">Active</span>
+      <span th:unless="${item.isActive}"
+            class="px-3 py-1 text-xs border rounded-full uppercase font-bold
+                   text-red-400 border-red-400/40 bg-red-400/10">Inactive</span>
+    </div>
+    <div sec:authorize="hasRole('ADMIN')" class="flex gap-2">
+      <a th:href="@{/admin/menu/{id}/edit(id=${item.id})}"
+         class="px-4 py-2 text-sm rounded-lg border border-sand/30 text-sand
+                hover:border-ivory/40 hover:text-ivory transition-colors">Edit</a>
+      <form th:action="@{/admin/menu/{id}/deactivate(id=${item.id})}"
+            method="post" class="inline"
+            onsubmit="return bbConfirm(this, 'Deactivate this item?')">
+        <button type="submit"
+                class="px-4 py-2 text-sm rounded-lg border border-red-500/30 text-red-400
+                       hover:border-red-500/60 hover:bg-red-500/10 transition-colors">
+          Deactivate
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- LEFT COLUMN -->
+    <div class="space-y-5">
+
+      <!-- Image + basic info -->
+      <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+        <div class="flex gap-4">
+          <div th:if="${item.imagePath != null}" class="flex-shrink-0">
+            <img th:src="'/uploads/' + ${item.imagePath}"
+                 alt="Item image"
+                 class="w-28 h-28 object-cover rounded-lg border border-elevated/60"/>
+          </div>
+          <div th:unless="${item.imagePath != null}"
+               class="flex-shrink-0 w-28 h-28 rounded-lg border border-elevated/60
+                      bg-elevated flex items-center justify-center text-sand/30 text-3xl">
+            ☕
+          </div>
+          <div class="space-y-2 min-w-0">
+            <div>
+              <span class="text-sand text-xs uppercase tracking-[0.15em]">Price</span>
+              <p class="text-accent font-heading text-2xl mt-0.5"
+                 th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}"></p>
+            </div>
+            <div>
+              <span class="text-sand text-xs uppercase tracking-[0.15em]">Display Order</span>
+              <p class="text-ivory text-sm mt-0.5" th:text="${item.displayOrder}"></p>
+            </div>
+            <div>
+              <span class="text-sand text-xs uppercase tracking-[0.15em]">Availability</span>
+              <p class="mt-0.5">
+                <span th:if="${item.availabilityOverride == null}"
+                      class="text-xs text-sand/70 font-mono uppercase tracking-wide">AUTO</span>
+                <span th:if="${item.availabilityOverride != null and item.availabilityOverride}"
+                      class="text-xs text-emerald-400/80 font-mono uppercase tracking-wide">FORCED ON</span>
+                <span th:if="${item.availabilityOverride != null and !item.availabilityOverride}"
+                      class="text-xs text-red-400/80 font-mono uppercase tracking-wide">FORCED OFF</span>
+                <span th:if="${item.available}"
+                      class="ml-1.5 inline-flex items-center gap-1 text-xs text-emerald-400">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Available
+                </span>
+                <span th:unless="${item.available}"
+                      class="ml-1.5 inline-flex items-center gap-1 text-xs text-red-400">
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Unavailable
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ingredients (from dish or combo) -->
+      <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+        <div class="px-5 py-3 border-b border-elevated/60">
+          <h2 class="font-heading text-lg text-ivory tracking-wide">Ingredients</h2>
+        </div>
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-elevated/40 text-sand text-xs uppercase tracking-widest">
+              <th class="px-5 py-2.5 font-medium">Item</th>
+              <th class="px-5 py-2.5 font-medium text-right">Required</th>
+              <th class="px-5 py-2.5 font-medium text-right">In Stock</th>
+              <th class="px-5 py-2.5 font-medium text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="ing : ${ingredients}"
+                class="border-b border-elevated/40 last:border-0 text-sm">
+              <td class="px-5 py-2.5 text-ivory" th:text="${ing.groceryItem.name}"></td>
+              <td class="px-5 py-2.5 text-sand text-right"
+                  th:text="${ing.quantityRequired} + ' ' + ${ing.groceryItem.unit}"></td>
+              <td class="px-5 py-2.5 text-right"
+                  th:classappend="${ing.groceryItem.quantityInStock.compareTo(ing.quantityRequired) >= 0}
+                                  ? 'text-emerald-400' : 'text-red-400'"
+                  th:text="${ing.groceryItem.quantityInStock} + ' ' + ${ing.groceryItem.unit}"></td>
+              <td class="px-5 py-2.5 text-right">
+                <span th:if="${ing.groceryItem.quantityInStock.compareTo(ing.quantityRequired) >= 0}"
+                      class="text-xs text-emerald-400">✓</span>
+                <span th:unless="${ing.groceryItem.quantityInStock.compareTo(ing.quantityRequired) >= 0}"
+                      class="text-xs text-red-400">✗ Low</span>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(ingredients)}">
+              <td colspan="4" class="px-5 py-6 text-center text-sand text-sm">
+                No ingredients recorded.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Availability log -->
+      <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+        <div class="px-5 py-3 border-b border-elevated/60">
+          <h2 class="font-heading text-lg text-ivory tracking-wide">Availability Log</h2>
+        </div>
+        <div th:if="${#lists.isEmpty(availabilityLog)}"
+             class="px-5 py-8 text-center text-sand text-sm">No override history.</div>
+        <table th:unless="${#lists.isEmpty(availabilityLog)}" class="w-full text-left">
+          <thead>
+            <tr class="border-b border-elevated/40 text-sand text-xs uppercase tracking-widest">
+              <th class="px-5 py-2.5 font-medium">Date</th>
+              <th class="px-5 py-2.5 font-medium">Before</th>
+              <th class="px-5 py-2.5 font-medium">After</th>
+              <th class="px-5 py-2.5 font-medium">By</th>
+              <th class="px-5 py-2.5 font-medium">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="log : ${availabilityLog}"
+                class="border-b border-elevated/40 last:border-0 text-xs text-sand">
+              <td class="px-5 py-2.5"
+                  th:text="${#temporals.format(log.changedAt, 'dd MMM yyyy HH:mm')}"></td>
+              <td class="px-5 py-2.5">
+                <span th:if="${log.overrideBefore == null}" class="text-sand/50">AUTO</span>
+                <span th:if="${log.overrideBefore != null and log.overrideBefore}"
+                      class="text-emerald-400/80">FORCED ON</span>
+                <span th:if="${log.overrideBefore != null and !log.overrideBefore}"
+                      class="text-red-400/80">FORCED OFF</span>
+              </td>
+              <td class="px-5 py-2.5">
+                <span th:if="${log.overrideAfter == null}" class="text-sand/50">AUTO</span>
+                <span th:if="${log.overrideAfter != null and log.overrideAfter}"
+                      class="text-emerald-400/80">FORCED ON</span>
+                <span th:if="${log.overrideAfter != null and !log.overrideAfter}"
+                      class="text-red-400/80">FORCED OFF</span>
+              </td>
+              <td class="px-5 py-2.5 text-sand/60 text-xs font-mono"
+                  th:text="${log.changedBy != null ? (usernameMap.get(log.changedBy) ?: log.changedBy) : '—'}"></td>
+              <td class="px-5 py-2.5 text-sand/60 truncate max-w-xs"
+                  th:text="${log.reason != null ? log.reason : '—'}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="space-y-5">
+
+      <!-- Price history -->
+      <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+        <div class="px-5 py-3 border-b border-elevated/60">
+          <h2 class="font-heading text-lg text-ivory tracking-wide">Price History</h2>
+        </div>
+        <div th:if="${#lists.isEmpty(priceHistory)}"
+             class="px-5 py-8 text-center text-sand text-sm">No price changes recorded.</div>
+        <table th:unless="${#lists.isEmpty(priceHistory)}" class="w-full text-left">
+          <thead>
+            <tr class="border-b border-elevated/40 text-sand text-xs uppercase tracking-widest">
+              <th class="px-5 py-2.5 font-medium">Date</th>
+              <th class="px-5 py-2.5 font-medium text-right">Old Price</th>
+              <th class="px-5 py-2.5 font-medium text-right">New Price</th>
+              <th class="px-5 py-2.5 font-medium">Changed By</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="ph : ${priceHistory}"
+                class="border-b border-elevated/40 last:border-0 text-sm">
+              <td class="px-5 py-2.5 text-sand text-xs"
+                  th:text="${#temporals.format(ph.changedAt, 'dd MMM yyyy HH:mm')}"></td>
+              <td class="px-5 py-2.5 text-sand text-right"
+                  th:text="'₹' + ${#numbers.formatDecimal(ph.oldPrice, 1, 2)}"></td>
+              <td class="px-5 py-2.5 text-accent font-medium text-right"
+                  th:text="'₹' + ${#numbers.formatDecimal(ph.newPrice, 1, 2)}"></td>
+              <td class="px-5 py-2.5 text-sand/60 text-xs font-mono"
+                  th:text="${ph.changedBy != null ? (usernameMap.get(ph.changedBy) ?: ph.changedBy) : '—'}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Inline price edit -->
+      <div sec:authorize="hasRole('ADMIN')"
+           class="bg-surface rounded-xl border border-elevated/60 p-5">
+        <h2 class="font-heading text-lg text-ivory tracking-wide mb-4">Update Price</h2>
+        <div th:id="'price-cell-' + ${item.id}"
+             th:with="standalone=${true}">
+          <th:block th:replace="~{menu/admin/fragments/price-cell :: price-cell}"></th:block>
+        </div>
+      </div>
+
+      <!-- Inline availability override -->
+      <div sec:authorize="hasRole('ADMIN')"
+           class="bg-surface rounded-xl border border-elevated/60 p-5">
+        <h2 class="font-heading text-lg text-ivory tracking-wide mb-4">Availability Override</h2>
+        <div th:id="'avail-cell-' + ${item.id}"
+             th:with="standalone=${true}">
+          <th:block th:replace="~{menu/admin/fragments/availability-cell :: availability-cell}"></th:block>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Billing — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Billing</h1>
+      <p class="text-sand text-sm mt-0.5">Active orders and table status</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="/bills/history"
+         class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                hover:border-ivory/40 hover:text-ivory transition-colors">
+        History
+      </a>
+      <a href="/bills/new"
+         class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
+                font-heading tracking-widest text-sm
+                hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        + NEW BILL
+      </a>
+    </div>
+  </div>
+
+  <!-- Flash -->
+  <div th:if="${param.cancelled}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-sand/30 text-sand text-sm">
+    Bill cancelled.
+  </div>
+
+  <!-- Table status strip -->
+  <div class="mb-6">
+    <p class="text-sand text-xs uppercase tracking-widest mb-3">Table Status</p>
+    <div class="flex flex-wrap gap-3">
+      <button onclick="filterByTable(null)"
+              class="px-3 py-1.5 text-xs rounded-lg border border-elevated text-sand
+                     hover:border-accent/40 hover:text-accent transition-colors">
+        All tables
+      </button>
+      <th:block th:each="t : ${tables}">
+        <button th:if="${t.status.name() == 'FREE'}"
+                th:attr="onclick='filterByTable(' + ${t.id} + ')'"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
+                       border border-emerald-400/30 bg-emerald-400/5 text-emerald-400
+                       hover:bg-emerald-400/15 transition-colors">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span th:text="${t.name}"></span>
+        </button>
+        <button th:unless="${t.status.name() == 'FREE'}"
+                th:attr="onclick='filterByTable(' + ${t.id} + ')'"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
+                       border border-amber-400/30 bg-amber-400/5 text-amber-400
+                       hover:bg-amber-400/15 transition-colors">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+          <span th:text="${t.name}"></span>
+          <span th:with="cnt=${activeBillsByTable[t.id]}"
+                th:if="${cnt != null}"
+                class="ml-0.5 px-1 py-0.5 rounded text-xs bg-amber-400/20 leading-none"
+                th:text="${cnt}"></span>
+        </button>
+      </th:block>
+    </div>
+  </div>
+
+  <!-- Active bills table -->
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+    <div class="px-4 py-3 border-b border-elevated/60 flex items-center justify-between">
+      <h2 class="font-heading text-lg text-ivory tracking-wide">Active Bills</h2>
+      <span class="text-sand text-xs" th:text="${#lists.size(activeBills)} + ' active'"></span>
+    </div>
+
+    <div id="active-bills-table"
+         hx-get="/bills"
+         hx-trigger="every 5s"
+         hx-select="#active-bills-table"
+         hx-target="this"
+         hx-swap="outerHTML">
+
+      <div th:if="${#lists.isEmpty(activeBills)}"
+           class="py-16 text-center text-sand text-sm">
+        No active bills. <a href="/bills/new" class="text-accent hover:underline">Start one?</a>
+      </div>
+
+      <table th:unless="${#lists.isEmpty(activeBills)}" class="w-full text-left">
+        <thead>
+          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+            <th class="px-4 py-3 font-medium">Bill #</th>
+            <th class="px-4 py-3 font-medium">Table</th>
+            <th class="px-4 py-3 font-medium">Customer</th>
+            <th class="px-4 py-3 font-medium">Status</th>
+            <th class="px-4 py-3 font-medium">Total</th>
+            <th class="px-4 py-3 font-medium">Opened</th>
+            <th class="px-4 py-3 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="b : ${activeBills}"
+              th:attr="data-table-id=${b.cafeTable.id}"
+              class="border-b border-elevated/40 last:border-0 hover:bg-elevated/20 transition-colors">
+
+            <td class="px-4 py-3 font-mono text-accent text-sm">
+              <span th:text="${b.billNumber}"></span>
+              <span th:if="${b.studentDiscountApplied}" title="Student discount applied">🎓</span>
+            </td>
+
+            <td class="px-4 py-3 text-ivory text-sm" th:text="${b.cafeTable.name}"></td>
+
+            <td class="px-4 py-3 text-sand text-sm"
+                th:text="${b.customer != null} ? ${b.customer.name} : 'Walk-in'"></td>
+
+            <td class="px-4 py-3">
+              <span th:switch="${b.status.name()}">
+                <span th:case="'DRAFT'"
+                      class="px-2 py-0.5 text-xs border rounded-full text-sand border-sand/30 bg-sand/5">
+                  Draft
+                </span>
+                <span th:case="'CONFIRMED'"
+                      class="px-2 py-0.5 text-xs border rounded-full text-amber-400 border-amber-400/40 bg-amber-400/10">
+                  Confirmed
+                </span>
+                <span th:case="*"
+                      class="px-2 py-0.5 text-xs border rounded-full text-sand border-sand/30">
+                  [[${b.status.name()}]]
+                </span>
+              </span>
+            </td>
+
+            <td class="px-4 py-3 text-ivory text-sm font-medium"
+                th:text="${b.totalAmount != null} ? '₹' + ${#numbers.formatDecimal(b.totalAmount, 1, 2)} : '—'"></td>
+
+            <td class="px-4 py-3 text-sand text-xs"
+                th:text="${b.createdAt != null} ? ${#temporals.format(b.createdAt, 'HH:mm')} : ''"></td>
+
+            <td class="px-4 py-3">
+              <span th:if="${qrActiveBillIds != null and qrActiveBillIds.contains(b.id)}"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full
+                           bg-accent/10 border border-accent/30 text-accent text-xs">
+                QR
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <a th:href="@{/bills/{id}(id=${b.id})}"
+                 class="text-xs px-2.5 py-1 rounded border border-accent/30 text-accent
+                        hover:bg-accent/10 transition-colors">
+                Open
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+function filterByTable(tableId) {
+  document.querySelectorAll('[data-table-id]').forEach(function(row) {
+    row.style.display = (tableId === null || row.dataset.tableId === String(tableId)) ? '' : 'none';
+  });
+}
+</script>
+
+</main>
+</body>
+</html>

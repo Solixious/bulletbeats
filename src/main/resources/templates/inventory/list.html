@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Inventory — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-7xl mx-auto">
+
+  <!-- Page header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Inventory</h1>
+      <p class="text-sand text-sm mt-0.5">Stock levels and item management</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+         href="/inventory/replenishment"
+         class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                hover:border-ivory/40 hover:text-ivory transition-colors">
+        Replenishment
+      </a>
+      <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+         href="/inventory/suppliers"
+         class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                hover:border-ivory/40 hover:text-ivory transition-colors">
+        Suppliers
+      </a>
+      <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+         href="/inventory/new"
+         class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
+                font-heading tracking-widest text-sm
+                hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        + ADD ITEM
+      </a>
+    </div>
+  </div>
+
+  <!-- Flash toast -->
+  <div th:if="${param.created}"
+       id="flash-created"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-accent/30
+              text-accent text-xs font-medium shadow-neon-sm whitespace-nowrap">
+    <span class="text-accent text-xs">✓</span> Item created successfully.
+  </div>
+  <div th:if="${param.updated}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Item updated.
+  </div>
+
+  <!-- Low stock banner -->
+  <div id="low-stock-banner">
+    <div th:if="${lowStockCount > 0}"
+         class="mb-5 flex items-center gap-3 px-4 py-3 rounded-lg
+                bg-amber-400/10 border border-amber-400/40 text-amber-400 text-sm"
+         style="box-shadow: 0 0 16px rgba(251,191,36,0.15)">
+      <span class="text-base">⚠</span>
+      <span><strong th:text="${lowStockCount}"></strong> item<span th:if="${lowStockCount > 1}">s</span> running low — check replenishment.</span>
+      <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+         href="/inventory/replenishment"
+         class="ml-auto text-xs underline hover:no-underline">
+        View requests →
+      </a>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+
+    <!-- Empty state -->
+    <div th:if="${#lists.isEmpty(items)}"
+         class="py-16 text-center text-sand text-sm">
+      No items in inventory yet.
+      <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+         href="/inventory/new" class="text-accent hover:underline ml-1">Add one?</a>
+    </div>
+
+    <table th:unless="${#lists.isEmpty(items)}" class="w-full text-left">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-4 py-3 font-medium">Name</th>
+          <th class="px-4 py-3 font-medium">Unit</th>
+          <th class="px-4 py-3 font-medium">Stock</th>
+          <th class="px-4 py-3 font-medium">Threshold</th>
+          <th class="px-4 py-3 font-medium">Default Supplier</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <th:block th:each="item : ${items}">
+
+          <!-- Data row -->
+          <tr th:with="isOnOrder=${item.lowStock and onOrderItemIds.contains(item.id)}"
+              th:classappend="${item.lowStock and not isOnOrder}
+                              ? 'border-l-4 border-amber-500 bg-amber-500/5 border-b border-b-elevated/40'
+                              : (${isOnOrder}
+                                 ? 'border-l-4 border-blue-500/60 bg-blue-500/5 border-b border-b-elevated/40'
+                                 : 'border-b border-elevated/40 hover:bg-elevated/20')"
+              class="transition-colors duration-100">
+
+            <td class="px-4 py-3">
+              <a th:href="@{/inventory/{id}(id=${item.id})}"
+                 class="text-ivory text-sm font-medium hover:text-accent transition-colors"
+                 th:text="${item.name}">Item Name</a>
+            </td>
+
+            <td class="px-4 py-3 text-sand text-sm font-mono" th:text="${item.unit}"></td>
+
+            <td class="px-4 py-3">
+              <span th:id="'stock-qty-' + ${item.id}"
+                    class="font-mono text-sm font-bold"
+                    th:classappend="${item.lowStock and not isOnOrder} ? 'text-red-400' : (${isOnOrder} ? 'text-blue-400' : 'text-ivory')"
+                    th:text="${#numbers.formatDecimal(item.quantityInStock, 1, 3)}"></span>
+            </td>
+
+            <td class="px-4 py-3 text-sand text-sm font-mono"
+                th:text="${#numbers.formatDecimal(item.minThreshold, 1, 3)}"></td>
+
+            <td class="px-4 py-3 text-sand text-sm"
+                th:text="${item.defaultSupplier != null} ? ${item.defaultSupplier.name} : '—'"></td>
+
+            <td class="px-4 py-3">
+              <div th:id="'stock-status-' + ${item.id}">
+                <span th:if="${item.lowStock and not isOnOrder}"
+                      class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                             text-amber-400 border-amber-400/40 bg-amber-400/10">
+                  Low Stock
+                </span>
+                <span th:if="${isOnOrder}"
+                      class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                             text-blue-400 border-blue-400/40 bg-blue-400/10">
+                  On Order
+                </span>
+                <span th:unless="${item.lowStock}"
+                      class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                             text-emerald-400 border-emerald-400/40 bg-emerald-400/10">
+                  OK
+                </span>
+              </div>
+            </td>
+
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <a th:href="@{/inventory/{id}(id=${item.id})}"
+                   class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                          hover:border-ivory/40 hover:text-ivory transition-colors">
+                  View
+                </a>
+                <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+                   th:href="@{/inventory/{id}/edit(id=${item.id})}"
+                   class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                          hover:border-ivory/40 hover:text-ivory transition-colors">
+                  Edit
+                </a>
+                <button th:attr="hx-get='/inventory/' + ${item.id} + '/adjust-form',
+                                 hx-target='#adjust-panel-' + ${item.id}"
+                        hx-swap="innerHTML"
+                        class="text-xs px-2.5 py-1 rounded border border-accent/40 text-accent
+                               hover:bg-accent/10 transition-colors cursor-pointer">
+                  Adjust
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Inline adjust panel row -->
+          <tr>
+            <td colspan="7" class="p-0">
+              <div th:id="'adjust-panel-' + ${item.id}"></div>
+            </td>
+          </tr>
+
+        </th:block>
+      </tbody>
+    </table>
+
+  </div>
+
+  <script th:if="${param.created}">
+    const _fb = document.getElementById('flash-created');
+    if (_fb) setTimeout(() => { _fb.style.opacity = '0'; setTimeout(() => _fb.style.display = 'none', 400); }, 3000);
+  </script>
+
+  <!-- Item count -->
+  <p th:unless="${#lists.isEmpty(items)}"
+     class="mt-3 text-sand text-xs text-right"
+     th:text="${#lists.size(items)} + ' item' + (${#lists.size(items)} == 1 ? '' : 's')">
+  </p>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--
+  Outer polling container for the kitchen view.
+  id="detail-left-col" is the stable anchor used by:
+    - detail.html (CONFIRMED initial load)
+    - confirm-success OOB swap (staff confirm)
+    - left-panel endpoint (QR confirm detected via DRAFT poll)
+  hx-target="#kitchen-view" polls for new items added after confirmation.
+-->
+<div th:fragment="kitchen-view-wrap"
+     id="detail-left-col"
+     th:attr="hx-get=@{/bills/{id}/kitchen(id=${bill.id})}"
+     hx-trigger="every 5s"
+     hx-target="#kitchen-view"
+     hx-swap="outerHTML">
+  <th:block th:replace="~{billing/fragments/kitchen-view :: kitchen-view}"/>
+</div>
+
+</body>
+</html>

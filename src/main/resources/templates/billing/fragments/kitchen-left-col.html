@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<th:block th:fragment="kitchen-left-col">
+
+  <!-- Poll for new items added after confirmation -->
+  <div th:attr="hx-get=@{/bills/{id}/kitchen(id=${bill.id})}"
+       hx-trigger="every 5s"
+       hx-target="#kitchen-view"
+       hx-swap="outerHTML"
+       class="h-0 overflow-hidden pointer-events-none" aria-hidden="true"></div>
+
+  <th:block th:replace="~{billing/fragments/kitchen-view :: kitchen-view}"/>
+
+</th:block>
+
+</body>
+</html>

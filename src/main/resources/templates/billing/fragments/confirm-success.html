@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="confirm-success">
+
+  <!-- Main response: replaces #bill-status via outerHTML -->
+  <th:block th:replace="~{billing/fragments/bill-status :: bill-status}"/>
+
+  <!-- OOB: swap left column content to kitchen view.
+       innerHTML swap keeps #detail-left-col in place — no duplicate IDs possible. -->
+  <div hx-swap-oob="innerHTML:#detail-left-col">
+    <th:block th:replace="~{billing/fragments/kitchen-left-col :: kitchen-left-col}"/>
+  </div>
+
+</th:block>
+</body>
+</html>

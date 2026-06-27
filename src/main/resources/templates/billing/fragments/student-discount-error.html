@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="student-discount-error" id="student-discount-error"
+     class="mb-3 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+  <span th:text="${reason}">Error</span>
+  <script>
+    (function () {
+      var el = document.getElementById('student-discount-error');
+      if (el) { setTimeout(function () { el.innerHTML = ''; el.className = ''; }, 3000); }
+    })();
+  </script>
+</div>
+</body>
+</html>

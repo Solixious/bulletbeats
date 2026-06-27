@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<span th:fragment="save-status" class="inline-block">
+  <span th:if="${error != null}"
+        class="text-xs text-red-400 ml-2"
+        th:text="${error}"></span>
+  <span th:unless="${error != null}"
+        class="save-ok-badge text-xs text-emerald-400 ml-2 transition-opacity duration-500">
+    ✓ Saved
+  </span>
+  <script>
+    (function() {
+      var badges = document.querySelectorAll('.save-ok-badge');
+      var badge = badges[badges.length - 1];
+      if (badge) { setTimeout(function(){ badge.style.opacity = '0'; }, 2000); }
+    })();
+  </script>
+</span>
+
+</body>
+</html>

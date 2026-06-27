@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Team Members — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <!-- Page header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Team Members</h1>
+      <p class="text-sand text-sm mt-0.5">Manage staff accounts and access</p>
+    </div>
+    <a sec:authorize="hasRole('ADMIN')"
+       href="/admin/users/new"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
+              font-heading tracking-widest text-sm
+              hover:shadow-neon hover:brightness-110 transition-all duration-200">
+      + NEW MEMBER
+    </a>
+  </div>
+
+  <!-- Flash messages -->
+  <div th:if="${param.created}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Team member created successfully.
+  </div>
+  <div th:if="${param.updated}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Team member updated.
+  </div>
+  <div th:if="${param.passwordReset}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Password reset successfully.
+  </div>
+
+  <!-- Table -->
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+
+    <!-- Empty state -->
+    <div th:if="${#lists.isEmpty(users)}"
+         class="py-16 text-center text-sand text-sm">
+      No team members found.
+      <a href="/admin/users/new" class="text-accent hover:underline ml-1">Add one?</a>
+    </div>
+
+    <table th:unless="${#lists.isEmpty(users)}" class="w-full text-left">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-4 py-3 font-medium">Full Name</th>
+          <th class="px-4 py-3 font-medium">Username</th>
+          <th class="px-4 py-3 font-medium">Role</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <th:block th:each="user : ${users}">
+          <tr th:replace="~{admin/users/fragments/user-row :: user-row}"></tr>
+        </th:block>
+      </tbody>
+    </table>
+
+  </div>
+
+  <!-- Member count -->
+  <p th:unless="${#lists.isEmpty(users)}"
+     class="mt-3 text-sand text-xs text-right"
+     th:text="${#lists.size(users)} + ' member' + (${#lists.size(users)} == 1 ? '' : 's')">
+    0 members
+  </p>
+
+</main>
+</body>
+</html>

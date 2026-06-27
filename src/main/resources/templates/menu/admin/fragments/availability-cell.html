@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Display cell -->
+<td th:fragment="availability-cell"
+    th:id="'avail-cell-' + ${item.id}"
+    class="px-4 py-3">
+  <div class="flex flex-col gap-1">
+
+    <!-- Override badge -->
+    <span th:if="${item.availabilityOverride == null}"
+          class="text-xs text-sand/70 font-mono uppercase tracking-wide">AUTO</span>
+    <span th:if="${item.availabilityOverride != null and item.availabilityOverride}"
+          class="text-xs text-emerald-400/80 font-mono uppercase tracking-wide">FORCED ON</span>
+    <span th:if="${item.availabilityOverride != null and !item.availabilityOverride}"
+          class="text-xs text-red-400/80 font-mono uppercase tracking-wide">FORCED OFF</span>
+
+    <!-- Effective availability dot -->
+    <span th:if="${item.available}"
+          class="inline-flex items-center gap-1 text-xs text-emerald-400">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span> Available
+    </span>
+    <span th:unless="${item.available}"
+          class="inline-flex items-center gap-1 text-xs text-red-400">
+      <span class="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0"></span> Unavailable
+    </span>
+
+    <!-- Edit trigger -->
+    <button th:attr="hx-get='/admin/menu/' + ${item.id} + '/availability-edit',
+                     hx-target='#avail-cell-' + ${item.id}"
+            hx-swap="outerHTML"
+            class="text-xs text-sand/40 hover:text-accent transition-colors self-start">
+      Edit ✎
+    </button>
+
+  </div>
+</td>
+
+<!-- Edit cell -->
+<td th:fragment="availability-edit"
+    th:id="'avail-cell-' + ${item.id}"
+    class="px-4 py-3">
+  <form th:attr="hx-patch='/admin/menu/' + ${item.id} + '/availability',
+                 hx-target='#avail-cell-' + ${item.id}"
+        hx-swap="outerHTML"
+        class="space-y-2">
+
+    <!-- Radio options -->
+    <div class="space-y-1.5">
+      <label class="flex items-center gap-2 cursor-pointer text-xs text-sand hover:text-ivory">
+        <input type="radio" name="override" value=""
+               th:checked="${item.availabilityOverride == null}"
+               class="accent-accent"/>
+        Auto (stock-based)
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer text-xs text-emerald-400/80 hover:text-emerald-400">
+        <input type="radio" name="override" value="true"
+               th:checked="${item.availabilityOverride != null and item.availabilityOverride}"
+               class="accent-accent"/>
+        Force Available
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer text-xs text-red-400/80 hover:text-red-400">
+        <input type="radio" name="override" value="false"
+               th:checked="${item.availabilityOverride != null and !item.availabilityOverride}"
+               class="accent-accent"/>
+        Force Unavailable
+      </label>
+    </div>
+
+    <!-- Reason -->
+    <input type="text" name="reason" maxlength="255" placeholder="Reason (optional)"
+           class="w-full bg-base border border-elevated/80 focus:border-accent
+                  rounded px-2 py-1 text-ivory text-xs outline-none
+                  placeholder-sand/40 focus:shadow-neon-sm transition-all"/>
+
+    <!-- Actions -->
+    <div class="flex gap-1.5">
+      <button type="submit"
+              class="text-xs px-2.5 py-1 rounded bg-accent/20 text-accent
+                     hover:bg-accent/30 transition-colors font-bold">
+        Save
+      </button>
+      <button type="button"
+              th:attr="hx-get='/admin/menu/' + ${item.id} + '/availability-cell',
+                       hx-target='#avail-cell-' + ${item.id}"
+              hx-swap="outerHTML"
+              class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                     hover:text-ivory transition-colors">
+        Cancel
+      </button>
+    </div>
+
+  </form>
+</td>
+
+</body>
+</html>

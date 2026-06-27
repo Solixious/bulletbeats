@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="menu-grid">
+  <div th:if="${#lists.isEmpty(menuItems)}"
+       class="py-12 text-center text-sand text-sm">
+    No items found.
+  </div>
+
+  <div th:unless="${#lists.isEmpty(menuItems)}"
+       class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <th:block th:each="item : ${menuItems}">
+
+      <!-- Available: clickable form-card -->
+      <form th:if="${item.isAvailable}"
+            th:attr="hx-post=@{/bills/{id}/items(id=${billId})}"
+            hx-target="#bill-panel"
+            hx-swap="innerHTML">
+        <input type="hidden" name="menuItemId" th:value="${item.id}"/>
+        <input type="hidden" name="quantity" value="1"/>
+        <button type="submit"
+                class="w-full text-left p-3 rounded-xl border border-elevated/60 bg-surface
+                       hover:border-accent/50 hover:bg-elevated/60 active:scale-95
+                       transition-all duration-150 cursor-pointer group">
+          <div th:if="${item.imagePath != null}" class="mb-2 overflow-hidden rounded-lg h-20">
+            <img th:src="@{/menu/images/{p}(p=${item.imagePath})}"
+                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                 th:alt="${item.name}"/>
+          </div>
+          <p class="text-ivory text-xs font-medium leading-tight" th:text="${item.name}"></p>
+          <p class="text-accent text-xs font-bold mt-1"
+             th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}"></p>
+        </button>
+      </form>
+
+      <!-- Unavailable: greyed out, non-clickable -->
+      <div th:unless="${item.isAvailable}"
+           class="text-left p-3 rounded-xl border border-elevated/40 bg-surface/50 opacity-50 cursor-not-allowed">
+        <div th:if="${item.imagePath != null}" class="mb-2 overflow-hidden rounded-lg h-20">
+          <img th:src="@{/menu/images/{p}(p=${item.imagePath})}"
+               class="w-full h-full object-cover grayscale"
+               th:alt="${item.name}"/>
+        </div>
+        <p class="text-sand text-xs font-medium leading-tight" th:text="${item.name}"></p>
+        <p class="text-sand text-xs mt-1"
+           th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}"></p>
+        <!-- auto-mode unavailable = low inventory; admin-forced unavailable = Unavailable -->
+        <p th:if="${item.availabilityOverride == null}"
+           class="text-amber-500/80 text-xs mt-0.5">Low inventory</p>
+        <p th:unless="${item.availabilityOverride == null}"
+           class="text-red-400/70 text-xs mt-0.5">Unavailable</p>
+      </div>
+
+    </th:block>
+  </div>
+</th:block>
+</body>
+</html>

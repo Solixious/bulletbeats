@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Categories — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-4xl mx-auto">
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Categories</h1>
+      <p class="text-sand text-sm mt-0.5">Drag rows to reorder — changes save automatically</p>
+    </div>
+    <a href="/admin/categories/new"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
+              font-heading tracking-widest text-sm
+              hover:shadow-neon hover:brightness-110 transition-all duration-200">
+      + ADD CATEGORY
+    </a>
+  </div>
+
+  <div th:if="${param.created}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Category created successfully.
+  </div>
+  <div th:if="${param.updated}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Category updated.
+  </div>
+  <div th:if="${param.deactivated}"
+       id="flash-deactivated"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-sand/30
+              text-sand text-xs font-medium whitespace-nowrap">
+    Category deactivated.
+  </div>
+  <script th:if="${param.deactivated}">
+    const _fd = document.getElementById('flash-deactivated');
+    if (_fd) setTimeout(() => { _fd.style.opacity = '0'; setTimeout(() => _fd.style.display = 'none', 400); }, 3000);
+  </script>
+  <div th:if="${param.reactivated}"
+       id="flash-reactivated"
+       style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-accent/30
+              text-accent text-xs font-medium shadow-neon-sm whitespace-nowrap">
+    <span>✓</span> Category reactivated.
+  </div>
+  <script th:if="${param.reactivated}">
+    const _fr = document.getElementById('flash-reactivated');
+    if (_fr) setTimeout(() => { _fr.style.opacity = '0'; setTimeout(() => _fr.style.display = 'none', 400); }, 3000);
+  </script>
+
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+
+    <div th:if="${#lists.isEmpty(categories)}"
+         class="py-16 text-center text-sand text-sm">
+      No active categories. <a href="/admin/categories/new" class="text-accent hover:underline ml-1">Add one?</a>
+    </div>
+
+    <table th:unless="${#lists.isEmpty(categories)}" class="w-full text-left">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-4 py-3 font-medium w-10"></th>
+          <th class="px-4 py-3 font-medium w-16">Order</th>
+          <th class="px-4 py-3 font-medium">Name</th>
+          <th class="px-4 py-3 font-medium">Description</th>
+          <th class="px-4 py-3 font-medium text-right">Items</th>
+          <th class="px-4 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="sortable-categories">
+        <tr th:each="cat : ${categories}"
+            th:data-id="${cat.id}"
+            class="border-b border-elevated/40 hover:bg-elevated/20 transition-colors duration-100">
+
+          <td class="px-4 py-3 text-sand drag-handle cursor-grab active:cursor-grabbing select-none">
+            ⠿
+          </td>
+          <td class="px-4 py-3 text-sand text-sm font-mono" th:text="${cat.displayOrder}"></td>
+          <td class="px-4 py-3">
+            <span class="text-ivory text-sm font-medium" th:text="${cat.name}">Name</span>
+          </td>
+          <td class="px-4 py-3 text-sand text-sm" th:text="${cat.description} ?: '—'"></td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-ivory text-sm font-mono"
+                  th:text="${itemCounts[cat.id]} ?: 0"></span>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <a th:href="@{/admin/categories/{id}/edit(id=${cat.id})}"
+                 class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                        hover:border-ivory/40 hover:text-ivory transition-colors">
+                Edit
+              </a>
+              <form th:action="@{/admin/categories/{id}/deactivate(id=${cat.id})}"
+                    method="post" class="inline"
+                    onsubmit="return bbConfirm(this, 'Deactivate this category?')">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-red-500/30 text-red-400
+                               hover:border-red-500/60 hover:bg-red-500/10 transition-colors">
+                  Deactivate
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p th:unless="${#lists.isEmpty(categories)}"
+     class="mt-3 text-sand text-xs text-right"
+     th:text="${#lists.size(categories)} + ' categor' + (${#lists.size(categories)} == 1 ? 'y' : 'ies')">
+  </p>
+
+  <!-- Inactive categories -->
+  <div th:unless="${#lists.isEmpty(inactiveCategories)}" class="mt-8">
+    <h2 class="font-heading text-lg text-sand tracking-wide mb-3">Inactive Categories</h2>
+    <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+            <th class="px-4 py-3 font-medium">Name</th>
+            <th class="px-4 py-3 font-medium">Description</th>
+            <th class="px-4 py-3 font-medium text-right">Active Items</th>
+            <th class="px-4 py-3 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="cat : ${inactiveCategories}"
+              class="border-b border-elevated/40 last:border-0 opacity-60 hover:opacity-80 transition-opacity">
+            <td class="px-4 py-3">
+              <span class="text-ivory text-sm font-medium" th:text="${cat.name}"></span>
+            </td>
+            <td class="px-4 py-3 text-sand text-sm" th:text="${cat.description} ?: '—'"></td>
+            <td class="px-4 py-3 text-right">
+              <span class="text-ivory text-sm font-mono" th:text="${itemCounts[cat.id]} ?: 0"></span>
+            </td>
+            <td class="px-4 py-3">
+              <form th:action="@{/admin/categories/{id}/reactivate(id=${cat.id})}"
+                    method="post" class="inline">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-emerald-500/30 text-emerald-400
+                               hover:border-emerald-500/60 hover:bg-emerald-500/10 transition-colors">
+                  Reactivate
+                </button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SortableJS — categories page only -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script>
+    var sortable = document.getElementById('sortable-categories');
+    if (sortable) {
+      Sortable.create(sortable, {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: function () {
+          var rows = sortable.querySelectorAll('tr[data-id]');
+          var ids = Array.from(rows).map(function(r) { return r.dataset.id; });
+          var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+          var csrfToken  = document.querySelector('meta[name="_csrf"]').content;
+          fetch('/admin/categories/reorder', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'HX-Request': 'true',
+              [csrfHeader]: csrfToken
+            },
+            body: ids.map(function(id) { return 'ids=' + encodeURIComponent(id); }).join('&')
+          });
+        }
+      });
+    }
+  </script>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body><table><tbody>
+
+<tr th:fragment="request-row"
+    th:id="'request-row-' + ${request.id}"
+    class="border-b border-elevated/40 hover:bg-elevated/20 transition-colors">
+
+  <td class="px-4 py-3">
+    <a th:href="@{/inventory/{id}(id=${request.groceryItem.id})}"
+       class="text-ivory text-sm font-medium hover:text-accent transition-colors"
+       th:text="${request.groceryItem.name}">Item</a>
+  </td>
+
+  <td class="px-4 py-3">
+    <span class="font-mono text-sm"
+          th:classappend="${request.groceryItem.lowStock} ? 'text-red-400' : 'text-ivory'"
+          th:text="${#numbers.formatDecimal(request.groceryItem.quantityInStock, 1, 3)} + ' ' + ${request.groceryItem.unit}">
+    </span>
+  </td>
+
+  <td class="px-4 py-3">
+    <input th:if="${request.status.name() == 'PENDING'}"
+           type="number" name="qty" step="0.001" min="0.001"
+           th:value="${request.requestedQty}"
+           th:attr="hx-post=@{/inventory/replenishment/{id}/update-qty(id=${request.id})},
+                    hx-target='#request-row-' + ${request.id}"
+           hx-swap="outerHTML"
+           hx-trigger="change"
+           hx-include="this"
+           class="w-28 bg-base border border-elevated/60 focus:border-accent rounded
+                  px-2 py-1 text-ivory text-sm font-mono outline-none
+                  transition-colors focus:shadow-neon-sm"/>
+    <span th:unless="${request.status.name() == 'PENDING'}"
+          class="text-ivory text-sm font-mono"
+          th:text="${#numbers.formatDecimal(request.requestedQty, 1, 3)}">
+    </span>
+  </td>
+
+  <td class="px-4 py-3 text-sand text-xs"
+      th:text="${#temporals.format(request.createdAt, 'dd MMM yyyy, HH:mm')}"></td>
+
+  <!-- Supplier column -->
+  <td class="px-4 py-3">
+    <select th:if="${request.status.name() == 'PENDING'}"
+            name="supplierId"
+            th:id="'supplier-' + ${request.id}"
+            class="bg-base border border-elevated/60 focus:border-accent rounded
+                   px-2 py-1 text-ivory text-xs outline-none transition-colors
+                   focus:shadow-neon-sm cursor-pointer w-36">
+      <option value="">No supplier</option>
+      <option th:each="s : ${suppliers}"
+              th:value="${s.id}"
+              th:text="${s.name}"
+              th:selected="${request.groceryItem.defaultSupplier != null and request.groceryItem.defaultSupplier.id == s.id}">
+      </option>
+    </select>
+    <span th:unless="${request.status.name() == 'PENDING'}"
+          class="text-sand text-xs"
+          th:text="${request.groceryItem.defaultSupplier != null} ? ${request.groceryItem.defaultSupplier.name} : '—'">
+    </span>
+  </td>
+
+  <!-- Actions column -->
+  <td class="px-4 py-3">
+    <th:block th:if="${request.status.name() != 'PENDING'}">
+      <span class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase"
+            th:classappend="${request.status.name() == 'APPROVED'}
+                            ? 'text-accent border-accent/40 bg-accent/10'
+                            : 'text-sand border-sand/40 bg-sand/10'"
+            th:text="${request.status}">
+      </span>
+    </th:block>
+
+    <div th:if="${request.status.name() == 'PENDING'}" class="flex gap-2">
+      <button th:attr="hx-post=@{/inventory/replenishment/{id}/approve(id=${request.id})},
+                       hx-target='#request-row-' + ${request.id},
+                       hx-include='#supplier-' + ${request.id}"
+              hx-swap="delete"
+              class="px-2.5 py-1 text-xs rounded border border-accent/40 text-accent
+                     hover:bg-accent/10 transition-colors cursor-pointer">
+        Approve
+      </button>
+      <button th:attr="hx-post=@{/inventory/replenishment/{id}/cancel(id=${request.id})},
+                       hx-target='#request-row-' + ${request.id},
+                       onclick='bbConfirmHtmx(this, \'Cancel replenishment request for ' + ${request.groceryItem.name} + '?\')'"
+              hx-swap="delete"
+              hx-trigger="confirmed"
+              class="px-2.5 py-1 text-xs rounded border border-red-500/40 text-red-400
+                     hover:bg-red-500/10 transition-colors cursor-pointer">
+        Cancel
+      </button>
+    </div>
+  </td>
+</tr>
+
+</tbody></table></body>
+</html>

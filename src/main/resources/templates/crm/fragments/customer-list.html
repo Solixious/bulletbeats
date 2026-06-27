@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="customer-list" id="customer-list">
+
+  <div th:if="${#lists.isEmpty(customers)}"
+       class="py-12 text-center text-sand text-sm">
+    No customers found.
+    <span class="block mt-1 text-sand/60 text-xs">
+      Customers are created when a bill is raised.
+    </span>
+  </div>
+
+  <table th:unless="${#lists.isEmpty(customers)}" class="w-full text-left text-sm">
+    <thead>
+      <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+        <th class="px-4 py-3 font-medium">Name</th>
+        <th class="px-4 py-3 font-medium">Phone</th>
+        <th class="px-4 py-3 font-medium text-right">Visits</th>
+        <th class="px-4 py-3 font-medium text-right">Total Spend</th>
+        <th class="px-4 py-3 font-medium text-right">Points</th>
+        <th class="px-4 py-3 font-medium">Joined</th>
+        <th class="px-4 py-3 font-medium">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="c : ${customers}"
+          class="border-b border-elevated/40 hover:bg-elevated/20 transition-colors duration-100">
+
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-2">
+            <span class="text-ivory font-medium" th:text="${c.name}"></span>
+            <span th:if="${c.isVip}"
+                  class="px-1.5 py-0.5 text-xs font-bold rounded-full border
+                         text-accent border-accent/40 bg-accent/10 shadow-neon-sm">
+              ⭐ VIP
+            </span>
+          </div>
+        </td>
+
+        <td class="px-4 py-3 text-sand font-mono text-xs" th:text="${c.phone}"></td>
+
+        <td class="px-4 py-3 text-sand text-right font-mono text-sm"
+            th:text="${c.visitCount}"></td>
+
+        <td class="px-4 py-3 text-right font-mono text-sm"
+            th:text="'₹' + ${#numbers.formatDecimal(c.totalSpend, 1, 2)}"></td>
+
+        <td class="px-4 py-3 text-sand text-right font-mono text-sm"
+            th:text="${c.loyaltyPoints}"></td>
+
+        <td class="px-4 py-3 text-sand text-xs"
+            th:text="${c.createdAt != null ? #temporals.format(c.createdAt, 'dd MMM yyyy') : '—'}"></td>
+
+        <td class="px-4 py-3">
+          <a th:href="@{/customers/{id}(id=${c.id})}"
+             class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                    hover:border-ivory/40 hover:text-ivory transition-colors">
+            View
+          </a>
+        </td>
+
+      </tr>
+    </tbody>
+  </table>
+
+  <p th:unless="${#lists.isEmpty(customers)}"
+     class="px-4 py-2.5 text-sand text-xs border-t border-elevated/40"
+     th:text="${#lists.size(customers)} + ' customer' + (${#lists.size(customers)} == 1 ? '' : 's')">
+  </p>
+
+</div>
+
+</body>
+</html>

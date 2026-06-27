@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Tables — Floor Plan — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-5 flex flex-col gap-4" style="height: calc(100vh - 48px); overflow: hidden;">
+
+  <!-- ── Header ────────────────────────────────────────────────── -->
+  <div class="flex items-center justify-between flex-shrink-0">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Tables</h1>
+      <p class="text-sand text-sm mt-0.5">Drag to rearrange · click to select</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="openAddTableModal()"
+              class="px-4 py-2 rounded-lg bg-accent text-base font-heading tracking-widest text-sm
+                     hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        + ADD TABLE
+      </button>
+      <a href="/admin/tables/list"
+         class="px-3 py-2 rounded-lg border border-elevated/60 text-sand text-xs
+                font-heading tracking-widest hover:border-sand/40 hover:text-ivory transition-colors">
+        LIST VIEW
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Flash messages ────────────────────────────────────────── -->
+  <div th:if="${param.created}" id="flash-created"
+       style="transition:opacity 0.4s ease;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border border-accent/30 text-accent text-xs font-medium whitespace-nowrap">
+    Table created with QR code.
+  </div>
+  <script th:if="${param.created}">
+    setTimeout(()=>{const e=document.getElementById('flash-created');if(e){e.style.opacity='0';setTimeout(()=>e.style.display='none',400);}},3000);
+  </script>
+
+  <!-- ── Floor tabs row ─────────────────────────────────────────── -->
+  <div class="flex items-center gap-2 flex-shrink-0 min-w-0">
+    <div id="floor-tabs" class="flex items-center gap-1 overflow-x-auto min-w-0 flex-1
+                                 pb-0.5 scrollbar-none" style="scrollbar-width:none"></div>
+    <button onclick="openAddFloorModal()"
+            class="flex-shrink-0 px-3 py-1.5 text-xs rounded-lg border border-elevated/60 text-sand
+                   font-heading tracking-widest hover:border-accent/40 hover:text-accent transition-colors">
+      + FLOOR
+    </button>
+  </div>
+
+  <!-- ── Floor controls bar ─────────────────────────────────────── -->
+  <div id="floor-controls-bar" class="hidden flex-shrink-0 flex items-center gap-4 px-1 py-0.5">
+    <span class="text-xs text-sand/50 uppercase tracking-widest flex-shrink-0">Floor</span>
+
+    <div class="flex items-center gap-1">
+      <span class="text-xs text-sand">W</span>
+      <button onclick="adjustFloor('w',-50)"
+              class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                     hover:border-sand/40 hover:text-ivory transition-colors">−</button>
+      <span id="floor-w-display" class="text-xs text-ivory w-16 text-center tabular-nums">—</span>
+      <button onclick="adjustFloor('w',+50)"
+              class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                     hover:border-sand/40 hover:text-ivory transition-colors">+</button>
+    </div>
+
+    <div class="flex items-center gap-1">
+      <span class="text-xs text-sand">H</span>
+      <button onclick="adjustFloor('h',-50)"
+              class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                     hover:border-sand/40 hover:text-ivory transition-colors">−</button>
+      <span id="floor-h-display" class="text-xs text-ivory w-16 text-center tabular-nums">—</span>
+      <button onclick="adjustFloor('h',+50)"
+              class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                     hover:border-sand/40 hover:text-ivory transition-colors">+</button>
+    </div>
+
+    <div class="w-px h-4 bg-elevated/60 flex-shrink-0"></div>
+
+    <button onclick="addCashCounter()"
+            class="px-3 py-1 text-xs rounded-lg border border-amber-500/40 text-amber-400/80
+                   font-heading tracking-widest hover:border-amber-400/70 hover:text-amber-300
+                   transition-colors flex items-center gap-1.5">
+      <svg width="12" height="8" viewBox="0 0 12 8" fill="none" style="flex-shrink:0">
+        <rect x="0.75" y="0.75" width="10.5" height="6.5" rx="1.5"
+              stroke="currentColor" stroke-width="1.5"/>
+        <line x1="0.75" y1="3" x2="11.25" y2="3" stroke="currentColor" stroke-width="1"/>
+      </svg>
+      CASH COUNTER
+    </button>
+  </div>
+
+  <!-- ── Canvas row ────────────────────────────────────────────── -->
+  <div class="flex gap-3 min-h-0 flex-1">
+
+    <!-- Draw toolbar (left) -->
+    <div id="draw-toolbar"
+         class="hidden flex-shrink-0 flex flex-col items-center gap-1 py-2 px-1
+                bg-surface rounded-xl border border-elevated/60" style="width:40px;">
+      <!-- Select -->
+      <button id="tool-select" onclick="setDrawMode(null)" title="Select / Move (V)"
+              class="tool-btn w-8 h-8 rounded-lg border flex items-center justify-center transition-all">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+          <polygon points="2,1 2,11 5,8 7,12 9,11 7,7 11,6"/>
+        </svg>
+      </button>
+      <div class="w-5 h-px bg-elevated/60 my-0.5"></div>
+      <!-- Wall -->
+      <button id="tool-wall" onclick="setDrawMode('WALL')" title="Draw Wall (W)"
+              class="tool-btn w-8 h-8 rounded-lg border flex items-center justify-center transition-all">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="2" y1="7" x2="12" y2="7"/>
+        </svg>
+      </button>
+      <!-- Door -->
+      <button id="tool-door" onclick="setDrawMode('DOOR')" title="Place Door (D)"
+              class="tool-btn w-8 h-8 rounded-lg border flex items-center justify-center transition-all">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor">
+          <line x1="1" y1="1" x2="11" y2="1" stroke-width="2" stroke-linecap="round"/>
+          <path d="M 11,1 A 10,10 0 0,1 1,11" stroke-width="1" stroke-dasharray="3 2"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- SVG canvas wrapper -->
+    <div class="flex-1 min-w-0 flex flex-col gap-3 min-h-0">
+      <div id="canvas-wrapper"
+           class="flex-1 overflow-auto rounded-xl border border-elevated/60"
+           style="background:#111111; min-height:0;">
+        <div id="canvas-empty"
+             class="h-full flex flex-col items-center justify-center gap-3 text-sand text-sm p-8">
+          <div class="text-4xl opacity-30">🗺</div>
+          <p>No floors yet. Add your first floor to get started.</p>
+          <button onclick="openAddFloorModal()"
+                  class="mt-1 px-4 py-2 rounded-lg border border-elevated/60 text-sand text-xs
+                         font-heading tracking-widest hover:border-accent/40 hover:text-accent transition-colors">
+            + ADD FLOOR
+          </button>
+        </div>
+        <svg id="floor-svg" class="block" style="touch-action:none; display:none; cursor:default;"></svg>
+      </div>
+
+      <!-- Legend -->
+      <div class="flex items-center gap-4 flex-shrink-0 px-1">
+        <span class="flex items-center gap-1.5 text-xs text-sand/70">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Free
+        </span>
+        <span class="flex items-center gap-1.5 text-xs text-sand/70">
+          <span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> Occupied
+        </span>
+        <span class="flex items-center gap-1.5 text-xs text-sand/70">
+          <svg width="14" height="9" viewBox="0 0 14 9" fill="none" style="flex-shrink:0">
+            <rect x="0.75" y="0.75" width="12.5" height="7.5" rx="1.5"
+                  fill="#3d2e00" stroke="#F59E0B" stroke-width="1.5"/>
+            <line x1="0.75" y1="3.5" x2="13.25" y2="3.5" stroke="#F59E0B" stroke-width="1"/>
+          </svg> Cash Counter
+        </span>
+        <span class="flex items-center gap-1.5 text-xs text-sand/70">
+          <span class="inline-block rounded" style="width:14px;height:4px;background:#4a4a4a;"></span> Wall
+        </span>
+        <span class="flex items-center gap-1.5 text-xs text-sand/70">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+               stroke="#6b7280" stroke-width="1.5" style="flex-shrink:0">
+            <line x1="0" y1="0" x2="10" y2="0"/>
+            <path d="M 10,0 A 10,10 0 0,1 0,10" stroke-dasharray="3 2"/>
+          </svg> Door
+        </span>
+        <span class="text-xs text-sand/50 ml-auto">Drag to rearrange</span>
+      </div>
+    </div>
+
+    <!-- ── Action side panel ───────────────────────────────────── -->
+    <div id="action-panel"
+         class="hidden w-56 flex-shrink-0 bg-surface rounded-xl border border-elevated/60 p-4 flex flex-col gap-3">
+
+      <!-- Header -->
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-xs text-sand uppercase tracking-widest font-medium" id="panel-type">Table</p>
+          <h3 class="font-heading text-xl text-ivory tracking-wide mt-0.5" id="panel-name">—</h3>
+        </div>
+        <button onclick="deselectAll()" class="text-sand hover:text-ivory text-lg leading-none mt-0.5">×</button>
+      </div>
+
+      <!-- TABLE content -->
+      <div id="table-panel-content" class="flex flex-col gap-3">
+        <div class="flex flex-col gap-1.5 text-xs">
+          <div class="flex justify-between text-sand">
+            <span>Status</span>
+            <span id="panel-status" class="font-medium text-emerald-400">—</span>
+          </div>
+          <div class="flex justify-between text-sand">
+            <span>Capacity</span>
+            <span id="panel-capacity" class="text-ivory">—</span>
+          </div>
+          <div class="flex justify-between text-sand">
+            <span>Seats on plan</span>
+            <span id="panel-seats" class="text-ivory">—</span>
+          </div>
+        </div>
+
+        <div class="border-t border-elevated/60 pt-3 flex flex-col gap-2">
+          <p class="text-xs text-sand/50 uppercase tracking-widest">Size &amp; Rotation</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-sand w-3">W</span>
+            <div class="flex items-center gap-1 flex-1 justify-end">
+              <button onclick="adjustDim('w',-10)"
+                      class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                             hover:border-sand/40 hover:text-ivory transition-colors">−</button>
+              <span id="panel-width" class="text-xs text-ivory w-12 text-center tabular-nums">—</span>
+              <button onclick="adjustDim('w',+10)"
+                      class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                             hover:border-sand/40 hover:text-ivory transition-colors">+</button>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-sand w-3">H</span>
+            <div class="flex items-center gap-1 flex-1 justify-end">
+              <button onclick="adjustDim('h',-10)"
+                      class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                             hover:border-sand/40 hover:text-ivory transition-colors">−</button>
+              <span id="panel-height" class="text-xs text-ivory w-12 text-center tabular-nums">—</span>
+              <button onclick="adjustDim('h',+10)"
+                      class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                             hover:border-sand/40 hover:text-ivory transition-colors">+</button>
+            </div>
+          </div>
+          <button onclick="rotateCW()"
+                  class="w-full py-1.5 rounded-lg border border-elevated/60 text-sand text-xs
+                         font-heading tracking-widest hover:border-sand/40 hover:text-ivory transition-colors">
+            ↻ ROTATE 90°
+          </button>
+        </div>
+
+        <div class="border-t border-elevated/60 pt-3 flex flex-col gap-2">
+          <button onclick="openEditModal()"
+                  class="w-full py-2 rounded-lg border border-sand/30 text-sand text-xs
+                         font-heading tracking-widest hover:border-ivory/40 hover:text-ivory transition-colors">
+            EDIT
+          </button>
+          <button onclick="confirmDeactivate()"
+                  class="w-full py-2 rounded-lg border border-red-500/30 text-red-400 text-xs
+                         font-heading tracking-widest hover:border-red-500/60 hover:bg-red-500/10 transition-colors">
+            DEACTIVATE
+          </button>
+        </div>
+
+        <div class="border-t border-elevated/60 pt-3">
+          <a id="panel-qr-link" href="#"
+             class="flex items-center gap-1.5 text-xs text-sand hover:text-accent transition-colors">
+            <span>↓</span> Download QR
+          </a>
+        </div>
+      </div>
+
+      <!-- ELEMENT content -->
+      <div id="element-panel-content" class="hidden flex flex-col gap-3">
+
+        <!-- Size controls (CASH_COUNTER only) -->
+        <div id="el-size-controls" class="hidden border-t border-elevated/60 pt-3 flex flex-col gap-2">
+          <p class="text-xs text-sand/50 uppercase tracking-widest">Size &amp; Rotation</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-sand w-3">W</span>
+            <div class="flex items-center gap-1 flex-1 justify-end">
+              <button onclick="adjustElement('w',-10)"
+                      class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                             hover:border-sand/40 hover:text-ivory transition-colors">−</button>
+              <span id="el-width-display" class="text-xs text-ivory w-12 text-center tabular-nums">—</span>
+              <button onclick="adjustElement('w',+10)"
+                      class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                             hover:border-sand/40 hover:text-ivory transition-colors">+</button>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-sand w-3">H</span>
+            <div class="flex items-center gap-1 flex-1 justify-end">
+              <button onclick="adjustElement('h',-10)"
+                      class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                             hover:border-sand/40 hover:text-ivory transition-colors">−</button>
+              <span id="el-height-display" class="text-xs text-ivory w-12 text-center tabular-nums">—</span>
+              <button onclick="adjustElement('h',+10)"
+                      class="w-6 h-6 rounded border border-elevated/60 text-sand text-xs leading-none
+                             hover:border-sand/40 hover:text-ivory transition-colors">+</button>
+            </div>
+          </div>
+          <button onclick="rotateElement()"
+                  class="w-full py-1.5 rounded-lg border border-elevated/60 text-sand text-xs
+                         font-heading tracking-widest hover:border-sand/40 hover:text-ivory transition-colors">
+            ↻ ROTATE 90°
+          </button>
+        </div>
+
+        <div class="border-t border-elevated/60 pt-3 flex flex-col gap-2">
+          <button id="el-rotate-btn" onclick="rotateElement()"
+                  class="hidden w-full py-1.5 rounded-lg border border-elevated/60 text-sand text-xs
+                         font-heading tracking-widest hover:border-sand/40 hover:text-ivory transition-colors">
+            ↻ ROTATE 90°
+          </button>
+          <p class="text-xs text-sand/50">Drag to reposition on the canvas.</p>
+          <button onclick="confirmRemoveElement()"
+                  class="w-full py-2 rounded-lg border border-red-500/30 text-red-400 text-xs
+                         font-heading tracking-widest hover:border-red-500/60 hover:bg-red-500/10 transition-colors">
+            REMOVE
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /action-panel -->
+
+  </div><!-- /canvas row -->
+
+  <!-- ── Toast ─────────────────────────────────────────────────── -->
+  <div id="fp-toast"
+       style="transition:opacity 0.3s ease;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;"
+       class="fixed top-16 left-1/2 -translate-x-1/2 z-50
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/75 border text-xs font-medium whitespace-nowrap">
+  </div>
+
+  <!-- ── Add Table Modal ────────────────────────────────────────── -->
+  <div id="add-table-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeModal('add-table-modal')"></div>
+    <div class="relative bg-surface border border-elevated/60 rounded-xl p-6 w-80 max-w-full shadow-2xl">
+      <h3 class="font-heading text-xl text-ivory tracking-wide mb-4">Add Table</h3>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="block text-xs text-sand uppercase tracking-widest mb-1">Name *</label>
+          <input id="at-name" type="text" placeholder="e.g. Table 7"
+                 class="w-full bg-elevated/60 border border-elevated/60 rounded-lg px-3 py-2
+                        text-ivory text-sm placeholder-sand/40 focus:outline-none focus:border-accent/40"/>
+        </div>
+        <div>
+          <label class="block text-xs text-sand uppercase tracking-widest mb-1">Capacity</label>
+          <input id="at-capacity" type="number" min="1" max="50" placeholder="4"
+                 class="w-full bg-elevated/60 border border-elevated/60 rounded-lg px-3 py-2
+                        text-ivory text-sm placeholder-sand/40 focus:outline-none focus:border-accent/40"/>
+        </div>
+        <div>
+          <label class="block text-xs text-sand uppercase tracking-widest mb-1">Seats on plan</label>
+          <input id="at-seats" type="number" min="1" max="20" placeholder="4"
+                 class="w-full bg-elevated/60 border border-elevated/60 rounded-lg px-3 py-2
+                        text-ivory text-sm placeholder-sand/40 focus:outline-none focus:border-accent/40"/>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModal('add-table-modal')"
+                class="flex-1 py-2 rounded-lg border border-elevated/60 text-sand font-heading
+                       tracking-widest text-xs hover:border-sand/40 hover:text-ivory transition-all">
+          CANCEL
+        </button>
+        <button onclick="submitAddTable()"
+                class="flex-1 py-2 rounded-lg bg-accent text-base font-heading
+                       tracking-widest text-xs hover:shadow-neon hover:brightness-110 transition-all">
+          ADD
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Edit Table Modal ───────────────────────────────────────── -->
+  <div id="edit-table-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeModal('edit-table-modal')"></div>
+    <div class="relative bg-surface border border-elevated/60 rounded-xl p-6 w-80 max-w-full shadow-2xl">
+      <h3 class="font-heading text-xl text-ivory tracking-wide mb-4">Edit Table</h3>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="block text-xs text-sand uppercase tracking-widest mb-1">Name *</label>
+          <input id="et-name" type="text"
+                 class="w-full bg-elevated/60 border border-elevated/60 rounded-lg px-3 py-2
+                        text-ivory text-sm placeholder-sand/40 focus:outline-none focus:border-accent/40"/>
+        </div>
+        <div>
+          <label class="block text-xs text-sand uppercase tracking-widest mb-1">Capacity</label>
+          <input id="et-capacity" type="number" min="1" max="50"
+                 class="w-full bg-elevated/60 border border-elevated/60 rounded-lg px-3 py-2
+                        text-ivory text-sm placeholder-sand/40 focus:outline-none focus:border-accent/40"/>
+        </div>
+        <div>
+          <label class="block text-xs text-sand uppercase tracking-widest mb-1">Seats on plan</label>
+          <input id="et-seats" type="number" min="1" max="20"
+                 class="w-full bg-elevated/60 border border-elevated/60 rounded-lg px-3 py-2
+                        text-ivory text-sm placeholder-sand/40 focus:outline-none focus:border-accent/40"/>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModal('edit-table-modal')"
+                class="flex-1 py-2 rounded-lg border border-elevated/60 text-sand font-heading
+                       tracking-widest text-xs hover:border-sand/40 hover:text-ivory transition-all">
+          CANCEL
+        </button>
+        <button onclick="submitEditTable()"
+                class="flex-1 py-2 rounded-lg bg-accent text-base font-heading
+                       tracking-widest text-xs hover:shadow-neon hover:brightness-110 transition-all">
+          SAVE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Add Floor Modal ────────────────────────────────────────── -->
+  <div id="add-floor-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeModal('add-floor-modal')"></div>
+    <div class="relative bg-surface border border-elevated/60 rounded-xl p-6 w-80 max-w-full shadow-2xl">
+      <h3 class="font-heading text-xl text-ivory tracking-wide mb-4">Add Floor</h3>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="block text-xs text-sand uppercase tracking-widest mb-1">Floor Name *</label>
+          <input id="af-name" type="text" placeholder="e.g. First Floor"
+                 class="w-full bg-elevated/60 border border-elevated/60 rounded-lg px-3 py-2
+                        text-ivory text-sm placeholder-sand/40 focus:outline-none focus:border-accent/40"/>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-sand uppercase tracking-widest mb-1">Width (px)</label>
+            <input id="af-width" type="number" min="400" max="3000" placeholder="1200"
+                   class="w-full bg-elevated/60 border border-elevated/60 rounded-lg px-3 py-2
+                          text-ivory text-sm placeholder-sand/40 focus:outline-none focus:border-accent/40"/>
+          </div>
+          <div>
+            <label class="block text-xs text-sand uppercase tracking-widest mb-1">Height (px)</label>
+            <input id="af-height" type="number" min="300" max="2000" placeholder="700"
+                   class="w-full bg-elevated/60 border border-elevated/60 rounded-lg px-3 py-2
+                          text-ivory text-sm placeholder-sand/40 focus:outline-none focus:border-accent/40"/>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModal('add-floor-modal')"
+                class="flex-1 py-2 rounded-lg border border-elevated/60 text-sand font-heading
+                       tracking-widest text-xs hover:border-sand/40 hover:text-ivory transition-all">
+          CANCEL
+        </button>
+        <button onclick="submitAddFloor()"
+                class="flex-1 py-2 rounded-lg bg-accent text-base font-heading
+                       tracking-widest text-xs hover:shadow-neon hover:brightness-110 transition-all">
+          CREATE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Floor Plan JavaScript
+       ═══════════════════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    'use strict';
+
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    // ── Colours ───────────────────────────────────────────────────
+    const C = {
+      floorStroke:   '#2a2a2a',
+      gridLine:      '#1f1f1f',
+      tableFill:     '#252525',
+      tableStroke:   '#3a3a3a',
+      chairFill:     '#1a1a1a',
+      chairStroke:   '#303030',
+      accent:        '#00D4FF',
+      free:          '#22c55e',
+      occupied:      '#f59e0b',
+      ivory:         '#F5F0E8',
+      sand:          '#9A9080',
+      cashFill:      '#3d2e00',
+      cashStroke:    '#F59E0B',
+      cashAccent:    '#FCD34D',
+      wallColor:     '#4a4a4a',
+      wallSelected:  '#00D4FF',
+      doorColor:     '#6b7280',
+      doorSelected:  '#00D4FF',
+    };
+
+    const SZ = {
+      RX:   8,   // table border-radius
+      CR:   10,  // chair circle radius
+      CG:   5,   // chair gap from table edge
+      PAD:  30,  // floor padding inside SVG
+      EL_W: 72,  // cash-counter rectangle width
+      EL_H: 40,  // cash-counter rectangle height
+    };
+
+    // ── App state ─────────────────────────────────────────────────
+    const S = {
+      floors:       [],
+      floor:        null,
+      selectedId:   null,   // selected table id
+      selectedElId: null,   // selected floor-element id
+      drag:         null,   // drag-move state
+      drawMode:     null,   // null | 'WALL' | 'DOOR'
+      drawing:      null,   // active draw state
+    };
+
+    // ── Fetch helper ──────────────────────────────────────────────
+    function csrf() {
+      const h = document.querySelector('meta[name="_csrf_header"]').content;
+      const t = document.querySelector('meta[name="_csrf"]').content;
+      return { [h]: t };
+    }
+
+    async function api(method, url, body) {
+      const opts = { method, headers: { 'Content-Type': 'application/json', ...csrf() } };
+      if (body !== undefined) opts.body = JSON.stringify(body);
+      const res  = await fetch(url, opts);
+      if (res.status === 204) return null;
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = 'Request failed';
+        try { msg = JSON.parse(text).error || JSON.parse(text).message || msg; } catch (_) { msg = text || msg; }
+        throw new Error(msg);
+      }
+      return text ? JSON.parse(text) : null;
+    }
+
+    // ── Toast ─────────────────────────────────────────────────────
+    let _toastTimer;
+    function toast(msg, type = 'success') {
+      const el = document.getElementById('fp-toast');
+      clearTimeout(_toastTimer);
+      el.textContent = msg;
+      el.style.borderColor = type === 'error' ? 'rgba(239,68,68,0.4)' : 'rgba(0,212,255,0.3)';
+      el.style.color       = type === 'error' ? '#f87171'             : '#00D4FF';
+      el.style.opacity = '1'; el.style.display = 'flex';
+      _toastTimer = setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => { el.style.display = 'none'; }, 300);
+      }, type === 'error' ? 4000 : 2500);
+    }
+
+    // ── Modals ────────────────────────────────────────────────────
+    window.closeModal = id => document.getElementById(id).classList.add('hidden');
+
+    window.openAddTableModal = function () {
+      if (!S.floor) { toast('Add a floor first', 'error'); return; }
+      document.getElementById('at-name').value     = '';
+      document.getElementById('at-capacity').value = '';
+      document.getElementById('at-seats').value    = '4';
+      document.getElementById('add-table-modal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('at-name').focus(), 50);
+    };
+
+    window.openEditModal = function () {
+      const t = S.floor?.tables.find(t => t.id === S.selectedId);
+      if (!t) return;
+      document.getElementById('et-name').value     = t.name;
+      document.getElementById('et-capacity').value = t.capacity ?? '';
+      document.getElementById('et-seats').value    = t.seatCount;
+      document.getElementById('edit-table-modal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('et-name').focus(), 50);
+    };
+
+    window.openAddFloorModal = function () {
+      document.getElementById('af-name').value   = '';
+      document.getElementById('af-width').value  = '';
+      document.getElementById('af-height').value = '';
+      document.getElementById('add-floor-modal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('af-name').focus(), 50);
+    };
+
+    // ── Floor tabs ────────────────────────────────────────────────
+    function renderTabs() {
+      const container = document.getElementById('floor-tabs');
+      container.innerHTML = '';
+      S.floors.forEach(f => {
+        const btn = document.createElement('button');
+        const active = S.floor?.id === f.id;
+        btn.className = [
+          'flex-shrink-0 px-4 py-1.5 rounded-lg text-xs font-heading tracking-widest transition-all duration-150',
+          active
+            ? 'bg-accent/15 text-accent border border-accent/40 shadow-neon-sm'
+            : 'text-sand border border-transparent hover:border-elevated/60 hover:text-ivory',
+        ].join(' ');
+        btn.textContent = f.name.toUpperCase();
+        btn.onclick = () => switchFloor(f);
+        container.appendChild(btn);
+      });
+    }
+
+    function renderFloorControls() {
+      const bar = document.getElementById('floor-controls-bar');
+      const dtb = document.getElementById('draw-toolbar');
+      if (!S.floor) {
+        bar.classList.add('hidden');
+        dtb.classList.add('hidden');
+        return;
+      }
+      bar.classList.remove('hidden');
+      dtb.classList.remove('hidden');
+      document.getElementById('floor-w-display').textContent = S.floor.width  + 'px';
+      document.getElementById('floor-h-display').textContent = S.floor.height + 'px';
+    }
+
+    function switchFloor(floor) {
+      S.floor = floor; S.selectedId = null; S.selectedElId = null;
+      S.drawMode = null; S.drawing = null;
+      renderTabs();
+      renderFloorControls();
+      setDrawMode(null);   // reset toolbar UI + cursor
+      renderCanvas();
+      updatePanel();
+    }
+
+    // ── Draw mode ─────────────────────────────────────────────────
+    window.setDrawMode = function (mode) {
+      S.drawMode = mode;
+      S.drawing  = null;
+
+      // Cursor
+      const svgEl = document.getElementById('floor-svg');
+      if (svgEl) svgEl.style.cursor = mode ? 'crosshair' : 'default';
+
+      // Toolbar button styles
+      const active   = { bg: 'rgba(0,212,255,0.12)', color: '#00D4FF', border: 'rgba(0,212,255,0.4)' };
+      const inactive = { bg: '',                       color: '#9A9080', border: 'transparent' };
+      const map = { select: null, wall: 'WALL', door: 'DOOR' };
+      Object.entries(map).forEach(([tool, toolMode]) => {
+        const btn = document.getElementById('tool-' + tool);
+        if (!btn) return;
+        const s = toolMode === mode ? active : inactive;
+        btn.style.background  = s.bg;
+        btn.style.color       = s.color;
+        btn.style.borderColor = s.border;
+      });
+    };
+
+    // ── Canvas ────────────────────────────────────────────────────
+    function renderCanvas() {
+      const emptyEl = document.getElementById('canvas-empty');
+      const svgEl   = document.getElementById('floor-svg');
+
+      if (!S.floor) {
+        emptyEl.style.display = 'flex'; svgEl.style.display = 'none'; return;
+      }
+      emptyEl.style.display = 'none'; svgEl.style.display = 'block';
+
+      const W = S.floor.width  + SZ.PAD * 2;
+      const H = S.floor.height + SZ.PAD * 2;
+      svgEl.setAttribute('width', W); svgEl.setAttribute('height', H);
+      svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svgEl.innerHTML = '';
+
+      // Defs
+      const defs  = makeSvgEl('defs');
+      const flt   = makeSvgEl('filter', { id: 'neon', x: '-50%', y: '-50%', width: '200%', height: '200%' });
+      const blur  = makeSvgEl('feGaussianBlur', { stdDeviation: '3', result: 'b' });
+      const merge = makeSvgEl('feMerge');
+      merge.appendChild(makeSvgEl('feMergeNode', { in: 'b' }));
+      merge.appendChild(makeSvgEl('feMergeNode', { in: 'SourceGraphic' }));
+      flt.appendChild(blur); flt.appendChild(merge);
+      const pat  = makeSvgEl('pattern', { id: 'grid', width: '40', height: '40', patternUnits: 'userSpaceOnUse' });
+      const gp   = makeSvgEl('path', { d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: C.gridLine, 'stroke-width': '0.5' });
+      pat.appendChild(gp); defs.appendChild(flt); defs.appendChild(pat); svgEl.appendChild(defs);
+
+      // Floor background
+      const fg = makeSvgEl('g');
+      fg.appendChild(makeSvgEl('rect', { x: SZ.PAD, y: SZ.PAD, width: S.floor.width, height: S.floor.height, rx: '12', fill: 'url(#grid)' }));
+      fg.appendChild(makeSvgEl('rect', { x: SZ.PAD, y: SZ.PAD, width: S.floor.width, height: S.floor.height, rx: '12', fill: 'none', stroke: C.floorStroke, 'stroke-width': '1.5' }));
+      const lbl = makeSvgEl('text', { x: SZ.PAD + 14, y: SZ.PAD + 20, fill: C.sand, 'font-size': '11', 'font-family': '"Bebas Neue", cursive', 'letter-spacing': '2' });
+      lbl.textContent = S.floor.name.toUpperCase();
+      fg.appendChild(lbl); svgEl.appendChild(fg);
+
+      // Items layer + preview layer
+      const layer   = makeSvgEl('g', { id: 'tables-layer' });
+      const preview = makeSvgEl('g', { id: 'preview-layer' });
+      svgEl.appendChild(layer);
+      svgEl.appendChild(preview);
+      drawLayer(layer);
+    }
+
+    function drawLayer(layer) {
+      (S.floor?.tables   || []).filter(t  => t.active).forEach(t  => layer.appendChild(buildTableGroup(t)));
+      (S.floor?.elements || [])                        .forEach(el => layer.appendChild(buildElementGroup(el)));
+    }
+
+    function redrawLayer() {
+      const layer = document.getElementById('tables-layer');
+      if (!layer) return;
+      layer.innerHTML = '';
+      drawLayer(layer);
+    }
+
+    // ── Table SVG group ───────────────────────────────────────────
+    function buildTableGroup(t) {
+      const W = t.tableWidth, H = t.tableHeight, cx = W / 2, cy = H / 2;
+      const sel = t.id === S.selectedId;
+
+      const outerG = makeSvgEl('g', { 'data-table-id': t.id });
+      outerG.setAttribute('transform', `translate(${SZ.PAD + t.xPos}, ${SZ.PAD + t.yPos})`);
+      outerG.style.cursor = 'grab';
+
+      const innerG = makeSvgEl('g');
+      innerG.setAttribute('transform', `rotate(${t.rotation}, ${cx}, ${cy})`);
+
+      chairPositions(t.seatCount, W, H).forEach(pos => {
+        innerG.appendChild(makeSvgEl('circle', {
+          cx: pos.x, cy: pos.y, r: SZ.CR,
+          fill: C.chairFill, stroke: sel ? C.accent + '66' : C.chairStroke, 'stroke-width': '1.5',
+        }));
+      });
+
+      const rect = makeSvgEl('rect', {
+        x: 0, y: 0, width: W, height: H, rx: SZ.RX,
+        fill: C.tableFill, stroke: sel ? C.accent : C.tableStroke,
+        'stroke-width': sel ? '2.5' : '1.5',
+      });
+      if (sel) rect.setAttribute('filter', 'url(#neon)');
+      innerG.appendChild(rect);
+
+      innerG.appendChild(makeSvgEl('circle', {
+        cx: W - 10, cy: 10, r: '5', fill: t.status === 'FREE' ? C.free : C.occupied,
+      }));
+
+      const nameEl = makeSvgEl('text', {
+        x: cx, y: cy + 1,
+        'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        fill: sel ? C.accent : C.ivory,
+        'font-size': '11', 'font-family': 'Lato, sans-serif', 'font-weight': '600',
+        'pointer-events': 'none',
+      });
+      nameEl.textContent = t.name;
+      innerG.appendChild(nameEl);
+
+      if (t.capacity) {
+        const cap = makeSvgEl('text', {
+          x: 6, y: H - 5, fill: C.sand, 'font-size': '8',
+          'font-family': 'Lato, sans-serif', 'pointer-events': 'none',
+        });
+        cap.textContent = t.capacity + 'p';
+        innerG.appendChild(cap);
+      }
+
+      outerG.appendChild(innerG);
+      outerG.addEventListener('pointerdown', e => onItemDown(e, 'table', t.id, t.xPos, t.yPos));
+      return outerG;
+    }
+
+    // ── Element SVG group (router) ────────────────────────────────
+    function buildElementGroup(el) {
+      switch (el.elementType) {
+        case 'WALL': return buildWallGroup(el);
+        case 'DOOR': return buildDoorGroup(el);
+        default:     return buildCashCounterGroup(el);
+      }
+    }
+
+    function buildCashCounterGroup(el) {
+      const W   = el.width  || SZ.EL_W;
+      const H   = el.height || SZ.EL_H;
+      const rot = el.rotation || 0;
+      const sel = el.id === S.selectedElId;
+
+      // Outer group: position only (drag moves only this transform)
+      const outerG = makeSvgEl('g', { 'data-element-id': el.id });
+      outerG.setAttribute('transform', `translate(${SZ.PAD + el.xPos}, ${SZ.PAD + el.yPos})`);
+      outerG.style.cursor = 'grab';
+
+      // Inner group: rotation around centre of rectangle
+      const innerG = makeSvgEl('g');
+      innerG.setAttribute('transform', `rotate(${rot}, ${W / 2}, ${H / 2})`);
+
+      // Outer glow when selected
+      if (sel) {
+        innerG.appendChild(makeSvgEl('rect', {
+          x: '-3', y: '-3', width: W + 6, height: H + 6, rx: '9',
+          fill: 'none', stroke: C.cashAccent, 'stroke-width': '1',
+          opacity: '0.4', filter: 'url(#neon)',
+        }));
+      }
+
+      // Main body
+      const body = makeSvgEl('rect', {
+        x: '0', y: '0', width: W, height: H, rx: '6',
+        fill: C.cashFill,
+        stroke: sel ? C.cashAccent : C.cashStroke,
+        'stroke-width': sel ? '2' : '1.5',
+      });
+      innerG.appendChild(body);
+
+      // Horizontal divider line
+      const divY = Math.round(H * 0.3);
+      innerG.appendChild(makeSvgEl('line', {
+        x1: '0', y1: divY, x2: W, y2: divY,
+        stroke: sel ? C.cashAccent : C.cashStroke, 'stroke-width': '1.5', opacity: '0.7',
+      }));
+
+      // $ symbol top-left
+      const sym = makeSvgEl('text', {
+        x: '8', y: Math.round(divY / 2),
+        'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        fill: sel ? C.cashAccent : C.cashStroke,
+        'font-size': '9', 'font-family': 'Lato, sans-serif', 'font-weight': '700',
+        'pointer-events': 'none',
+      });
+      sym.textContent = '$';
+      innerG.appendChild(sym);
+
+      // CASH label centred in the lower portion
+      const lbl = makeSvgEl('text', {
+        x: W / 2, y: divY + (H - divY) / 2,
+        'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        fill: C.cashAccent,
+        'font-size': '8', 'font-family': 'Lato, sans-serif', 'font-weight': '700',
+        'letter-spacing': '1.5', 'pointer-events': 'none',
+      });
+      lbl.textContent = el.label || 'CASH';
+      innerG.appendChild(lbl);
+
+      outerG.appendChild(innerG);
+      outerG.addEventListener('pointerdown', e => onItemDown(e, 'element', el.id, el.xPos, el.yPos));
+      return outerG;
+    }
+
+    // Wall: xPos/yPos = absolute start; x2/y2 = relative vector (dx, dy)
+    function buildWallGroup(el) {
+      const sel = el.id === S.selectedElId;
+      const dx = el.x2 ?? 0, dy = el.y2 ?? 0;
+
+      const g = makeSvgEl('g', { 'data-element-id': el.id });
+      g.setAttribute('transform', `translate(${SZ.PAD + el.xPos}, ${SZ.PAD + el.yPos})`);
+      g.style.cursor = 'grab';
+
+      // Thick wall line
+      const line = makeSvgEl('line', {
+        x1: '0', y1: '0', x2: dx, y2: dy,
+        stroke: sel ? C.wallSelected : C.wallColor,
+        'stroke-width': '7', 'stroke-linecap': 'round',
+      });
+      if (sel) line.setAttribute('filter', 'url(#neon)');
+      g.appendChild(line);
+
+      // Wide invisible hit area
+      g.appendChild(makeSvgEl('line', {
+        x1: '0', y1: '0', x2: dx, y2: dy,
+        stroke: 'transparent', 'stroke-width': '20', 'stroke-linecap': 'round',
+      }));
+
+      g.addEventListener('pointerdown', e => onItemDown(e, 'element', el.id, el.xPos, el.yPos));
+      return g;
+    }
+
+    // Door: xPos/yPos = hinge; width = leaf length; rotation = orientation
+    function buildDoorGroup(el) {
+      const sel = el.id === S.selectedElId;
+      const W = el.width || 60;
+      const stroke = sel ? C.doorSelected : C.doorColor;
+
+      const g = makeSvgEl('g', { 'data-element-id': el.id });
+      g.setAttribute('transform',
+        `translate(${SZ.PAD + el.xPos}, ${SZ.PAD + el.yPos}) rotate(${el.rotation})`);
+      g.style.cursor = 'grab';
+
+      // Hinge dot
+      g.appendChild(makeSvgEl('circle', { cx: '0', cy: '0', r: '3', fill: stroke }));
+
+      // Door leaf (line from hinge to tip)
+      const leaf = makeSvgEl('line', {
+        x1: '0', y1: '0', x2: W, y2: '0',
+        stroke, 'stroke-width': '2.5', 'stroke-linecap': 'round',
+      });
+      if (sel) leaf.setAttribute('filter', 'url(#neon)');
+      g.appendChild(leaf);
+
+      // Swing arc (quarter circle, CW: tip goes to bottom)
+      g.appendChild(makeSvgEl('path', {
+        d: `M ${W},0 A ${W},${W} 0 0,1 0,${W}`,
+        fill: 'none', stroke, 'stroke-width': '1', 'stroke-dasharray': '5 3',
+      }));
+
+      // Wide hit area rectangle
+      g.appendChild(makeSvgEl('rect', {
+        x: '0', y: '0', width: W, height: W,
+        fill: 'transparent', 'pointer-events': 'all',
+      }));
+
+      g.addEventListener('pointerdown', e => onItemDown(e, 'element', el.id, el.xPos, el.yPos));
+      return g;
+    }
+
+    // ── Chair positions ───────────────────────────────────────────
+    function chairPositions(count, W, H) {
+      const pos = [], r = SZ.CR, gap = SZ.CG;
+      let top = 0, bot = 0, left = 0, right = 0;
+      if (count <= 2)      { top = 1; bot = count - 1; }
+      else if (count <= 4) { top = 1; bot = 1; left = Math.floor((count-2)/2); right = count-2-left; }
+      else {
+        const sides = 2 * Math.floor(count / 6); left = right = sides / 2;
+        const tb = count - sides; top = Math.ceil(tb / 2); bot = Math.floor(tb / 2);
+      }
+      for (let i=0; i<top;   i++) pos.push({ x: W*(i+1)/(top+1),    y: -(r+gap) });
+      for (let i=0; i<bot;   i++) pos.push({ x: W*(i+1)/(bot+1),    y: H+r+gap  });
+      for (let i=0; i<left;  i++) pos.push({ x: -(r+gap),            y: H*(i+1)/(left+1)  });
+      for (let i=0; i<right; i++) pos.push({ x: W+r+gap,             y: H*(i+1)/(right+1) });
+      return pos;
+    }
+
+    // ── SVG utility ───────────────────────────────────────────────
+    function makeSvgEl(tag, attrs) {
+      const el = document.createElementNS(SVG_NS, tag);
+      if (attrs) Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      return el;
+    }
+
+    function clientToSvg(e) {
+      const svg = document.getElementById('floor-svg');
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    }
+
+    // ── Draw: canvas pointerdown ──────────────────────────────────
+    function onCanvasPointerDown(e) {
+      if (!S.drawMode) return;
+      // Only act on events that reached the SVG (not stopped by items)
+      const svgEl = document.getElementById('floor-svg');
+      const svgPt = clientToSvg(e);
+      const localX = Math.round(svgPt.x - SZ.PAD);
+      const localY = Math.round(svgPt.y - SZ.PAD);
+
+      const previewLayer = document.getElementById('preview-layer');
+      if (!previewLayer) return;
+
+      let previewEl;
+      if (S.drawMode === 'WALL') {
+        previewEl = makeSvgEl('line', {
+          x1: SZ.PAD + localX, y1: SZ.PAD + localY,
+          x2: SZ.PAD + localX, y2: SZ.PAD + localY,
+          stroke: C.accent + 'aa', 'stroke-width': '5', 'stroke-linecap': 'round',
+          'stroke-dasharray': '8 4', 'pointer-events': 'none',
+        });
+      } else { // DOOR
+        previewEl = makeSvgEl('g', { 'pointer-events': 'none' });
+        previewEl.setAttribute('transform', `translate(${SZ.PAD + localX}, ${SZ.PAD + localY})`);
+        previewEl.appendChild(makeSvgEl('circle', { cx: '0', cy: '0', r: '3', fill: C.doorSelected + 'aa' }));
+        previewEl.appendChild(makeSvgEl('line', {
+          x1: '0', y1: '0', x2: '60', y2: '0',
+          stroke: C.doorSelected + 'aa', 'stroke-width': '2', 'stroke-linecap': 'round',
+        }));
+        previewEl.appendChild(makeSvgEl('path', {
+          d: 'M 60,0 A 60,60 0 0,1 0,60', fill: 'none',
+          stroke: C.doorSelected + 'aa', 'stroke-width': '1', 'stroke-dasharray': '5 3',
+        }));
+      }
+
+      previewLayer.appendChild(previewEl);
+      svgEl.setPointerCapture(e.pointerId);
+      S.drawing = { startX: localX, startY: localY, curX: localX, curY: localY, previewEl };
+      e.preventDefault();
+    }
+
+    // ── Drag: item pointerdown ────────────────────────────────────
+    function onItemDown(e, type, id, origX, origY) {
+      if (S.drawMode) { e.stopPropagation(); return; } // don't drag while drawing
+      e.stopPropagation();
+      const svgPt = clientToSvg(e);
+      S.drag = { type, id, startCX: e.clientX, startCY: e.clientY,
+                 startSX: svgPt.x, startSY: svgPt.y, origX, origY, moved: false };
+      document.getElementById('floor-svg').setPointerCapture(e.pointerId);
+      e.preventDefault();
+    }
+
+    // ── Pointer move ──────────────────────────────────────────────
+    function onPointerMove(e) {
+      if (S.drawing) {
+        updateDrawPreview(e);
+        return;
+      }
+      if (!S.drag) return;
+      const dx = e.clientX - S.drag.startCX, dy = e.clientY - S.drag.startCY;
+      if (!S.drag.moved && Math.sqrt(dx*dx + dy*dy) > 6) S.drag.moved = true;
+      if (!S.drag.moved) return;
+
+      const svgPt = clientToSvg(e);
+      const newX  = Math.max(0, Math.round(S.drag.origX + svgPt.x - S.drag.startSX));
+      const newY  = Math.max(0, Math.round(S.drag.origY + svgPt.y - S.drag.startSY));
+
+      if (S.drag.type === 'table') {
+        const t = S.floor.tables.find(t => t.id === S.drag.id);
+        if (t) { t.xPos = newX; t.yPos = newY; }
+        const g = document.querySelector(`[data-table-id="${S.drag.id}"]`);
+        if (g) g.setAttribute('transform', `translate(${SZ.PAD + newX}, ${SZ.PAD + newY})`);
+      } else {
+        const el = S.floor.elements?.find(el => el.id === S.drag.id);
+        if (el) { el.xPos = newX; el.yPos = newY; }
+        const g = document.querySelector(`[data-element-id="${S.drag.id}"]`);
+        if (g) {
+          const elData = S.floor.elements?.find(el => el.id === S.drag.id);
+          if (elData?.elementType === 'DOOR') {
+            g.setAttribute('transform',
+              `translate(${SZ.PAD + newX}, ${SZ.PAD + newY}) rotate(${elData.rotation})`);
+          } else {
+            g.setAttribute('transform', `translate(${SZ.PAD + newX}, ${SZ.PAD + newY})`);
+          }
+        }
+      }
+    }
+
+    function updateDrawPreview(e) {
+      if (!S.drawing) return;
+      const svgPt  = clientToSvg(e);
+      const localX = Math.round(svgPt.x - SZ.PAD);
+      const localY = Math.round(svgPt.y - SZ.PAD);
+      S.drawing.curX = localX; S.drawing.curY = localY;
+
+      if (S.drawMode === 'WALL') {
+        S.drawing.previewEl.setAttribute('x2', SZ.PAD + localX);
+        S.drawing.previewEl.setAttribute('y2', SZ.PAD + localY);
+      } else { // DOOR: follow cursor
+        S.drawing.previewEl.setAttribute('transform',
+          `translate(${SZ.PAD + localX}, ${SZ.PAD + localY})`);
+        S.drawing.startX = localX; S.drawing.startY = localY;
+      }
+    }
+
+    // ── Pointer up ────────────────────────────────────────────────
+    async function onPointerUp(e) {
+      const svgEl = document.getElementById('floor-svg');
+      try { svgEl.releasePointerCapture(e.pointerId); } catch (_) {}
+
+      if (S.drawing) {
+        await finishDraw();
+        return;
+      }
+      if (!S.drag) return;
+      const d = S.drag; S.drag = null;
+
+      if (d.moved) {
+        if (d.type === 'table') {
+          const t = S.floor.tables.find(t => t.id === d.id);
+          if (t) {
+            try {
+              await api('PATCH', `/api/admin/floor-plan/tables/${d.id}/position`,
+                        { xPos: t.xPos, yPos: t.yPos, floorId: S.floor.id });
+            } catch (err) {
+              t.xPos = d.origX; t.yPos = d.origY;
+              const g = document.querySelector(`[data-table-id="${d.id}"]`);
+              if (g) g.setAttribute('transform', `translate(${SZ.PAD + d.origX}, ${SZ.PAD + d.origY})`);
+              toast(err.message || 'Failed to save position', 'error');
+            }
+          }
+        } else {
+          const el = S.floor.elements?.find(el => el.id === d.id);
+          if (el) {
+            try {
+              await api('PATCH', `/api/admin/floor-plan/elements/${d.id}/position`,
+                        { xPos: el.xPos, yPos: el.yPos });
+            } catch (err) {
+              el.xPos = d.origX; el.yPos = d.origY;
+              const g = document.querySelector(`[data-element-id="${d.id}"]`);
+              if (g) g.setAttribute('transform', `translate(${SZ.PAD + d.origX}, ${SZ.PAD + d.origY})`);
+              toast(err.message || 'Failed to save position', 'error');
+            }
+          }
+        }
+      } else {
+        if (d.type === 'table')   selectTable(d.id);
+        else                      selectElement(d.id);
+      }
+    }
+
+    async function finishDraw() {
+      const draw = S.drawing;
+      S.drawing = null;
+
+      // Remove preview
+      const previewLayer = document.getElementById('preview-layer');
+      if (previewLayer) previewLayer.innerHTML = '';
+
+      if (S.drawMode === 'WALL') {
+        const dx = draw.curX - draw.startX;
+        const dy = draw.curY - draw.startY;
+        if (Math.sqrt(dx*dx + dy*dy) < 15) return; // too short, ignore
+        try {
+          const el = await api('POST', '/api/admin/floor-plan/elements', {
+            elementType: 'WALL', label: 'Wall', floorId: S.floor.id,
+            xPos: draw.startX, yPos: draw.startY, x2: dx, y2: dy,
+          });
+          S.floor.elements = S.floor.elements || [];
+          S.floor.elements.push(el);
+          redrawLayer();
+          selectElement(el.id);
+          toast('Wall added');
+        } catch (err) {
+          toast(err.message || 'Failed to add wall', 'error');
+        }
+      } else if (S.drawMode === 'DOOR') {
+        try {
+          const el = await api('POST', '/api/admin/floor-plan/elements', {
+            elementType: 'DOOR', label: 'Door', floorId: S.floor.id,
+            xPos: draw.startX, yPos: draw.startY, width: 60, rotation: 0,
+          });
+          S.floor.elements = S.floor.elements || [];
+          S.floor.elements.push(el);
+          redrawLayer();
+          selectElement(el.id);
+          toast('Door added');
+        } catch (err) {
+          toast(err.message || 'Failed to add door', 'error');
+        }
+      }
+    }
+
+    // ── Selection ─────────────────────────────────────────────────
+    function selectTable(tableId) {
+      S.selectedId = tableId; S.selectedElId = null;
+      redrawLayer(); updatePanel();
+    }
+
+    function selectElement(elementId) {
+      S.selectedElId = elementId; S.selectedId = null;
+      redrawLayer(); updatePanel();
+    }
+
+    window.deselectAll = function () {
+      S.selectedId = null; S.selectedElId = null;
+      redrawLayer(); updatePanel();
+    };
+
+    // ── Panel ─────────────────────────────────────────────────────
+    function updatePanel() {
+      const panel     = document.getElementById('action-panel');
+      const tablePart = document.getElementById('table-panel-content');
+      const elPart    = document.getElementById('element-panel-content');
+
+      const t  = S.floor?.tables.find(t  => t.id  === S.selectedId);
+      const el = S.floor?.elements?.find(el => el.id === S.selectedElId);
+
+      if (!t && !el) { panel.classList.add('hidden'); return; }
+      panel.classList.remove('hidden');
+
+      if (t) {
+        tablePart.classList.remove('hidden'); elPart.classList.add('hidden');
+        document.getElementById('panel-name').textContent = t.name;
+        document.getElementById('panel-type').textContent = 'Table';
+        const st = document.getElementById('panel-status');
+        st.textContent = t.status === 'FREE' ? 'Free' : 'Occupied';
+        st.className   = 'font-medium ' + (t.status === 'FREE' ? 'text-emerald-400' : 'text-amber-400');
+        document.getElementById('panel-capacity').textContent = t.capacity != null ? t.capacity + ' people' : '—';
+        document.getElementById('panel-seats').textContent    = t.seatCount;
+        document.getElementById('panel-width').textContent    = t.tableWidth  + 'px';
+        document.getElementById('panel-height').textContent   = t.tableHeight + 'px';
+        document.getElementById('panel-qr-link').href         = `/admin/tables/${t.id}/qr/download`;
+      } else {
+        tablePart.classList.add('hidden'); elPart.classList.remove('hidden');
+        const typeLabel = { CASH_COUNTER: 'Cash Counter', WALL: 'Wall', DOOR: 'Door' };
+        document.getElementById('panel-name').textContent = el.label || el.elementType;
+        document.getElementById('panel-type').textContent = typeLabel[el.elementType] || el.elementType;
+        // Size controls visible only for CASH_COUNTER
+        const isCashCounter = el.elementType === 'CASH_COUNTER';
+        document.getElementById('el-size-controls').classList.toggle('hidden', !isCashCounter);
+        if (isCashCounter) {
+          document.getElementById('el-width-display').textContent  = (el.width  || SZ.EL_W) + 'px';
+          document.getElementById('el-height-display').textContent = (el.height || SZ.EL_H) + 'px';
+        }
+        // Rotate button for DOOR only (CASH_COUNTER rotate is inside el-size-controls)
+        document.getElementById('el-rotate-btn').classList.toggle('hidden', el.elementType !== 'DOOR');
+      }
+    }
+
+    // ── Deactivate table ──────────────────────────────────────────
+    window.confirmDeactivate = function () {
+      const t = S.floor?.tables.find(t => t.id === S.selectedId);
+      if (!t) return;
+      document.getElementById('bb-confirm-message').textContent = 'Deactivate ' + t.name + '? This cannot be undone.';
+      const modal = document.getElementById('bb-confirm-modal');
+      modal.classList.remove('hidden');
+      const cancel = document.getElementById('bb-confirm-cancel');
+      const ok     = document.getElementById('bb-confirm-ok');
+      const done   = () => { modal.classList.add('hidden'); cancel.onclick = null; ok.onclick = null; };
+      cancel.onclick = done;
+      ok.onclick = async () => { done(); await doDeactivate(t.id); };
+    };
+
+    async function doDeactivate(tableId) {
+      try {
+        await api('POST', `/api/admin/floor-plan/tables/${tableId}/deactivate`);
+        S.floor.tables = S.floor.tables.filter(t => t.id !== tableId);
+        S.selectedId   = null;
+        renderCanvas(); updatePanel();
+        toast('Table deactivated');
+      } catch (err) { toast(err.message || 'Cannot deactivate', 'error'); }
+    }
+
+    // ── Remove element ────────────────────────────────────────────
+    window.confirmRemoveElement = function () {
+      if (!S.selectedElId) return;
+      const el = S.floor?.elements?.find(el => el.id === S.selectedElId);
+      const label = el ? ({ CASH_COUNTER: 'cash counter', WALL: 'wall', DOOR: 'door' }[el.elementType] || 'item') : 'item';
+      document.getElementById('bb-confirm-message').textContent = `Remove this ${label} from the floor plan?`;
+      const modal  = document.getElementById('bb-confirm-modal');
+      modal.classList.remove('hidden');
+      const cancel = document.getElementById('bb-confirm-cancel');
+      const ok     = document.getElementById('bb-confirm-ok');
+      const done   = () => { modal.classList.add('hidden'); cancel.onclick = null; ok.onclick = null; };
+      cancel.onclick = done;
+      ok.onclick = async () => { done(); await doRemoveElement(S.selectedElId); };
+    };
+
+    async function doRemoveElement(elementId) {
+      try {
+        await api('DELETE', `/api/admin/floor-plan/elements/${elementId}`);
+        S.floor.elements = (S.floor.elements || []).filter(el => el.id !== elementId);
+        S.selectedElId   = null;
+        redrawLayer(); updatePanel();
+        toast('Removed');
+      } catch (err) { toast(err.message || 'Failed to remove', 'error'); }
+    }
+
+    // ── Rotate element (DOOR or CASH_COUNTER) ────────────────────
+    window.rotateElement = async function () {
+      const el = S.floor?.elements?.find(el => el.id === S.selectedElId);
+      if (!el || (el.elementType !== 'DOOR' && el.elementType !== 'CASH_COUNTER')) return;
+      el.rotation = (el.rotation + 90) % 360;
+      redrawLayer();
+      try {
+        await api('PATCH', `/api/admin/floor-plan/elements/${el.id}`, { rotation: el.rotation });
+      } catch (err) {
+        toast(err.message || 'Failed to rotate', 'error');
+      }
+    };
+
+    // ── Resize cash counter ───────────────────────────────────────
+    let _elTimer;
+    window.adjustElement = function (axis, delta) {
+      const el = S.floor?.elements?.find(el => el.id === S.selectedElId);
+      if (!el || el.elementType !== 'CASH_COUNTER') return;
+      if (axis === 'w') {
+        el.width  = Math.max(40, Math.min(300, (el.width  || SZ.EL_W) + delta));
+        document.getElementById('el-width-display').textContent  = el.width  + 'px';
+      } else {
+        el.height = Math.max(24, Math.min(200, (el.height || SZ.EL_H) + delta));
+        document.getElementById('el-height-display').textContent = el.height + 'px';
+      }
+      redrawLayer();
+      clearTimeout(_elTimer);
+      _elTimer = setTimeout(() =>
+        api('PATCH', `/api/admin/floor-plan/elements/${el.id}`,
+            { width: el.width, height: el.height })
+        .catch(err => toast(err.message || 'Failed to save', 'error')), 500);
+    };
+
+    // ── Add cash counter (singleton per floor) ────────────────────
+    window.addCashCounter = async function () {
+      if (!S.floor) return;
+      if ((S.floor.elements || []).some(el => el.elementType === 'CASH_COUNTER')) {
+        toast('Only one cash counter is allowed per floor', 'error'); return;
+      }
+      const xPos = 60;
+      const yPos = S.floor.height - SZ.EL_H - 20;
+      try {
+        const el = await api('POST', '/api/admin/floor-plan/elements', {
+          elementType: 'CASH_COUNTER', label: 'CASH', floorId: S.floor.id, xPos, yPos,
+          width: SZ.EL_W, height: SZ.EL_H,
+        });
+        S.floor.elements = S.floor.elements || [];
+        S.floor.elements.push(el);
+        redrawLayer(); selectElement(el.id);
+        toast('Cash counter added');
+      } catch (err) { toast(err.message || 'Failed to add cash counter', 'error'); }
+    };
+
+    // ── Add table ─────────────────────────────────────────────────
+    window.submitAddTable = async function () {
+      const name     = document.getElementById('at-name').value.trim();
+      const capacity = parseInt(document.getElementById('at-capacity').value) || null;
+      const seats    = parseInt(document.getElementById('at-seats').value)    || 4;
+      if (!name) { toast('Table name is required', 'error'); return; }
+
+      const existing = S.floor.tables || [];
+      let xPos = 80, yPos = 80;
+      if (existing.length > 0) {
+        const maxY = Math.max(...existing.map(t => t.yPos));
+        const row  = existing.filter(t => t.yPos === maxY);
+        const maxX = Math.max(...row.map(t => t.xPos));
+        xPos = maxX + (row[0]?.tableWidth ?? 100) + 60; yPos = maxY;
+        if (xPos + 100 > S.floor.width - 80) { xPos = 80; yPos = maxY + 68 + 80; }
+      }
+      try {
+        const newTable = await api('POST', '/api/admin/floor-plan/tables',
+            { name, capacity, seatCount: seats, floorId: S.floor.id, xPos, yPos });
+        S.floor.tables.push(newTable);
+        closeModal('add-table-modal');
+        renderCanvas(); selectTable(newTable.id);
+        toast('Table added');
+      } catch (err) { toast(err.message || 'Failed to add table', 'error'); }
+    };
+
+    window.submitEditTable = async function () {
+      if (!S.selectedId) return;
+      const name     = document.getElementById('et-name').value.trim();
+      const capacity = parseInt(document.getElementById('et-capacity').value) || null;
+      const seats    = parseInt(document.getElementById('et-seats').value)    || 4;
+      if (!name) { toast('Table name is required', 'error'); return; }
+      try {
+        const updated = await api('PATCH', `/api/admin/floor-plan/tables/${S.selectedId}`,
+            { name, capacity, seatCount: seats });
+        const idx = S.floor.tables.findIndex(t => t.id === S.selectedId);
+        if (idx >= 0) S.floor.tables[idx] = { ...S.floor.tables[idx], ...updated };
+        closeModal('edit-table-modal');
+        renderCanvas(); selectTable(S.selectedId);
+        toast('Table updated');
+      } catch (err) { toast(err.message || 'Failed to update table', 'error'); }
+    };
+
+    window.submitAddFloor = async function () {
+      const name   = document.getElementById('af-name').value.trim();
+      const width  = parseInt(document.getElementById('af-width').value)  || 1200;
+      const height = parseInt(document.getElementById('af-height').value) || 700;
+      if (!name) { toast('Floor name is required', 'error'); return; }
+      try {
+        const floor = await api('POST', '/api/admin/floor-plan/floors', { name, width, height });
+        floor.tables = []; floor.elements = [];
+        S.floors.push(floor); closeModal('add-floor-modal');
+        switchFloor(floor); toast('Floor created');
+      } catch (err) { toast(err.message || 'Failed to create floor', 'error'); }
+    };
+
+    // ── Table resize / rotate ─────────────────────────────────────
+    let _dimTimer;
+
+    window.adjustDim = function (axis, delta) {
+      const t = S.floor?.tables.find(t => t.id === S.selectedId);
+      if (!t) return;
+      if (axis === 'w') { t.tableWidth  = Math.max(60,  Math.min(400, t.tableWidth  + delta)); document.getElementById('panel-width').textContent  = t.tableWidth  + 'px'; }
+      else              { t.tableHeight = Math.max(40,  Math.min(300, t.tableHeight + delta)); document.getElementById('panel-height').textContent = t.tableHeight + 'px'; }
+      redrawLayer();
+      clearTimeout(_dimTimer);
+      _dimTimer = setTimeout(() => api('PATCH', `/api/admin/floor-plan/tables/${t.id}/dimensions`,
+          { tableWidth: t.tableWidth, tableHeight: t.tableHeight, rotation: t.rotation })
+          .catch(err => toast(err.message || 'Failed to save', 'error')), 500);
+    };
+
+    window.rotateCW = function () {
+      const t = S.floor?.tables.find(t => t.id === S.selectedId);
+      if (!t) return;
+      t.rotation = (t.rotation + 90) % 360;
+      redrawLayer();
+      api('PATCH', `/api/admin/floor-plan/tables/${t.id}/dimensions`,
+          { tableWidth: t.tableWidth, tableHeight: t.tableHeight, rotation: t.rotation })
+          .catch(err => toast(err.message || 'Failed to save', 'error'));
+    };
+
+    // ── Floor resize ──────────────────────────────────────────────
+    let _floorTimer;
+
+    window.adjustFloor = function (axis, delta) {
+      if (!S.floor) return;
+      if (axis === 'w') { S.floor.width  = Math.max(400,  Math.min(3000, S.floor.width  + delta)); document.getElementById('floor-w-display').textContent = S.floor.width  + 'px'; }
+      else              { S.floor.height = Math.max(300,  Math.min(2000, S.floor.height + delta)); document.getElementById('floor-h-display').textContent = S.floor.height + 'px'; }
+      renderCanvas();
+      clearTimeout(_floorTimer);
+      _floorTimer = setTimeout(() =>
+          api('PUT', `/api/admin/floor-plan/floors/${S.floor.id}`, { width: S.floor.width, height: S.floor.height })
+          .catch(err => toast(err.message || 'Failed to save floor size', 'error')), 600);
+    };
+
+    // ── Boot ──────────────────────────────────────────────────────
+    async function init() {
+      // Attach SVG pointer listeners once (renderCanvas only rebuilds innerHTML)
+      const svgEl = document.getElementById('floor-svg');
+      svgEl.addEventListener('pointerdown',   onCanvasPointerDown);
+      svgEl.addEventListener('pointermove',   onPointerMove);
+      svgEl.addEventListener('pointerup',     onPointerUp);
+      svgEl.addEventListener('pointercancel', onPointerUp);
+
+      // Keyboard shortcuts for draw modes
+      document.addEventListener('keydown', e => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'v' || e.key === 'Escape') setDrawMode(null);
+        if (e.key === 'w') setDrawMode('WALL');
+        if (e.key === 'd') setDrawMode('DOOR');
+      });
+
+      try {
+        S.floors = await api('GET', '/api/admin/floor-plan/floors');
+        renderTabs();
+        if (S.floors.length > 0) switchFloor(S.floors[0]);
+        else document.getElementById('canvas-empty').style.display = 'flex';
+      } catch (err) {
+        toast('Failed to load floor plan', 'error');
+        console.error(err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  })();
+  </script>
+
+</main>
+</body>
+</html>

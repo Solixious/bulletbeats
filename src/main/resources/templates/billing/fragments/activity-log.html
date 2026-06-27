@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<div th:fragment="activity-log" id="activity-log-inner">
+
+  <div th:if="${#lists.isEmpty(logs)}"
+       class="py-6 text-center text-sand text-sm">
+    No activity recorded yet.
+  </div>
+
+  <ol th:unless="${#lists.isEmpty(logs)}" class="relative border-l border-elevated/60 ml-2 space-y-4">
+    <li th:each="entry : ${logs}" class="ml-5">
+
+      <!-- Timeline dot -->
+      <span th:switch="${entry.actorType.name()}"
+            class="absolute -left-2 flex items-center justify-center w-4 h-4 rounded-full ring-4 ring-base">
+        <span th:case="'CUSTOMER'" class="w-4 h-4 rounded-full bg-accent ring-4 ring-base"></span>
+        <span th:case="'STAFF'"    class="w-4 h-4 rounded-full bg-emerald-400 ring-4 ring-base"></span>
+        <span th:case="*"          class="w-4 h-4 rounded-full bg-sand/40 ring-4 ring-base"></span>
+      </span>
+
+      <div class="bg-elevated/30 rounded-lg px-3 py-2">
+        <p class="text-ivory text-sm" th:text="${entry.message}">Message</p>
+        <div class="flex items-center gap-2 mt-1">
+          <span th:switch="${entry.actorType.name()}"
+                class="text-xs px-1.5 py-0.5 rounded">
+            <span th:case="'CUSTOMER'" class="text-accent bg-accent/10 px-1.5 py-0.5 rounded text-xs"
+                  th:text="${entry.actorName != null ? entry.actorName : 'Customer'}"></span>
+            <span th:case="'STAFF'" class="text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded text-xs"
+                  th:text="${entry.actorName != null ? entry.actorName : 'Staff'}"></span>
+            <span th:case="*" class="text-sand bg-sand/10 px-1.5 py-0.5 rounded text-xs">System</span>
+          </span>
+          <span class="text-sand text-xs"
+                th:text="${#temporals.format(entry.createdAt, 'dd MMM, HH:mm')}"></span>
+        </div>
+      </div>
+
+    </li>
+  </ol>
+
+</div>
+
+</body>
+</html>

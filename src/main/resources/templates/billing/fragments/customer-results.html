@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="customer-results">
+
+  <!-- Existing customers -->
+  <div th:if="${!#lists.isEmpty(customers)}"
+       class="bg-elevated rounded-lg border border-elevated/60 divide-y divide-elevated/40 overflow-hidden">
+    <button th:each="c : ${customers}"
+            type="button"
+            th:attr="onclick='selectCustomer(&quot;' + ${c.phone} + '&quot;, &quot;' + ${c.name} + '&quot;, ' + ${c.vip} + ')'"
+            class="w-full text-left px-4 py-2.5 hover:bg-elevated/60 transition-colors
+                   flex items-center gap-3">
+      <div class="flex-1 min-w-0">
+        <p class="text-ivory text-sm truncate" th:text="${c.name}"></p>
+        <p class="text-sand text-xs" th:text="${c.phone}"></p>
+      </div>
+      <span th:if="${c.vip}"
+            class="flex-shrink-0 px-1.5 py-0.5 text-xs rounded-full font-bold
+                   text-amber-400 border border-amber-400/40 bg-amber-400/10">VIP</span>
+      <span class="flex-shrink-0 text-sand text-xs"
+            th:text="${c.loyaltyPoints} + ' pts'"></span>
+    </button>
+  </div>
+
+  <!-- No results: offer inline create -->
+  <div th:if="${#lists.isEmpty(customers) and q != null and !#strings.isEmpty(q)}"
+       class="bg-elevated rounded-lg border border-dashed border-accent/30 p-4">
+    <p class="text-sand text-xs mb-3">No customer found — add as new?</p>
+    <div class="space-y-2">
+      <input type="text" id="new-cust-phone"
+             th:value="${q}"
+             placeholder="Phone number"
+             class="w-full bg-base rounded-lg px-3 py-2 text-ivory text-sm
+                    border border-elevated focus:border-accent outline-none transition-colors"/>
+      <input type="text" id="new-cust-name"
+             placeholder="Customer name"
+             class="w-full bg-base rounded-lg px-3 py-2 text-ivory text-sm
+                    border border-elevated focus:border-accent outline-none transition-colors"/>
+      <button type="button"
+              onclick="createNewCustomer()"
+              class="w-full py-2 text-sm rounded-lg bg-accent/10 border border-accent/30
+                     text-accent hover:bg-accent/20 transition-colors font-medium">
+        + Add as new customer
+      </button>
+    </div>
+  </div>
+
+</th:block>
+</body>
+</html>

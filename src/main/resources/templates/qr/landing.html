@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="_csrf"        th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  <title th:text="${cafeName}">Bullet Beats Café</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base:     '#1C1C1C',
+            surface:  '#2A2A2A',
+            elevated: '#333333',
+            accent:   '#00D4FF',
+            ivory:    '#F5F0E8',
+            sand:     '#9A9080',
+          },
+          fontFamily: {
+            heading: ['"Bebas Neue"', 'cursive'],
+            body:    ['Lato', 'sans-serif'],
+          },
+          boxShadow: {
+            neon: '0 0 24px rgba(0,212,255,0.45), 0 0 48px rgba(0,212,255,0.15)',
+          },
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-base font-body text-ivory min-h-screen flex flex-col">
+
+  <!-- Tyre-tread top stripe -->
+  <div class="h-1.5 flex-shrink-0"
+       style="background: repeating-linear-gradient(90deg,#00D4FF 0,#00D4FF 6px,transparent 6px,transparent 14px)"></div>
+
+  <!-- Header -->
+  <div class="flex-shrink-0 pt-10 pb-6 text-center px-6">
+    <p class="font-heading text-5xl text-accent tracking-widest leading-none" th:text="${cafeName}">Bullet Beats Café</p>
+    <p class="text-sand text-base mt-3 tracking-wide">
+      Welcome to <span class="text-ivory font-bold" th:text="${table.name}">Table 1</span>
+    </p>
+  </div>
+
+  <!-- Phone capture card -->
+  <div class="flex-1 px-5 pb-10 flex flex-col justify-start">
+    <div class="bg-surface rounded-2xl p-6 shadow-xl border border-elevated/60">
+
+      <h2 class="font-heading text-3xl text-ivory tracking-wide mb-1">Who's ordering?</h2>
+      <p class="text-sand text-sm mb-6">Enter your number to track your order and earn loyalty points (optional)</p>
+
+      <form th:action="@{/qr/{code}/start(code=${qrCode})}" method="post" id="landing-form">
+
+        <div class="space-y-3 mb-6">
+          <input id="phone-input" type="tel" name="phone"
+                 placeholder="Your phone number"
+                 class="w-full h-14 bg-elevated rounded-xl px-4 text-ivory text-base
+                        placeholder-sand/50 border border-elevated/60
+                        focus:border-accent outline-none transition-colors"/>
+
+          <input id="name-input" type="text" name="name"
+                 placeholder="Your name"
+                 class="w-full h-14 bg-elevated rounded-xl px-4 text-ivory text-base
+                        placeholder-sand/50 border border-elevated/60
+                        focus:border-accent outline-none transition-colors"/>
+        </div>
+
+        <!-- Primary: continue with phone -->
+        <button type="submit"
+                class="w-full h-14 rounded-xl bg-accent text-base font-heading
+                       tracking-widest text-sm hover:shadow-neon hover:brightness-110
+                       transition-all duration-200">
+          CONTINUE
+        </button>
+
+        <!-- Secondary: skip as guest -->
+        <button type="button"
+                onclick="document.getElementById('phone-input').value='';
+                         document.getElementById('name-input').value='';
+                         document.getElementById('landing-form').submit();"
+                class="w-full h-12 mt-3 rounded-xl border border-sand/30 text-sand text-sm
+                       hover:border-ivory/40 hover:text-ivory transition-colors">
+          Skip — Order as Guest
+        </button>
+
+      </form>
+    </div>
+
+    <!-- Loyalty hint -->
+    <p class="text-center text-sand/50 text-xs mt-6 px-4">
+      Regular visitors earn loyalty points automatically when you pay.
+    </p>
+  </div>
+
+  <!-- Bottom tyre stripe -->
+  <div class="h-1.5 flex-shrink-0"
+       style="background: repeating-linear-gradient(90deg,#00D4FF 0,#00D4FF 6px,transparent 6px,transparent 14px)"></div>
+
+</body>
+</html>

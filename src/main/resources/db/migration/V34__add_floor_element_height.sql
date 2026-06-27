@@ -1,0 +1,1 @@
+ALTER TABLE floor_elements ADD COLUMN IF NOT EXISTS height INT;

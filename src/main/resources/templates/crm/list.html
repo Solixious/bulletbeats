@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Customers — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <div class="mb-6">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide">Customers</h1>
+    <p class="text-sand text-sm mt-0.5">
+      Billing time customer lookup — customers are added when a bill is created
+    </p>
+  </div>
+
+  <!-- Search bar -->
+  <div class="mb-5">
+    <input type="text"
+           name="q"
+           placeholder="Search by name or phone..."
+           th:value="${query}"
+           hx-get="/customers/search"
+           hx-trigger="keyup changed delay:350ms, search"
+           hx-target="#customer-list"
+           hx-swap="outerHTML"
+           class="w-full max-w-md bg-elevated border border-elevated/60 focus:border-accent
+                  rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                  outline-none transition-all duration-200 focus:shadow-neon-sm"/>
+  </div>
+
+  <!-- Customer list -->
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+    <th:block th:replace="~{crm/fragments/customer-list :: customer-list}"></th:block>
+  </div>
+
+</main>
+</body>
+</html>

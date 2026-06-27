@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="recipe-notes">
+  <p th:if="${dish.recipeNotes != null and !#strings.isEmpty(dish.recipeNotes)}"
+     class="text-sand text-sm whitespace-pre-wrap leading-relaxed"
+     th:text="${dish.recipeNotes}"></p>
+  <p th:unless="${dish.recipeNotes != null and !#strings.isEmpty(dish.recipeNotes)}"
+     class="text-sand/40 text-sm italic">
+    No recipe notes yet. Add cooking steps and tips so the taste stays consistent across cooks.
+  </p>
+</div>
+</body>
+</html>

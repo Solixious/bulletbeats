@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    container_name: bulletbeats-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-bulletbeats}
+      POSTGRES_USER: ${DB_USER:-bulletbeats}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"  # bind to localhost only — not exposed externally
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bulletbeats}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: bulletbeats-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Database
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-bulletbeats}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-bulletbeats}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      # App config
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+      APP_UPLOAD_DIR: /app/uploads
+      # Session
+      SPRING_SESSION_STORE_TYPE: jdbc
+      # Logging
+      LOGGING_LEVEL_IN_BULLETBEATS: ${LOG_LEVEL:-INFO}
+    volumes:
+      - uploads_data:/app/uploads
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
+  uploads_data:

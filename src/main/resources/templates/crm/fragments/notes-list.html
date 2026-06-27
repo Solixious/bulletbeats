@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="notes-list" id="notes-list" class="space-y-3">
+
+  <p th:if="${#lists.isEmpty(notes)}"
+     class="py-4 text-center text-sand text-sm">
+    No notes yet.
+  </p>
+
+  <div th:each="n : ${notes}"
+       class="bg-elevated/50 rounded-lg p-3 border border-elevated/60">
+    <p class="text-ivory text-sm leading-relaxed" th:text="${n.note}"></p>
+    <div class="flex items-center justify-between mt-2 pt-2 border-t border-elevated/40">
+      <span class="text-sand/60 text-xs font-mono"
+            th:text="${usernameMap != null ? (usernameMap.get(n.createdBy) ?: '—') : '—'}"></span>
+      <time class="text-sand/60 text-xs"
+            th:attr="data-ts=${#temporals.format(n.createdAt, 'yyyy-MM-dd''T''HH:mm:ss')}"
+            th:text="${#temporals.format(n.createdAt, 'dd MMM yyyy, HH:mm')}">
+      </time>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    document.querySelectorAll('time[data-ts]').forEach(function (el) {
+      var diff = Date.now() - new Date(el.getAttribute('data-ts')).getTime();
+      var mins = Math.floor(diff / 60000);
+      if (mins < 1)    el.textContent = 'just now';
+      else if (mins < 60)   el.textContent = mins + ' min ago';
+      else if (mins < 1440) el.textContent = Math.floor(mins / 60) + ' hr ago';
+      else              el.textContent = Math.floor(mins / 1440) + 'd ago';
+    });
+  })();
+</script>
+
+</body>
+</html>
