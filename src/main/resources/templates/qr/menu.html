@@ -76,7 +76,7 @@
         </div>
       </div>
 
-      <!-- Item name + price + dismiss -->
+      <!-- Item name + price + add button -->
       <div class="px-5 py-4 flex items-center justify-between gap-4">
         <div class="min-w-0">
           <p class="text-ivory font-bold text-base leading-tight truncate"
@@ -84,22 +84,42 @@
           <p class="text-accent font-heading text-xl mt-0.5"
              th:text="'₹' + ${#numbers.formatDecimal(promotedItem.price, 1, 2)}">₹0</p>
         </div>
-        <button id="promo-dismiss"
-                class="flex-shrink-0 px-5 py-2.5 rounded-xl bg-accent font-heading
-                       tracking-widest text-sm hover:shadow-neon hover:brightness-110
-                       transition-all duration-200">
-          SEE MENU
-        </button>
+        <form th:id="'promo-af-' + ${promotedItem.id}" style="display:inline">
+          <input type="hidden" name="billId"       th:value="${billId}"/>
+          <input type="hidden" name="menuItemId"   th:value="${promotedItem.id}"/>
+          <input type="hidden" name="quantity"     value="1"/>
+          <input type="hidden" name="customerName" th:value="${customerName}"/>
+          <input type="hidden" name="customerId"   th:value="${customerId}"/>
+          <button type="button" id="promo-add-btn"
+                  th:attr="hx-post=@{/qr/{c}/items(c=${qrCode})},
+                           hx-include='#promo-af-' + ${promotedItem.id}"
+                  hx-target="#order-panel"
+                  hx-swap="innerHTML"
+                  class="flex-shrink-0 px-5 py-2.5 rounded-xl bg-accent font-heading
+                         tracking-widest text-sm hover:shadow-neon hover:brightness-110
+                         transition-all duration-200 active:scale-95">
+            + Add
+          </button>
+        </form>
       </div>
 
     </div>
   </div>
   <script th:if="${promotedItem != null}">
-    document.getElementById('promo-dismiss').addEventListener('click', function () {
+    function dismissPromo() {
       var el = document.getElementById('promo-overlay');
+      if (!el) return;
       el.style.transition = 'opacity 0.25s ease';
       el.style.opacity = '0';
       setTimeout(function () { el.remove(); }, 260);
+    }
+    // Click on backdrop (not on the card) dismisses
+    document.getElementById('promo-overlay').addEventListener('click', function (e) {
+      if (e.target === this) dismissPromo();
+    });
+    // Dismiss after the add request fires
+    document.getElementById('promo-add-btn').addEventListener('click', function () {
+      setTimeout(dismissPromo, 200);
     });
   </script>
 
