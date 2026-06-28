@@ -47,48 +47,75 @@
     </p>
   </div>
 
-  <!-- Phone capture card -->
+  <!-- Hidden form (always present — submitted by both cards) -->
+  <form th:action="@{/qr/{code}/start(code=${qrCode})}" method="post" id="landing-form" class="hidden">
+    <input id="phone-input" type="tel"  name="phone"/>
+    <input id="name-input"  type="text" name="name"/>
+  </form>
+
   <div class="flex-1 px-5 pb-10 flex flex-col justify-start">
-    <div class="bg-surface rounded-2xl p-6 shadow-xl border border-elevated/60">
+
+    <!-- ── Welcome-back card (shown when localStorage has a phone) ── -->
+    <div id="welcome-back-card" class="hidden bg-surface rounded-2xl p-6 shadow-xl border border-elevated/60">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-full bg-accent/20 border border-accent/40
+                    flex items-center justify-center text-accent text-lg flex-shrink-0">👋</div>
+        <div>
+          <p class="text-sand text-xs uppercase tracking-widest">Welcome back</p>
+          <p class="text-ivory font-bold text-base" id="wb-name">—</p>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="w-full h-0.5 bg-elevated/60 rounded-full mb-5 overflow-hidden">
+        <div id="wb-progress" class="h-full bg-accent rounded-full"
+             style="width:0%; transition:width 2s linear;"></div>
+      </div>
+
+      <button onclick="submitSaved()"
+              class="w-full h-14 rounded-xl bg-accent text-base font-heading
+                     tracking-widest text-sm hover:shadow-neon hover:brightness-110
+                     transition-all duration-200 mb-3">
+        CONTINUE
+      </button>
+
+      <button type="button" onclick="showForm()"
+              class="w-full h-11 rounded-xl border border-sand/30 text-sand text-sm
+                     hover:border-ivory/40 hover:text-ivory transition-colors">
+        Not you? Change details
+      </button>
+    </div>
+
+    <!-- ── Normal entry card ──────────────────────────────────────── -->
+    <div id="form-card" class="bg-surface rounded-2xl p-6 shadow-xl border border-elevated/60">
 
       <h2 class="font-heading text-3xl text-ivory tracking-wide mb-1">Who's ordering?</h2>
       <p class="text-sand text-sm mb-6">Enter your number to track your order and earn loyalty points (optional)</p>
 
-      <form th:action="@{/qr/{code}/start(code=${qrCode})}" method="post" id="landing-form">
+      <div class="space-y-3 mb-6">
+        <input id="form-phone" type="tel"  placeholder="Your phone number"
+               class="w-full h-14 bg-elevated rounded-xl px-4 text-ivory text-base
+                      placeholder-sand/50 border border-elevated/60
+                      focus:border-accent outline-none transition-colors"/>
 
-        <div class="space-y-3 mb-6">
-          <input id="phone-input" type="tel" name="phone"
-                 placeholder="Your phone number"
-                 class="w-full h-14 bg-elevated rounded-xl px-4 text-ivory text-base
-                        placeholder-sand/50 border border-elevated/60
-                        focus:border-accent outline-none transition-colors"/>
+        <input id="form-name"  type="text" placeholder="Your name"
+               class="w-full h-14 bg-elevated rounded-xl px-4 text-ivory text-base
+                      placeholder-sand/50 border border-elevated/60
+                      focus:border-accent outline-none transition-colors"/>
+      </div>
 
-          <input id="name-input" type="text" name="name"
-                 placeholder="Your name"
-                 class="w-full h-14 bg-elevated rounded-xl px-4 text-ivory text-base
-                        placeholder-sand/50 border border-elevated/60
-                        focus:border-accent outline-none transition-colors"/>
-        </div>
+      <button type="button" onclick="submitForm()"
+              class="w-full h-14 rounded-xl bg-accent text-base font-heading
+                     tracking-widest text-sm hover:shadow-neon hover:brightness-110
+                     transition-all duration-200">
+        CONTINUE
+      </button>
 
-        <!-- Primary: continue with phone -->
-        <button type="submit"
-                class="w-full h-14 rounded-xl bg-accent text-base font-heading
-                       tracking-widest text-sm hover:shadow-neon hover:brightness-110
-                       transition-all duration-200">
-          CONTINUE
-        </button>
-
-        <!-- Secondary: skip as guest -->
-        <button type="button"
-                onclick="document.getElementById('phone-input').value='';
-                         document.getElementById('name-input').value='';
-                         document.getElementById('landing-form').submit();"
-                class="w-full h-12 mt-3 rounded-xl border border-sand/30 text-sand text-sm
-                       hover:border-ivory/40 hover:text-ivory transition-colors">
-          Skip — Order as Guest
-        </button>
-
-      </form>
+      <button type="button" onclick="submitGuest()"
+              class="w-full h-12 mt-3 rounded-xl border border-sand/30 text-sand text-sm
+                     hover:border-ivory/40 hover:text-ivory transition-colors">
+        Skip — Order as Guest
+      </button>
     </div>
 
     <!-- Loyalty hint -->
@@ -96,6 +123,83 @@
       Regular visitors earn loyalty points automatically when you pay.
     </p>
   </div>
+
+  <script>
+  (function () {
+    var KEY_PHONE = 'bb_phone';
+    var KEY_NAME  = 'bb_name';
+
+    var savedPhone = localStorage.getItem(KEY_PHONE) || '';
+    var savedName  = localStorage.getItem(KEY_NAME)  || '';
+
+    var autoTimer = null;
+
+    // ── Startup ─────────────────────────────────────────────────────
+    if (savedPhone) {
+      showWelcomeBack();
+    }
+
+    // ── Welcome-back flow ────────────────────────────────────────────
+    function showWelcomeBack() {
+      document.getElementById('form-card').classList.add('hidden');
+      var wb = document.getElementById('welcome-back-card');
+      wb.classList.remove('hidden');
+      document.getElementById('wb-name').textContent = savedName || savedPhone;
+
+      // Animate progress bar then auto-submit
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          document.getElementById('wb-progress').style.width = '100%';
+        });
+      });
+      autoTimer = setTimeout(submitSaved, 2000);
+    }
+
+    // ── Submit with saved data ───────────────────────────────────────
+    window.submitSaved = function () {
+      clearTimeout(autoTimer);
+      document.getElementById('phone-input').value = savedPhone;
+      document.getElementById('name-input').value  = savedName;
+      document.getElementById('landing-form').submit();
+    };
+
+    // ── "Not you?" — show the editable form ─────────────────────────
+    window.showForm = function () {
+      clearTimeout(autoTimer);
+      document.getElementById('wb-progress').style.transition = 'none';
+      document.getElementById('wb-progress').style.width = '0%';
+      document.getElementById('welcome-back-card').classList.add('hidden');
+      document.getElementById('form-card').classList.remove('hidden');
+      document.getElementById('form-phone').value = savedPhone;
+      document.getElementById('form-name').value  = savedName;
+      document.getElementById('form-phone').focus();
+    };
+
+    // ── Submit manual form (CONTINUE button) ─────────────────────────
+    window.submitForm = function () {
+      var phone = document.getElementById('form-phone').value.trim();
+      var name  = document.getElementById('form-name').value.trim();
+      if (phone) {
+        localStorage.setItem(KEY_PHONE, phone);
+        localStorage.setItem(KEY_NAME,  name);
+      }
+      document.getElementById('phone-input').value = phone;
+      document.getElementById('name-input').value  = name;
+      document.getElementById('landing-form').submit();
+    };
+
+    // ── Submit as guest (clears saved identity) ──────────────────────
+    window.submitGuest = function () {
+      localStorage.removeItem(KEY_PHONE);
+      localStorage.removeItem(KEY_NAME);
+      savedPhone = '';
+      savedName  = '';
+      document.getElementById('phone-input').value = '';
+      document.getElementById('name-input').value  = '';
+      document.getElementById('landing-form').submit();
+    };
+  })();
+  </script>
 
   <!-- Bottom tyre stripe -->
   <div class="h-1.5 flex-shrink-0"
