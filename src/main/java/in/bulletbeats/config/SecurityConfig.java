@@ -89,7 +89,7 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/login", "/setup", "/error",
                         "/css/**", "/js/**", "/images/**", "/webjars/**",
-                        "/qr/**", "/uploads/**", "/public/**"
+                        "/qr/**", "/public/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

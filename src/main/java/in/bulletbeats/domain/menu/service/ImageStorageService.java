@@ -1,15 +1,13 @@
 package in.bulletbeats.domain.menu.service;
 
 import in.bulletbeats.config.AppProperties;
+import in.bulletbeats.config.SupabaseStorageService;
 import in.bulletbeats.domain.shared.exception.ImageStorageException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
 
@@ -20,6 +18,7 @@ public class ImageStorageService {
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
 
     private final AppProperties appProperties;
+    private final SupabaseStorageService supabaseStorageService;
 
     public String store(MultipartFile file, String subDir) {
         if (file == null || file.isEmpty()) {
@@ -34,26 +33,18 @@ public class ImageStorageService {
             throw new ImageStorageException("Only jpg, png, and webp files are allowed");
         }
 
-        String filename = UUID.randomUUID() + "." + extension;
-        Path targetDir = Paths.get(appProperties.getUploadDir(), subDir);
+        String objectPath = subDir + "/" + UUID.randomUUID() + "." + extension;
         try {
-            Files.createDirectories(targetDir);
-            Files.copy(file.getInputStream(), targetDir.resolve(filename));
+            return supabaseStorageService.upload(file.getBytes(), file.getContentType(), objectPath);
         } catch (IOException e) {
-            throw new ImageStorageException("Failed to store image", e);
+            throw new ImageStorageException("Failed to read uploaded file", e);
         }
-
-        return subDir + "/" + filename;
     }
 
-    public void delete(String relativePath) {
-        if (relativePath == null || relativePath.isBlank()) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(Paths.get(appProperties.getUploadDir(), relativePath));
-        } catch (IOException ignored) {
-        }
+    public void delete(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) return;
+        String objectPath = supabaseStorageService.extractObjectPath(imageUrl);
+        supabaseStorageService.delete(objectPath);
     }
 
     private String extractExtension(String filename) {

@@ -17,18 +17,19 @@ RUN addgroup -S bulletbeats && adduser -S bulletbeats -G bulletbeats
 # Copy jar
 COPY --from=builder /build/target/*.jar app.jar
 
-# Create upload directory
-RUN mkdir -p /app/uploads && chown -R bulletbeats:bulletbeats /app
+RUN chown -R bulletbeats:bulletbeats /app
 
 USER bulletbeats
 
 EXPOSE 8080
 
-# -XX:+UseContainerSupport  — respects Docker memory limits
-# -XX:MaxRAMPercentage=75   — use 75% of container memory for heap
-# -Djava.security.egd       — faster startup for Tomcat
+# -XX:+UseContainerSupport    — respects Docker memory limits
+# -XX:MaxRAMPercentage=75     — use 75% of container memory for heap
+# -Djava.security.egd         — faster startup for Tomcat
+# -Djava.net.preferIPv4Stack  — Docker bridge has no IPv6; Supabase host resolves to IPv6 first
 ENTRYPOINT ["java", \
   "-XX:+UseContainerSupport", \
   "-XX:MaxRAMPercentage=75.0", \
   "-Djava.security.egd=file:/dev/./urandom", \
+  "-Djava.net.preferIPv4Stack=true", \
   "-jar", "app.jar"]

@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 @Setter
 public class AppProperties {
 
-    private String uploadDir = "./uploads";
     private String baseUrl = "http://localhost:8080";
     private int maxImageSizeMb = 2;
     private RateLimit rateLimit = new RateLimit();

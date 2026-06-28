@@ -28,9 +28,9 @@
     <!-- Thumbnail -->
     <div class="flex-shrink-0 w-20 h-20">
       <img th:if="${item.imagePath != null}"
-           th:src="@{/uploads/{p}(p=${item.imagePath})}"
+           th:src="${item.imagePath}"
            th:alt="${item.name}"
-           th:attr="data-src=@{/uploads/{p}(p=${item.imagePath})}"
+           th:attr="data-src=${item.imagePath}"
            class="w-20 h-20 object-cover rounded-lg cursor-pointer"
            onclick="openLightbox(this.dataset.src)"/>
       <!-- Tyre-tread placeholder -->

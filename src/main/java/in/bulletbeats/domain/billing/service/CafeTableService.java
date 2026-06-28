@@ -1,5 +1,6 @@
 package in.bulletbeats.domain.billing.service;
 
+import in.bulletbeats.config.SupabaseStorageService;
 import in.bulletbeats.domain.billing.dto.CafeTableDto;
 import in.bulletbeats.domain.billing.entity.CafeTable;
 import in.bulletbeats.domain.billing.entity.Floor;
@@ -12,15 +13,11 @@ import in.bulletbeats.domain.shared.exception.DuplicateTableException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,9 +32,7 @@ public class CafeTableService {
     private final QrCodeService qrCodeService;
     private final JdbcTemplate jdbcTemplate;
     private final FloorRepository floorRepository;
-
-    @Value("${app.upload-dir:./uploads}")
-    private String uploadDir;
+    private final SupabaseStorageService supabaseStorageService;
 
     public List<CafeTable> getAllActive() {
         return cafeTableRepository.findByIsActiveTrueOrderByNameAsc();
@@ -58,11 +53,11 @@ public class CafeTableService {
         if (table.getQrImagePath() == null) {
             throw new ResourceNotFoundException("No QR code generated for table " + id);
         }
-        try {
-            return Files.readAllBytes(Paths.get(uploadDir, table.getQrImagePath()));
-        } catch (IOException e) {
+        byte[] bytes = supabaseStorageService.download(table.getQrImagePath());
+        if (bytes == null) {
             throw new ResourceNotFoundException("QR image not found for table " + id);
         }
+        return bytes;
     }
 
     @Transactional
@@ -184,10 +179,7 @@ public class CafeTableService {
     public CafeTable regenerateQrCode(Long id) {
         CafeTable table = getById(id);
         if (table.getQrImagePath() != null) {
-            try {
-                Files.deleteIfExists(Paths.get(uploadDir, table.getQrImagePath()));
-            } catch (IOException ignored) {
-            }
+            supabaseStorageService.delete(supabaseStorageService.extractObjectPath(table.getQrImagePath()));
         }
         String newQrCode = UUID.randomUUID().toString();
         String content = readBaseUrl() + "/qr/" + newQrCode;

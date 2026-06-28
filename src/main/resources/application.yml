@@ -74,9 +74,14 @@ server:
       enabled: false
     path: /error
 
+# ── Supabase ─────────────────────────────────────────────────
+supabase:
+  url: ${SUPABASE_URL}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+  bucket: ${SUPABASE_BUCKET:bulletbeats}
+
 # ── App custom config ────────────────────────────────────────
 app:
-  upload-dir: ${APP_UPLOAD_DIR:./uploads}
   base-url: ${APP_BASE_URL:http://localhost:8080}
   max-image-size-mb: 2
   rate-limit:

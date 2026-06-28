@@ -155,7 +155,7 @@
         </label>
         <div th:if="${mode == 'edit' and item.imagePath != null}"
              class="mb-2 flex items-center gap-3">
-          <img th:src="'/uploads/' + ${item.imagePath}"
+          <img th:src="${item.imagePath}"
                alt="Current image"
                class="w-16 h-16 object-cover rounded-lg border border-elevated/60"/>
           <span class="text-sand text-xs">Current image — upload a new one to replace it</span>

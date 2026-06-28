@@ -69,7 +69,7 @@
 
         <!-- Image or placeholder -->
         <img th:if="${item.imagePath != null}"
-             th:src="'/uploads/' + ${item.imagePath}"
+             th:src="${item.imagePath}"
              alt=""
              class="w-14 h-14 rounded-lg object-cover border border-elevated/60 flex-shrink-0"/>
         <div th:unless="${item.imagePath != null}"

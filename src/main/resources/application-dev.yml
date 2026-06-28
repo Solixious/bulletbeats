@@ -1,15 +1,14 @@
 # Overrides for local development
 # Activate with: -Dspring.profiles.active=dev
 # Or in IntelliJ: Run config → Active profiles: dev
+#
+# Set these env vars locally (e.g. in .env or IDE run config):
+#   SPRING_DATASOURCE_URL / USERNAME / PASSWORD  — local or Supabase postgres
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_BUCKET
 
 spring:
   thymeleaf:
     cache: false  # hot reload templates
-
-  datasource:
-    url: jdbc:postgresql://localhost:5432/bulletbeats_dev
-    username: bulletbeats
-    password: bulletbeats
 
 logging:
   level:
