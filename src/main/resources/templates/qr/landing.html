@@ -72,14 +72,14 @@
              style="width:0%; transition:width 2s linear;"></div>
       </div>
 
-      <button onclick="submitSaved()"
+      <button type="button" id="btn-continue-wb"
               class="w-full h-14 rounded-xl bg-accent text-base font-heading
                      tracking-widest text-sm hover:shadow-neon hover:brightness-110
                      transition-all duration-200 mb-3">
         CONTINUE
       </button>
 
-      <button type="button" onclick="showForm()"
+      <button type="button" id="btn-change"
               class="w-full h-11 rounded-xl border border-sand/30 text-sand text-sm
                      hover:border-ivory/40 hover:text-ivory transition-colors">
         Not you? Change details
@@ -104,14 +104,14 @@
                       focus:border-accent outline-none transition-colors"/>
       </div>
 
-      <button type="button" onclick="submitForm()"
+      <button type="button" id="btn-continue-form"
               class="w-full h-14 rounded-xl bg-accent text-base font-heading
                      tracking-widest text-sm hover:shadow-neon hover:brightness-110
                      transition-all duration-200">
         CONTINUE
       </button>
 
-      <button type="button" onclick="submitGuest()"
+      <button type="button" id="btn-guest"
               class="w-full h-12 mt-3 rounded-xl border border-sand/30 text-sand text-sm
                      hover:border-ivory/40 hover:text-ivory transition-colors">
         Skip — Order as Guest
@@ -131,40 +131,16 @@
 
     var savedPhone = localStorage.getItem(KEY_PHONE) || '';
     var savedName  = localStorage.getItem(KEY_NAME)  || '';
+    var autoTimer  = null;
 
-    var autoTimer = null;
-
-    // ── Startup ─────────────────────────────────────────────────────
-    if (savedPhone) {
-      showWelcomeBack();
-    }
-
-    // ── Welcome-back flow ────────────────────────────────────────────
-    function showWelcomeBack() {
-      document.getElementById('form-card').classList.add('hidden');
-      var wb = document.getElementById('welcome-back-card');
-      wb.classList.remove('hidden');
-      document.getElementById('wb-name').textContent = savedName || savedPhone;
-
-      // Animate progress bar then auto-submit
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          document.getElementById('wb-progress').style.width = '100%';
-        });
-      });
-      autoTimer = setTimeout(submitSaved, 2000);
-    }
-
-    // ── Submit with saved data ───────────────────────────────────────
-    window.submitSaved = function () {
+    function submitSaved() {
       clearTimeout(autoTimer);
       document.getElementById('phone-input').value = savedPhone;
       document.getElementById('name-input').value  = savedName;
       document.getElementById('landing-form').submit();
-    };
+    }
 
-    // ── "Not you?" — show the editable form ─────────────────────────
-    window.showForm = function () {
+    function showForm() {
       clearTimeout(autoTimer);
       document.getElementById('wb-progress').style.transition = 'none';
       document.getElementById('wb-progress').style.width = '0%';
@@ -173,10 +149,9 @@
       document.getElementById('form-phone').value = savedPhone;
       document.getElementById('form-name').value  = savedName;
       document.getElementById('form-phone').focus();
-    };
+    }
 
-    // ── Submit manual form (CONTINUE button) ─────────────────────────
-    window.submitForm = function () {
+    function submitForm() {
       var phone = document.getElementById('form-phone').value.trim();
       var name  = document.getElementById('form-name').value.trim();
       if (phone) {
@@ -186,18 +161,38 @@
       document.getElementById('phone-input').value = phone;
       document.getElementById('name-input').value  = name;
       document.getElementById('landing-form').submit();
-    };
+    }
 
-    // ── Submit as guest (clears saved identity) ──────────────────────
-    window.submitGuest = function () {
+    function submitGuest() {
       localStorage.removeItem(KEY_PHONE);
       localStorage.removeItem(KEY_NAME);
-      savedPhone = '';
-      savedName  = '';
       document.getElementById('phone-input').value = '';
       document.getElementById('name-input').value  = '';
       document.getElementById('landing-form').submit();
-    };
+    }
+
+    function showWelcomeBack() {
+      document.getElementById('form-card').classList.add('hidden');
+      document.getElementById('welcome-back-card').classList.remove('hidden');
+      document.getElementById('wb-name').textContent = savedName || savedPhone;
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          document.getElementById('wb-progress').style.width = '100%';
+        });
+      });
+      autoTimer = setTimeout(submitSaved, 2000);
+    }
+
+    // Wire up buttons via event listeners (avoids inline-handler CSP issues)
+    document.getElementById('btn-continue-wb').addEventListener('click', submitSaved);
+    document.getElementById('btn-change').addEventListener('click', showForm);
+    document.getElementById('btn-continue-form').addEventListener('click', submitForm);
+    document.getElementById('btn-guest').addEventListener('click', submitGuest);
+
+    // Startup — show welcome-back card if we have a saved phone
+    if (savedPhone) {
+      showWelcomeBack();
+    }
   })();
   </script>
 
