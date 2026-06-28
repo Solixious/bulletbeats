@@ -132,19 +132,18 @@
 
       <!-- CTA: DRAFT → send to kitchen -->
       <div th:if="${bill.status.name() == 'DRAFT'}">
-        <form th:id="'confirm-form-' + ${bill.id}">
+        <form th:attr="hx-post=@{/qr/{c}/confirm(c=${qrCode})}"
+              hx-target="#order-panel"
+              hx-swap="innerHTML">
           <input type="hidden" name="billId"       th:value="${bill.id}"/>
           <input type="hidden" name="customerName" th:value="${customerName}"/>
+          <button type="submit"
+                  class="w-full py-3.5 rounded-xl bg-accent text-base font-heading tracking-widest
+                         text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200
+                         active:scale-95">
+            SEND TO KITCHEN 🍽
+          </button>
         </form>
-        <button th:attr="hx-post=@{/qr/{c}/confirm(c=${qrCode})},
-                         hx-include='#confirm-form-' + ${bill.id}"
-                hx-target="#order-panel"
-                hx-swap="innerHTML"
-                class="w-full py-3.5 rounded-xl bg-accent text-base font-heading tracking-widest
-                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200
-                       active:scale-95">
-          SEND TO KITCHEN 🍽
-        </button>
       </div>
 
       <!-- CTA: CONFIRMED -->

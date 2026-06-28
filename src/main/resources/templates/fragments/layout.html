@@ -46,13 +46,15 @@
       }
     }
   </style>
-  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script src="/js/htmx.min.js"></script>
   <script>
     // Forward CSRF token on every HTMX request
     document.addEventListener('htmx:configRequest', function (e) {
-      var header = document.querySelector('meta[name="_csrf_header"]').content;
-      var token  = document.querySelector('meta[name="_csrf"]').content;
-      e.detail.headers[header] = token;
+      var headerMeta = document.querySelector('meta[name="_csrf_header"]');
+      var tokenMeta  = document.querySelector('meta[name="_csrf"]');
+      if (headerMeta && tokenMeta && headerMeta.content && tokenMeta.content) {
+        e.detail.headers[headerMeta.content] = tokenMeta.content;
+      }
     });
     // Allow 422 responses to swap (used for validation errors like student discount)
     document.addEventListener('htmx:beforeSwap', function (e) {
