@@ -5,7 +5,14 @@
   <title>Tables — Floor Plan — Bullet Beats Café</title>
 </head>
 <body>
-<main class="p-5 flex flex-col gap-4" style="height: calc(100vh - 48px); overflow: hidden;">
+<style>
+  @media (max-width: 767px) {
+    .fp-main { height: auto !important; min-height: calc(100vh - 48px); overflow-y: auto !important; }
+    #canvas-wrapper { height: 70vw; min-height: 260px; flex: none !important; }
+    #action-panel { width: 100% !important; }
+  }
+</style>
+<main class="fp-main p-5 flex flex-col gap-4" style="height: calc(100vh - 48px); overflow: hidden;">
 
   <!-- ── Header ────────────────────────────────────────────────── -->
   <div class="flex items-center justify-between flex-shrink-0">

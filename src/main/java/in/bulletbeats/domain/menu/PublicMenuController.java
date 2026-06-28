@@ -36,4 +36,13 @@ public class PublicMenuController {
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
         return "public/menu";
     }
+
+    @GetMapping("/items")
+    public String items(@RequestParam(required = false) Long categoryId, Model model) {
+        List<MenuItem> items = categoryId != null
+                ? menuService.getItemsByCategory(categoryId)
+                : menuService.getAllItems();
+        model.addAttribute("items", items);
+        return "public/menu :: items-list";
+    }
 }

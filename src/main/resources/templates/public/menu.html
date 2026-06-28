@@ -27,6 +27,11 @@
       }
     };
   </script>
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <style>
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tabs { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
 </head>
 <body class="bg-base font-body text-ivory min-h-screen">
 
@@ -42,60 +47,79 @@
 
     <!-- Category filter -->
     <div th:if="${!#lists.isEmpty(categories)}"
-         class="flex flex-wrap gap-2 mb-6 justify-center">
-      <a href="/public/menu"
-         th:classappend="${selectedCategoryId == null}
-                         ? 'bg-accent/20 text-accent border-accent/50'
-                         : 'text-sand border-elevated/60 hover:text-ivory'"
-         class="px-4 py-1.5 text-xs rounded-full border transition-colors">All</a>
-      <a th:each="cat : ${categories}"
-         th:href="@{/public/menu(categoryId=${cat.id})}"
-         th:text="${cat.name}"
-         th:classappend="${selectedCategoryId == cat.id}
-                         ? 'bg-accent/20 text-accent border-accent/50'
-                         : 'text-sand border-elevated/60 hover:text-ivory'"
-         class="px-4 py-1.5 text-xs rounded-full border transition-colors">Category</a>
+         class="cat-tabs overflow-x-auto flex gap-2 mb-6 justify-center pb-0.5">
+      <button id="tab-all"
+              class="cat-tab flex-shrink-0 px-4 py-1.5 text-xs rounded-full border transition-colors
+                     bg-accent/20 text-accent border-accent/50"
+              hx-get="/public/menu/items"
+              hx-target="#items-list"
+              hx-swap="outerHTML"
+              onclick="setActiveTab(this)">All</button>
+      <button th:each="cat : ${categories}"
+              th:id="'tab-' + ${cat.id}"
+              th:text="${cat.name}"
+              th:attr="hx-get='/public/menu/items?categoryId=' + ${cat.id}"
+              hx-target="#items-list"
+              hx-swap="outerHTML"
+              th:classappend="${selectedCategoryId == cat.id}
+                              ? 'bg-accent/20 text-accent border-accent/50'
+                              : 'text-sand border-elevated/60 hover:text-ivory'"
+              class="cat-tab flex-shrink-0 px-4 py-1.5 text-xs rounded-full border transition-colors cursor-pointer"
+              onclick="setActiveTab(this)">Category</button>
     </div>
 
-    <!-- Item list -->
-    <div th:if="${#lists.isEmpty(items)}"
-         class="text-center text-sand text-sm py-16">Nothing on the menu right now.</div>
+    <!-- Item list (fragment target) -->
+    <div id="items-list" th:fragment="items-list">
+      <div th:if="${#lists.isEmpty(items)}"
+           class="text-center text-sand text-sm py-16">Nothing on the menu right now.</div>
 
-    <div th:unless="${#lists.isEmpty(items)}" class="space-y-2">
-      <div th:each="item : ${items}"
-           th:classappend="${!item.available} ? 'opacity-50' : ''"
-           class="bg-surface rounded-xl border border-elevated/60 px-5 py-4
-                  flex items-center gap-4">
+      <div th:unless="${#lists.isEmpty(items)}" class="space-y-2">
+        <div th:each="item : ${items}"
+             th:classappend="${!item.available} ? 'opacity-50' : ''"
+             class="bg-surface rounded-xl border border-elevated/60 px-5 py-4
+                    flex items-center gap-4">
 
-        <!-- Image or placeholder -->
-        <img th:if="${item.imagePath != null}"
-             th:src="${item.imagePath}"
-             alt=""
-             class="w-14 h-14 rounded-lg object-cover border border-elevated/60 flex-shrink-0"/>
-        <div th:unless="${item.imagePath != null}"
-             class="w-14 h-14 rounded-lg bg-elevated border border-elevated/60
-                    flex items-center justify-center text-2xl flex-shrink-0">☕</div>
+          <!-- Image or placeholder -->
+          <img th:if="${item.imagePath != null}"
+               th:src="${item.imagePath}"
+               alt=""
+               class="w-14 h-14 rounded-lg object-cover border border-elevated/60 flex-shrink-0"/>
+          <div th:unless="${item.imagePath != null}"
+               class="w-14 h-14 rounded-lg bg-elevated border border-elevated/60
+                      flex items-center justify-center text-2xl flex-shrink-0">☕</div>
 
-        <!-- Name + category -->
-        <div class="flex-1 min-w-0">
-          <p class="text-ivory font-medium text-sm leading-tight" th:text="${item.name}">Item</p>
-          <p class="text-sand text-xs mt-0.5" th:text="${item.category.name}">Category</p>
-          <span th:unless="${item.available}"
-                class="inline-block mt-1 px-2 py-0.5 text-xs border rounded-full
-                       text-red-400 border-red-400/40 bg-red-400/10">Unavailable</span>
+          <!-- Name + category -->
+          <div class="flex-1 min-w-0">
+            <p class="text-ivory font-medium text-sm leading-tight" th:text="${item.name}">Item</p>
+            <p class="text-sand text-xs mt-0.5" th:text="${item.category.name}">Category</p>
+            <span th:unless="${item.available}"
+                  class="inline-block mt-1 px-2 py-0.5 text-xs border rounded-full
+                         text-red-400 border-red-400/40 bg-red-400/10">Unavailable</span>
+          </div>
+
+          <!-- Price -->
+          <span class="font-heading text-xl text-accent flex-shrink-0"
+                th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}">₹0</span>
         </div>
-
-        <!-- Price -->
-        <span class="font-heading text-xl text-accent flex-shrink-0"
-              th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}">₹0</span>
       </div>
-    </div>
 
-    <p th:unless="${#lists.isEmpty(items)}"
-       class="mt-5 text-center text-sand/50 text-xs"
-       th:text="${#lists.size(items)} + ' item' + (${#lists.size(items)} == 1 ? '' : 's')"></p>
+      <p th:unless="${#lists.isEmpty(items)}"
+         class="mt-5 text-center text-sand/50 text-xs"
+         th:text="${#lists.size(items)} + ' item' + (${#lists.size(items)} == 1 ? '' : 's')"></p>
+    </div>
 
   </main>
+
+  <script>
+    function setActiveTab(el) {
+      document.querySelectorAll('.cat-tab').forEach(function(t) {
+        t.classList.remove('bg-accent/20', 'text-accent', 'border-accent/50');
+        t.classList.add('text-sand', 'border-elevated/60');
+      });
+      el.classList.add('bg-accent/20', 'text-accent', 'border-accent/50');
+      el.classList.remove('text-sand', 'border-elevated/60');
+    }
+  </script>
 
   <!-- Footer -->
   <footer class="text-center text-sand/40 text-xs pb-8 mt-4">

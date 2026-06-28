@@ -58,7 +58,7 @@
       </div>
 
       <!-- Stats row -->
-      <div th:class="${customer.isStudent} ? 'grid grid-cols-4 gap-3' : 'grid grid-cols-3 gap-3'">
+      <div th:class="${customer.isStudent} ? 'grid grid-cols-2 sm:grid-cols-4 gap-3' : 'grid grid-cols-2 sm:grid-cols-3 gap-3'">
         <div class="bg-surface rounded-xl border border-elevated/60 p-4 text-center">
           <p class="text-sand text-xs uppercase tracking-widest mb-1">Visits</p>
           <p class="font-heading text-3xl text-ivory" th:text="${customer.visitCount}">0</p>

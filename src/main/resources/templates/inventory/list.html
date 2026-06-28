@@ -9,12 +9,12 @@
 <main class="p-6 max-w-7xl mx-auto">
 
   <!-- Page header -->
-  <div class="flex items-center justify-between mb-6">
+  <div class="flex flex-wrap items-start justify-between gap-y-3 mb-6">
     <div>
       <h1 class="font-heading text-3xl text-ivory tracking-wide">Inventory</h1>
       <p class="text-sand text-sm mt-0.5">Stock levels and item management</p>
     </div>
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center gap-2">
       <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
          href="/inventory/replenishment"
          class="px-3 py-2 text-xs rounded border border-sand/30 text-sand

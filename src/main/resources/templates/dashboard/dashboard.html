@@ -20,7 +20,7 @@
   <div th:if="${isManager}">
 
     <!-- ── Row 1: Today KPIs + Alert cards ──────────────────────── -->
-    <div class="grid grid-cols-5 gap-4 mb-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
 
       <!-- Today Revenue -->
       <div class="bg-surface rounded-2xl border border-elevated/60 p-5 flex flex-col gap-3">
@@ -140,7 +140,7 @@
     </div><!-- /Row 1 -->
 
     <!-- ── Row 2: Monthly comparison cards ───────────────────────── -->
-    <div class="grid grid-cols-3 gap-4 mb-4">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
 
       <!-- Monthly Revenue card -->
       <div class="bg-surface rounded-2xl border border-elevated/60 p-6">
