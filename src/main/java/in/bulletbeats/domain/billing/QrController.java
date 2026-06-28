@@ -94,6 +94,7 @@ public class QrController {
         model.addAttribute("customerName", customerName != null ? customerName : "Guest");
         model.addAttribute("returning", returning);
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
+        model.addAttribute("promotedItem", menuService.getPromotedItem().orElse(null));
         return "qr/menu";
     }
 

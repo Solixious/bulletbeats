@@ -1,0 +1,2 @@
+ALTER TABLE menu_items ADD COLUMN promoted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE menu_items ADD COLUMN promotion_text VARCHAR(255);

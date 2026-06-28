@@ -90,7 +90,23 @@ public class MenuAdminController {
         model.addAttribute("priceHistory", menuService.getPriceHistory(id));
         model.addAttribute("availabilityLog", menuService.getAvailabilityLog(id));
         model.addAttribute("usernameMap", userService.getUsernameMap());
+        model.addAttribute("promotedItem", menuService.getPromotedItem().orElse(null));
         return "menu/admin/detail";
+    }
+
+    @PostMapping("/{id}/promote")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String promote(@PathVariable Long id,
+                          @RequestParam(required = false) String promotionText) {
+        menuService.promote(id, promotionText);
+        return "redirect:/admin/menu/" + id + "?promoted";
+    }
+
+    @PostMapping("/{id}/unpromote")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String unpromote(@PathVariable Long id) {
+        menuService.clearPromotion();
+        return "redirect:/admin/menu/" + id + "?unpromoted";
     }
 
     @GetMapping("/{id}/edit")

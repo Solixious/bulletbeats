@@ -51,6 +51,12 @@ public class MenuItem extends BaseEntity {
     @Column(nullable = false)
     private Long tenantId;
 
+    @Column(nullable = false)
+    private boolean promoted;
+
+    @Column(length = 255)
+    private String promotionText;
+
     public MenuItemType getType() {
         return dish != null ? MenuItemType.DISH : MenuItemType.COMBO;
     }

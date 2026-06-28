@@ -13,6 +13,15 @@
     ← Menu Management
   </a>
 
+  <div th:if="${param.promoted}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Item is now the promoted splash for QR menu visitors.
+  </div>
+  <div th:if="${param.unpromoted}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-sand/30 text-sand text-sm">
+    Promotion cleared.
+  </div>
+
   <div class="flex items-start justify-between mb-7">
     <div class="flex items-center gap-4">
       <div>
@@ -240,6 +249,77 @@
         <div th:id="'avail-cell-' + ${item.id}"
              th:with="standalone=${true}">
           <th:block th:replace="~{menu/admin/fragments/availability-cell :: availability-cell}"></th:block>
+        </div>
+      </div>
+
+      <!-- Promotion -->
+      <div sec:authorize="hasRole('ADMIN')"
+           class="bg-surface rounded-xl border border-elevated/60 p-5">
+        <div class="flex items-center justify-between mb-1">
+          <h2 class="font-heading text-lg text-ivory tracking-wide">QR Splash Promotion</h2>
+          <span th:if="${item.promoted}"
+                class="px-2 py-0.5 text-xs border rounded-full font-bold uppercase
+                       text-accent border-accent/40 bg-accent/10">Active</span>
+        </div>
+        <p class="text-sand text-xs mb-4">
+          When active, customers see this item as a full-screen overlay the moment they open the QR menu.
+          Only one item can be promoted at a time.
+        </p>
+
+        <!-- Currently promoted by a different item -->
+        <div th:if="${promotedItem != null and promotedItem.id != item.id}"
+             class="mb-4 px-3 py-2 rounded-lg bg-elevated border border-amber-400/30 text-amber-400 text-xs">
+          Currently promoting: <span class="font-bold" th:text="${promotedItem.name}"></span>.
+          Saving below will replace it.
+        </div>
+
+        <!-- Promote form -->
+        <form th:unless="${item.promoted}"
+              th:action="@{/admin/menu/{id}/promote(id=${item.id})}"
+              method="post" class="space-y-3">
+          <input type="text" name="promotionText"
+                 th:placeholder="'Try our ' + ${item.name} + '!'"
+                 class="w-full h-11 bg-elevated rounded-lg px-4 text-ivory text-sm
+                        placeholder-sand/40 border border-elevated/60
+                        focus:border-accent outline-none transition-colors"/>
+          <p class="text-sand/50 text-xs">Bold text shown over the image on the splash screen. Leave blank for no overlay text.</p>
+          <button type="submit"
+                  class="w-full h-10 rounded-lg bg-accent font-heading tracking-widest text-sm
+                         hover:brightness-110 hover:shadow-neon transition-all duration-200">
+            SET AS PROMOTED ITEM
+          </button>
+        </form>
+
+        <!-- Unpromote form (shown when this item is currently promoted) -->
+        <div th:if="${item.promoted}" class="space-y-3">
+          <div class="px-3 py-2 rounded-lg bg-elevated text-xs text-sand">
+            Overlay text:
+            <span class="text-ivory font-medium"
+                  th:text="${item.promotionText != null and !item.promotionText.isEmpty()} ? '&quot;' + ${item.promotionText} + '&quot;' : '(none)'">
+            </span>
+          </div>
+          <form th:action="@{/admin/menu/{id}/promote(id=${item.id})}"
+                method="post" class="space-y-3">
+            <input type="text" name="promotionText"
+                   th:value="${item.promotionText}"
+                   placeholder="Update overlay text..."
+                   class="w-full h-11 bg-elevated rounded-lg px-4 text-ivory text-sm
+                          placeholder-sand/40 border border-elevated/60
+                          focus:border-accent outline-none transition-colors"/>
+            <button type="submit"
+                    class="w-full h-10 rounded-lg bg-accent font-heading tracking-widest text-sm
+                           hover:brightness-110 hover:shadow-neon transition-all duration-200">
+              UPDATE PROMOTION
+            </button>
+          </form>
+          <form th:action="@{/admin/menu/{id}/unpromote(id=${item.id})}"
+                method="post">
+            <button type="submit"
+                    class="w-full h-9 rounded-lg border border-sand/30 text-sand text-xs
+                           hover:border-ivory/40 hover:text-ivory transition-colors">
+              Clear promotion
+            </button>
+          </form>
         </div>
       </div>
 

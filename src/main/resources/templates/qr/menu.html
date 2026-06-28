@@ -51,6 +51,58 @@
 </head>
 <body class="bg-base font-body text-ivory min-h-screen" style="padding-bottom: 80px;">
 
+  <!-- ── Promoted item splash overlay ──────────────────────────────── -->
+  <div th:if="${promotedItem != null}" id="promo-overlay"
+       class="fixed inset-0 z-[200] flex items-center justify-center p-5"
+       style="background: rgba(0,0,0,0.88); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);">
+    <div class="relative max-w-sm w-full bg-surface rounded-2xl overflow-hidden shadow-2xl border border-elevated/60">
+
+      <!-- Image area -->
+      <div class="relative w-full" style="height: 240px;">
+        <img th:if="${promotedItem.imagePath != null}"
+             th:src="${promotedItem.imagePath}"
+             alt=""
+             class="w-full h-full object-cover"/>
+        <div th:unless="${promotedItem.imagePath != null}"
+             class="w-full h-full bg-elevated flex items-center justify-center text-7xl">
+          ☕
+        </div>
+        <!-- Gradient + overlay text -->
+        <div class="absolute inset-0 flex flex-col justify-end"
+             style="background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 55%, transparent 100%);">
+          <p th:if="${promotedItem.promotionText != null and !#strings.isEmpty(promotedItem.promotionText)}"
+             class="font-heading text-4xl text-ivory tracking-wide leading-tight px-5 pb-4"
+             th:text="${promotedItem.promotionText}"></p>
+        </div>
+      </div>
+
+      <!-- Item name + price + dismiss -->
+      <div class="px-5 py-4 flex items-center justify-between gap-4">
+        <div class="min-w-0">
+          <p class="text-ivory font-bold text-base leading-tight truncate"
+             th:text="${promotedItem.name}">Item</p>
+          <p class="text-accent font-heading text-xl mt-0.5"
+             th:text="'₹' + ${#numbers.formatDecimal(promotedItem.price, 1, 2)}">₹0</p>
+        </div>
+        <button id="promo-dismiss"
+                class="flex-shrink-0 px-5 py-2.5 rounded-xl bg-accent font-heading
+                       tracking-widest text-sm hover:shadow-neon hover:brightness-110
+                       transition-all duration-200">
+          SEE MENU
+        </button>
+      </div>
+
+    </div>
+  </div>
+  <script th:if="${promotedItem != null}">
+    document.getElementById('promo-dismiss').addEventListener('click', function () {
+      var el = document.getElementById('promo-overlay');
+      el.style.transition = 'opacity 0.25s ease';
+      el.style.opacity = '0';
+      setTimeout(function () { el.remove(); }, 260);
+    });
+  </script>
+
   <!-- ── Fixed top bar ──────────────────────────────────────────────── -->
   <header class="fixed top-0 left-0 right-0 z-50 h-14 bg-surface border-b border-elevated/60
                  flex items-center px-4 gap-3">

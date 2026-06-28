@@ -123,9 +123,14 @@
               class="border-b border-elevated/40 hover:bg-elevated/10 transition-colors duration-100">
 
             <td class="px-4 py-3">
-              <a th:href="@{/admin/menu/{id}(id=${item.id})}"
-                 class="text-ivory text-sm font-medium hover:text-accent transition-colors"
-                 th:text="${item.name}">Name</a>
+              <div class="flex items-center gap-2">
+                <a th:href="@{/admin/menu/{id}(id=${item.id})}"
+                   class="text-ivory text-sm font-medium hover:text-accent transition-colors"
+                   th:text="${item.name}">Name</a>
+                <span th:if="${item.promoted}"
+                      class="px-1.5 py-0.5 text-xs border rounded-full font-bold uppercase
+                             text-accent border-accent/40 bg-accent/10 flex-shrink-0">★ Promo</span>
+              </div>
             </td>
 
             <td class="px-4 py-3">

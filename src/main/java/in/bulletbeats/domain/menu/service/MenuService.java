@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -187,6 +188,32 @@ public class MenuService {
         MenuItem item = getItemById(id);
         item.setActive(true);
         menuItemRepository.save(item);
+    }
+
+    public Optional<MenuItem> getPromotedItem() {
+        return menuItemRepository.findActivePromoted();
+    }
+
+    @Transactional
+    public void promote(Long id, String text) {
+        menuItemRepository.findAllPromoted().forEach(item -> {
+            item.setPromoted(false);
+            item.setPromotionText(null);
+            menuItemRepository.save(item);
+        });
+        MenuItem item = getItemById(id);
+        item.setPromoted(true);
+        item.setPromotionText(text);
+        menuItemRepository.save(item);
+    }
+
+    @Transactional
+    public void clearPromotion() {
+        menuItemRepository.findAllPromoted().forEach(item -> {
+            item.setPromoted(false);
+            item.setPromotionText(null);
+            menuItemRepository.save(item);
+        });
     }
 
     public List<?> getIngredients(Long id) {
