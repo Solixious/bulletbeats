@@ -158,12 +158,12 @@ public class QrOrderService {
         int currentQty = existing.map(BillItem::getQuantity).orElse(0);
         int newTotalQty = currentQty + quantity;
 
-        if (bill.getStatus() == BillStatus.DRAFT) {
-            // Soft stock check: validate cumulative quantity needed without deducting
-            validateStock(aggregateIngredientsForItem(menuItem, newTotalQty));
-        } else {
-            // CONFIRMED: deduct stock for the added delta immediately
-            deductStockForMenuItem(menuItem, quantity, billId);
+        if (!isForceAvailable(menuItem)) {
+            if (bill.getStatus() == BillStatus.DRAFT) {
+                validateStock(aggregateIngredientsForItem(menuItem, newTotalQty));
+            } else {
+                deductStockForMenuItem(menuItem, quantity, billId);
+            }
         }
 
         if (existing.isPresent()) {
@@ -210,7 +210,7 @@ public class QrOrderService {
         String itemName = billItem.getItemName();
         int qty = billItem.getQuantity();
 
-        if (bill.getStatus() == BillStatus.CONFIRMED) {
+        if (bill.getStatus() == BillStatus.CONFIRMED && !isForceAvailable(billItem.getMenuItem())) {
             reverseStockForBillItem(billItem, billId);
         }
 
@@ -283,20 +283,21 @@ public class QrOrderService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found in bill"));
 
-        if (bill.getStatus() == BillStatus.DRAFT && newQty > item.getQuantity()) {
-            validateStock(aggregateIngredientsForItem(item.getMenuItem(), newQty));
-        }
-
-        if (bill.getStatus() == BillStatus.CONFIRMED) {
-            int delta = newQty - item.getQuantity();
-            if (delta > 0) {
-                deductStockForMenuItem(item.getMenuItem(), delta, billId);
-            } else if (delta < 0) {
-                Map<Long, BigDecimal> toReverse = aggregateIngredientsForItem(item.getMenuItem(), -delta);
-                for (Map.Entry<Long, BigDecimal> e : toReverse.entrySet()) {
-                    GroceryItem groceryItem = inventoryService.getItemById(e.getKey());
-                    inventoryService.recordMovement(groceryItem, MovementType.INBOUND, e.getValue(),
-                            "QR_QTY_ADJUST", billId, "QR quantity adjustment", SYSTEM_USER_ID);
+        if (!isForceAvailable(item.getMenuItem())) {
+            if (bill.getStatus() == BillStatus.DRAFT && newQty > item.getQuantity()) {
+                validateStock(aggregateIngredientsForItem(item.getMenuItem(), newQty));
+            }
+            if (bill.getStatus() == BillStatus.CONFIRMED) {
+                int delta = newQty - item.getQuantity();
+                if (delta > 0) {
+                    deductStockForMenuItem(item.getMenuItem(), delta, billId);
+                } else if (delta < 0) {
+                    Map<Long, BigDecimal> toReverse = aggregateIngredientsForItem(item.getMenuItem(), -delta);
+                    for (Map.Entry<Long, BigDecimal> e : toReverse.entrySet()) {
+                        GroceryItem groceryItem = inventoryService.getItemById(e.getKey());
+                        inventoryService.recordMovement(groceryItem, MovementType.INBOUND, e.getValue(),
+                                "QR_QTY_ADJUST", billId, "QR quantity adjustment", SYSTEM_USER_ID);
+                    }
                 }
             }
         }
@@ -360,10 +361,16 @@ public class QrOrderService {
     private Map<Long, BigDecimal> aggregateAllIngredients(Bill bill) {
         Map<Long, BigDecimal> required = new HashMap<>();
         for (BillItem item : bill.getItems()) {
-            aggregateIngredientsForItem(item.getMenuItem(), item.getQuantity())
-                    .forEach((k, v) -> required.merge(k, v, BigDecimal::add));
+            if (!isForceAvailable(item.getMenuItem())) {
+                aggregateIngredientsForItem(item.getMenuItem(), item.getQuantity())
+                        .forEach((k, v) -> required.merge(k, v, BigDecimal::add));
+            }
         }
         return required;
+    }
+
+    private boolean isForceAvailable(MenuItem item) {
+        return Boolean.TRUE.equals(item.getAvailabilityOverride());
     }
 
     private void validateStock(Map<Long, BigDecimal> required) {
