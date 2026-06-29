@@ -253,7 +253,9 @@
           </button>
         </div>
 
-        <div class="border-t border-elevated/60 pt-3">
+        <div class="border-t border-elevated/60 pt-3 flex flex-col items-center gap-2">
+          <img id="panel-qr-img" src="" alt="QR Code"
+               class="w-28 h-28 rounded-lg border border-elevated/60 bg-white"/>
           <a id="panel-qr-link" href="#"
              class="flex items-center gap-1.5 text-xs text-sand hover:text-accent transition-colors">
             <span>↓</span> Download QR
@@ -1145,6 +1147,7 @@
         document.getElementById('panel-seats').textContent    = t.seatCount;
         document.getElementById('panel-width').textContent    = t.tableWidth  + 'px';
         document.getElementById('panel-height').textContent   = t.tableHeight + 'px';
+        document.getElementById('panel-qr-img').src             = `/admin/tables/${t.id}/qr`;
         document.getElementById('panel-qr-link').href         = `/admin/tables/${t.id}/qr/download`;
       } else {
         tablePart.classList.add('hidden'); elPart.classList.remove('hidden');
