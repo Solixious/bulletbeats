@@ -76,9 +76,11 @@
             <td class="px-5 py-3">
               <div class="flex items-center gap-2.5">
                 <img th:if="${item.imagePath != null}"
-                     th:src="${item.imagePath}"
+                     th:src="${item.thumbnailPath != null ? item.thumbnailPath : item.imagePath}"
+                     th:attr="data-full=${item.imagePath}"
                      alt=""
-                     class="w-9 h-9 rounded-md object-cover border border-elevated/60 flex-shrink-0"/>
+                     class="w-9 h-9 rounded-md object-cover border border-elevated/60 flex-shrink-0 cursor-pointer"
+                     onclick="bbOpenImage(this.dataset.full)"/>
                 <div th:unless="${item.imagePath != null}"
                      class="w-9 h-9 rounded-md bg-elevated border border-elevated/60
                             flex items-center justify-center text-sand/30 text-base flex-shrink-0">

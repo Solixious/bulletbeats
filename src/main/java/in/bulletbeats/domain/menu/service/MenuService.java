@@ -78,8 +78,11 @@ public class MenuService {
                 : null;
 
         String imagePath = null;
+        String thumbnailPath = null;
         if (image != null && !image.isEmpty()) {
-            imagePath = imageStorageService.store(image, "menu");
+            ImageStorageService.StoredImage stored = imageStorageService.storeWithThumbnail(image, "menu");
+            imagePath = stored.imagePath();
+            thumbnailPath = stored.thumbnailPath();
         }
 
         MenuItem item = MenuItem.builder()
@@ -91,6 +94,7 @@ public class MenuService {
                 .isAvailable(true)
                 .displayOrder(dto.getDisplayOrder())
                 .imagePath(imagePath)
+                .thumbnailPath(thumbnailPath)
                 .isActive(true)
                 .tenantId(1L)
                 .build();
@@ -116,7 +120,10 @@ public class MenuService {
 
         if (image != null && !image.isEmpty()) {
             imageStorageService.delete(item.getImagePath());
-            item.setImagePath(imageStorageService.store(image, "menu"));
+            imageStorageService.delete(item.getThumbnailPath());
+            ImageStorageService.StoredImage stored = imageStorageService.storeWithThumbnail(image, "menu");
+            item.setImagePath(stored.imagePath());
+            item.setThumbnailPath(stored.thumbnailPath());
         }
 
         item.setName(dto.getName());
@@ -179,6 +186,7 @@ public class MenuService {
     public void deactivate(Long id) {
         MenuItem item = getItemById(id);
         imageStorageService.delete(item.getImagePath());
+        imageStorageService.delete(item.getThumbnailPath());
         item.setActive(false);
         menuItemRepository.save(item);
     }

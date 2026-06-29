@@ -68,9 +68,11 @@
       <div class="bg-surface rounded-xl border border-elevated/60 p-5">
         <div class="flex gap-4">
           <div th:if="${item.imagePath != null}" class="flex-shrink-0">
-            <img th:src="${item.imagePath}"
+            <img th:src="${item.thumbnailPath != null ? item.thumbnailPath : item.imagePath}"
+                 th:attr="data-full=${item.imagePath}"
                  alt="Item image"
-                 class="w-28 h-28 object-cover rounded-lg border border-elevated/60"/>
+                 class="w-28 h-28 object-cover rounded-lg border border-elevated/60 cursor-pointer"
+                 onclick="bbOpenImage(this.dataset.full)"/>
           </div>
           <div th:unless="${item.imagePath != null}"
                class="flex-shrink-0 w-28 h-28 rounded-lg border border-elevated/60

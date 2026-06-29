@@ -248,6 +248,29 @@
 
   </div>
 
+  <!-- ── Image lightbox ───────────────────────────────────────────── -->
+  <div id="bb-image-lightbox"
+       class="hidden fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/90"
+       onclick="bbCloseImage()">
+    <img id="bb-lightbox-img" src="" alt="Menu item"
+         class="max-w-full max-h-full object-contain rounded-xl"/>
+    <button class="absolute top-4 right-4 text-white/60 hover:text-white text-3xl leading-none"
+            onclick="event.stopPropagation(); bbCloseImage()">×</button>
+  </div>
+  <script>
+    function bbOpenImage(src) {
+      document.getElementById('bb-lightbox-img').src = src;
+      document.getElementById('bb-image-lightbox').classList.remove('hidden');
+    }
+    function bbCloseImage() {
+      document.getElementById('bb-image-lightbox').classList.add('hidden');
+      document.getElementById('bb-lightbox-img').src = '';
+    }
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') bbCloseImage();
+    });
+  </script>
+
   <!-- ── Confirm modal ────────────────────────────────────────────── -->
   <div id="bb-confirm-modal"
        class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">

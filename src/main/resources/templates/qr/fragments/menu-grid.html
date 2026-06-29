@@ -28,7 +28,7 @@
     <!-- Thumbnail -->
     <div class="flex-shrink-0 w-20 h-20">
       <img th:if="${item.imagePath != null}"
-           th:src="${item.imagePath}"
+           th:src="${item.thumbnailPath != null ? item.thumbnailPath : item.imagePath}"
            th:alt="${item.name}"
            th:attr="data-src=${item.imagePath}"
            class="w-20 h-20 object-cover rounded-lg cursor-pointer"
