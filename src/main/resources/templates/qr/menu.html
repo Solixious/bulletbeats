@@ -65,7 +65,7 @@
       <!-- Image area -->
       <div class="relative w-full" style="height: 240px;">
         <img th:if="${promotedItem.imagePath != null}"
-             th:src="${promotedItem.imagePath}"
+             th:src="${promotedItem.imagePath + '?v=' + promotedItem.imageVersion}"
              alt=""
              class="w-full h-full object-cover"/>
         <div th:unless="${promotedItem.imagePath != null}"

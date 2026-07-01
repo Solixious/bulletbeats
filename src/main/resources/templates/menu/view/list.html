@@ -76,8 +76,8 @@
             <td class="px-5 py-3">
               <div class="flex items-center gap-2.5">
                 <img th:if="${item.imagePath != null}"
-                     th:src="${item.thumbnailPath != null ? item.thumbnailPath : item.imagePath}"
-                     th:attr="data-full=${item.imagePath}"
+                     th:src="${(item.thumbnailPath != null ? item.thumbnailPath : item.imagePath) + '?v=' + item.imageVersion}"
+                     th:attr="data-full=${item.imagePath + '?v=' + item.imageVersion}"
                      alt=""
                      class="w-9 h-9 rounded-md object-cover border border-elevated/60 flex-shrink-0 cursor-pointer"
                      onclick="bbOpenImage(this.dataset.full)"/>
@@ -102,7 +102,7 @@
             <td class="px-5 py-3 text-sand text-sm" th:text="${item.category.name}"></td>
 
             <td class="px-5 py-3 text-right">
-              <span class="text-accent font-heading text-base"
+              <span class="text-accent font-heading"
                     th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}"></span>
             </td>
 

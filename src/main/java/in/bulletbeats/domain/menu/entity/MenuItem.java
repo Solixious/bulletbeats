@@ -46,6 +46,9 @@ public class MenuItem extends BaseEntity {
     private String thumbnailPath;
 
     @Column(nullable = false)
+    private long imageVersion;
+
+    @Column(nullable = false)
     private int displayOrder;
 
     @Column(nullable = false)

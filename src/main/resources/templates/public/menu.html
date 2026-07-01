@@ -81,8 +81,8 @@
 
           <!-- Image or placeholder -->
           <img th:if="${item.imagePath != null}"
-               th:src="${item.thumbnailPath != null ? item.thumbnailPath : item.imagePath}"
-               th:attr="data-full=${item.imagePath}"
+               th:src="${(item.thumbnailPath != null ? item.thumbnailPath : item.imagePath) + '?v=' + item.imageVersion}"
+               th:attr="data-full=${item.imagePath + '?v=' + item.imageVersion}"
                alt=""
                class="w-14 h-14 rounded-lg object-cover border border-elevated/60 flex-shrink-0 cursor-pointer"
                onclick="pubOpenImage(this.dataset.full)"/>

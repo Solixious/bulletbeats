@@ -79,10 +79,12 @@ public class MenuService {
 
         String imagePath = null;
         String thumbnailPath = null;
+        long imageVersion = 0L;
         if (image != null && !image.isEmpty()) {
             ImageStorageService.StoredImage stored = imageStorageService.storeWithThumbnail(image, "menu");
             imagePath = stored.imagePath();
             thumbnailPath = stored.thumbnailPath();
+            imageVersion = System.currentTimeMillis();
         }
 
         MenuItem item = MenuItem.builder()
@@ -95,6 +97,7 @@ public class MenuService {
                 .displayOrder(dto.getDisplayOrder())
                 .imagePath(imagePath)
                 .thumbnailPath(thumbnailPath)
+                .imageVersion(imageVersion)
                 .isActive(true)
                 .tenantId(1L)
                 .build();
@@ -124,6 +127,7 @@ public class MenuService {
             ImageStorageService.StoredImage stored = imageStorageService.storeWithThumbnail(image, "menu");
             item.setImagePath(stored.imagePath());
             item.setThumbnailPath(stored.thumbnailPath());
+            item.setImageVersion(System.currentTimeMillis());
         }
 
         item.setName(dto.getName());
