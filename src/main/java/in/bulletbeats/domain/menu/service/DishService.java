@@ -58,7 +58,9 @@ public class DishService {
                 .isActive(true)
                 .tenantId(1L)
                 .build();
-        dto.getIngredients().forEach(i -> dish.getIngredients().add(buildIngredient(dish, i)));
+        if (dto.getIngredients() != null) {
+            dto.getIngredients().forEach(i -> dish.getIngredients().add(buildIngredient(dish, i)));
+        }
         return dishRepository.save(dish);
     }
 
@@ -75,7 +77,9 @@ public class DishService {
         dish.setPrepTimeMinutes(dto.getPrepTimeMinutes());
         dish.getIngredients().clear();
         entityManager.flush(); // send DELETEs to DB before INSERTs to avoid unique constraint violation
-        dto.getIngredients().forEach(i -> dish.getIngredients().add(buildIngredient(dish, i)));
+        if (dto.getIngredients() != null) {
+            dto.getIngredients().forEach(i -> dish.getIngredients().add(buildIngredient(dish, i)));
+        }
         return dishRepository.save(dish);
     }
 
