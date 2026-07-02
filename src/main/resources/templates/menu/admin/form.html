@@ -164,7 +164,13 @@
                class="w-full text-sand text-sm file:mr-3 file:py-1.5 file:px-3
                       file:rounded file:border file:border-sand/30 file:text-sand
                       file:bg-elevated file:text-xs file:cursor-pointer
-                      hover:file:border-ivory/40 hover:file:text-ivory transition-colors"/>
+                      hover:file:border-ivory/40 hover:file:text-ivory transition-colors"
+               onchange="checkImageSize(this)"/>
+        <p id="image-size-error" class="mt-1.5 text-red-400 text-xs hidden">
+          Image must be 2 MB or smaller.
+        </p>
+        <p th:if="${imageError}" th:text="${imageError}"
+           class="mt-1.5 text-red-400 text-xs"></p>
       </div>
 
       <!-- Actions -->
@@ -185,10 +191,15 @@
   </div>
 
   <script>
-    // When dish selector loads, clear any hidden combo input and vice-versa
     function clearOtherType(type) {
       var sel = document.getElementById(type + 'Id');
       if (sel) sel.removeAttribute('name');
+    }
+    function checkImageSize(input) {
+      var err = document.getElementById('image-size-error');
+      var tooBig = input.files.length > 0 && input.files[0].size > 2 * 1024 * 1024;
+      err.classList.toggle('hidden', !tooBig);
+      input.closest('form').querySelector('[type="submit"]').disabled = tooBig;
     }
   </script>
 

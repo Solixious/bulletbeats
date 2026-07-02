@@ -8,6 +8,7 @@ import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.ComboService;
 import in.bulletbeats.domain.menu.service.DishService;
 import in.bulletbeats.domain.menu.service.MenuService;
+import in.bulletbeats.domain.shared.exception.ImageStorageException;
 import in.bulletbeats.domain.user.entity.User;
 import in.bulletbeats.domain.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -79,7 +80,16 @@ public class MenuAdminController {
             model.addAttribute("mode", "create");
             return "menu/admin/form";
         }
-        menuService.createItem(dto, image, currentUserId(auth));
+        try {
+            menuService.createItem(dto, image, currentUserId(auth));
+        } catch (ImageStorageException e) {
+            model.addAttribute("imageError", e.getMessage());
+            model.addAttribute("categories", categoryService.getAllActive());
+            model.addAttribute("dishes", dishService.getAll());
+            model.addAttribute("combos", comboService.getAll());
+            model.addAttribute("mode", "create");
+            return "menu/admin/form";
+        }
         return "redirect:/admin/menu?created";
     }
 
@@ -144,7 +154,17 @@ public class MenuAdminController {
             model.addAttribute("mode", "edit");
             return "menu/admin/form";
         }
-        menuService.updateItem(id, dto, image, currentUserId(auth));
+        try {
+            menuService.updateItem(id, dto, image, currentUserId(auth));
+        } catch (ImageStorageException e) {
+            model.addAttribute("imageError", e.getMessage());
+            model.addAttribute("item", menuService.getItemById(id));
+            model.addAttribute("categories", categoryService.getAllActive());
+            model.addAttribute("dishes", dishService.getAll());
+            model.addAttribute("combos", comboService.getAll());
+            model.addAttribute("mode", "edit");
+            return "menu/admin/form";
+        }
         return "redirect:/admin/menu/" + id + "?updated";
     }
 
