@@ -157,10 +157,7 @@
     }
 
     function removeRow(btn) {
-      var row = btn.closest('.ingredient-row');
-      if (document.querySelectorAll('#ingredients-list .ingredient-row').length > 1) {
-        row.remove();
-      }
+      btn.closest('.ingredient-row').remove();
     }
 
     // Renumber indices sequentially before submit

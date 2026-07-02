@@ -21,7 +21,6 @@ public class CreateDishDto {
 
     private Integer prepTimeMinutes;
 
-    @NotEmpty
     @Valid
     private List<DishIngredientDto> ingredients;
 }

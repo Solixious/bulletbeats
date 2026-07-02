@@ -21,7 +21,6 @@ public class UpdateDishDto {
 
     private Integer prepTimeMinutes;
 
-    @NotEmpty
     @Valid
     private List<DishIngredientDto> ingredients;
 }
