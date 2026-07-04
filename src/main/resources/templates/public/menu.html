@@ -78,7 +78,7 @@
         <!-- Grouped view with section headers (shown when all items are displayed) -->
         <th:block th:if="${categories != null}">
           <th:block th:each="cat : ${categories}"
-                    th:with="catItems=${items.?[category.id == cat.id]}">
+                    th:with="catItems=${items.?[category.id == __${cat.id}__]}">
             <div th:unless="${#lists.isEmpty(catItems)}" class="mb-7">
               <h2 class="font-heading text-lg text-sand tracking-widest uppercase mb-3
                          border-b border-elevated/40 pb-1"
