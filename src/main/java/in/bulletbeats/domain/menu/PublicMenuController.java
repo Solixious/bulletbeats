@@ -43,6 +43,9 @@ public class PublicMenuController {
                 ? menuService.getItemsByCategory(categoryId)
                 : menuService.getAllItems();
         model.addAttribute("items", items);
+        if (categoryId == null) {
+            model.addAttribute("categories", categoryService.getAllActive());
+        }
         return "public/menu :: items-list";
     }
 }
