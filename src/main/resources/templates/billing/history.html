@@ -105,7 +105,8 @@
           <td class="px-4 py-3 text-sand text-xs whitespace-nowrap"
               th:text="${#temporals.format(b.createdAt, 'dd MMM yyyy, HH:mm')}"></td>
 
-          <td class="px-4 py-3 text-ivory text-sm" th:text="${b.cafeTable.name}"></td>
+          <td class="px-4 py-3 text-ivory text-sm"
+              th:text="${b.cafeTable != null ? b.cafeTable.name : b.orderType.displayName}"></td>
 
           <td class="px-4 py-3 text-sand text-sm">
             <span th:if="${b.customer != null}">

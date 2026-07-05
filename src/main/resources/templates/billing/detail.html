@@ -18,16 +18,16 @@
       <h1 class="font-heading text-2xl text-ivory tracking-wide"
           th:text="'Bill #' + ${bill.billNumber}"></h1>
       <p class="text-sand text-sm mt-0.5"
-         th:text="${bill.cafeTable.name}
+         th:text="${bill.cafeTable != null ? bill.cafeTable.name : bill.orderType.displayName}
                   + (${bill.customer != null} ? ' · ' + ${bill.customer.name} : ' · Walk-in')
                   + (${bill.createdAt != null} ? ' · ' + ${#temporals.format(bill.createdAt, 'dd MMM, HH:mm')} : '')">
       </p>
     </div>
     <!-- Header actions (manager+) -->
     <div class="flex items-center gap-2" sec:authorize="hasAnyRole('MANAGER','ADMIN')">
-      <!-- Transfer Table button -->
+      <!-- Transfer Table button (dine-in only) -->
       <div id="bill-transfer-btn">
-        <button th:if="${bill.status.name() == 'DRAFT' or bill.status.name() == 'CONFIRMED'}"
+        <button th:if="${bill.cafeTable != null and (bill.status.name() == 'DRAFT' or bill.status.name() == 'CONFIRMED')}"
                 th:attr="hx-get=@{/bills/{id}/transfer-form(id=${bill.id})}"
                 hx-target="#transfer-panel"
                 hx-swap="innerHTML"

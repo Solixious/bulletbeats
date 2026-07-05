@@ -35,7 +35,23 @@
         </span>
       </span>
     </div>
-    <p class="text-ivory text-sm font-medium" th:text="${bill.cafeTable.name}"></p>
+    <!-- Location / order type line -->
+    <div class="flex items-center gap-2">
+      <p th:if="${bill.cafeTable != null}"
+         class="text-ivory text-sm font-medium" th:text="${bill.cafeTable.name}"></p>
+      <span th:if="${bill.orderType != null and bill.orderType.name() == 'TAKEAWAY'}"
+            class="px-2 py-0.5 text-xs border rounded-full text-blue-400 border-blue-400/40 bg-blue-400/10">
+        Takeaway
+      </span>
+      <span th:if="${bill.orderType != null and bill.orderType.name() == 'ONLINE_ORDER'}"
+            class="px-2 py-0.5 text-xs border rounded-full text-orange-400 border-orange-400/40 bg-orange-400/10"
+            th:text="${bill.onlineOrderPlatform != null ? bill.onlineOrderPlatform.displayName : 'Online Order'}">
+      </span>
+      <span th:if="${bill.orderType != null and bill.orderType.name() == 'DIRECT_DELIVERY'}"
+            class="px-2 py-0.5 text-xs border rounded-full text-purple-400 border-purple-400/40 bg-purple-400/10">
+        Direct Delivery
+      </span>
+    </div>
     <p class="text-sand text-xs mt-0.5"
        th:text="${bill.customer != null} ? ${bill.customer.name} + ' · ' + ${bill.customer.phone} : 'Walk-in'"></p>
   </div>

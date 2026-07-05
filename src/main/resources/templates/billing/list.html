@@ -101,7 +101,7 @@
         </thead>
         <tbody>
           <tr th:each="b : ${activeBills}"
-              th:attr="data-table-id=${b.cafeTable.id}"
+              th:attr="data-table-id=${b.cafeTable != null ? b.cafeTable.id : ''}"
               class="border-b border-elevated/40 last:border-0 hover:bg-elevated/20 transition-colors">
 
             <td class="px-4 py-3 font-mono text-accent text-sm">
@@ -109,7 +109,26 @@
               <span th:if="${b.studentDiscountApplied}" title="Student discount applied">🎓</span>
             </td>
 
-            <td class="px-4 py-3 text-ivory text-sm" th:text="${b.cafeTable.name}"></td>
+            <td class="px-4 py-3 text-sm">
+              <!-- Dine-in: show table name -->
+              <span th:if="${b.cafeTable != null}"
+                    class="text-ivory" th:text="${b.cafeTable.name}"></span>
+              <!-- Takeaway -->
+              <span th:if="${b.orderType != null and b.orderType.name() == 'TAKEAWAY'}"
+                    class="px-2 py-0.5 text-xs border rounded-full text-blue-400 border-blue-400/40 bg-blue-400/10">
+                Takeaway
+              </span>
+              <!-- Online Order -->
+              <span th:if="${b.orderType != null and b.orderType.name() == 'ONLINE_ORDER'}"
+                    class="px-2 py-0.5 text-xs border rounded-full text-orange-400 border-orange-400/40 bg-orange-400/10"
+                    th:text="${b.onlineOrderPlatform != null ? b.onlineOrderPlatform.displayName : 'Online'}">
+              </span>
+              <!-- Direct Delivery -->
+              <span th:if="${b.orderType != null and b.orderType.name() == 'DIRECT_DELIVERY'}"
+                    class="px-2 py-0.5 text-xs border rounded-full text-purple-400 border-purple-400/40 bg-purple-400/10">
+                Direct Delivery
+              </span>
+            </td>
 
             <td class="px-4 py-3 text-sand text-sm"
                 th:text="${b.customer != null} ? ${b.customer.name} : 'Walk-in'"></td>

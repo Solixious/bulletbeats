@@ -21,7 +21,7 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
     @Query("SELECT DISTINCT b FROM Bill b " +
            "LEFT JOIN FETCH b.items bi " +
            "LEFT JOIN FETCH bi.menuItem " +
-           "JOIN FETCH b.cafeTable " +
+           "LEFT JOIN FETCH b.cafeTable " +
            "LEFT JOIN FETCH b.customer " +
            "WHERE b.id = :id")
     Optional<Bill> findByIdWithItems(@Param("id") Long id);
@@ -44,7 +44,7 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
     BigDecimal getTodaysRevenue();
 
     @Query("SELECT b FROM Bill b " +
-           "JOIN FETCH b.cafeTable " +
+           "LEFT JOIN FETCH b.cafeTable " +
            "LEFT JOIN FETCH b.customer " +
            "WHERE b.status NOT IN :statuses " +
            "ORDER BY b.createdAt DESC")
@@ -53,7 +53,7 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
     @Query("SELECT COUNT(b) FROM Bill b WHERE b.status NOT IN :statuses")
     long countActiveBills(@Param("statuses") Collection<BillStatus> statuses);
 
-    @Query("SELECT b.cafeTable.id, COUNT(b) FROM Bill b WHERE b.status NOT IN :statuses GROUP BY b.cafeTable.id")
+    @Query("SELECT b.cafeTable.id, COUNT(b) FROM Bill b WHERE b.cafeTable IS NOT NULL AND b.status NOT IN :statuses GROUP BY b.cafeTable.id")
     List<Object[]> countActiveByTableId(@Param("statuses") Collection<BillStatus> statuses);
 
     List<Bill> findByCafeTableIdAndStatusIn(Long cafeTableId, List<BillStatus> statuses);

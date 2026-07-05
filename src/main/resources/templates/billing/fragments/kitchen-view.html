@@ -8,7 +8,7 @@
     <div>
       <h2 class="font-heading text-2xl text-ivory tracking-wide">Kitchen Order</h2>
       <p class="text-sand text-xs mt-0.5"
-         th:text="${bill.cafeTable.name}
+         th:text="${bill.cafeTable != null ? bill.cafeTable.name : bill.orderType.displayName}
                   + (${bill.customer != null} ? ' · ' + ${bill.customer.name} : ' · Walk-in')"></p>
     </div>
     <span class="px-3 py-1 rounded-full border border-amber-400/40 bg-amber-400/10

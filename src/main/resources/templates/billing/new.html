@@ -14,18 +14,71 @@
 
   <div class="mb-7">
     <h1 class="font-heading text-3xl text-ivory tracking-wide">New Bill</h1>
-    <p class="text-sand text-sm mt-0.5">Select a table and optionally link a customer</p>
+    <p class="text-sand text-sm mt-0.5">Choose how this order is arriving</p>
   </div>
 
   <form th:action="@{/bills}" th:object="${dto}" method="post" class="space-y-6">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <input type="hidden" id="orderType" name="orderType" th:field="*{orderType}"/>
     <input type="hidden" id="cafeTableId" name="cafeTableId" th:field="*{cafeTableId}"/>
+    <input type="hidden" id="onlineOrderPlatform" name="onlineOrderPlatform" th:field="*{onlineOrderPlatform}"/>
     <input type="hidden" id="customerPhone" name="customerPhone" th:field="*{customerPhone}"/>
     <input type="hidden" id="customerName" name="customerName" th:field="*{customerName}"/>
 
-    <!-- Step 1: Table selection -->
+    <!-- Step 1: Order Type -->
     <div class="bg-surface rounded-xl border border-elevated/60 p-5">
-      <p class="text-sand text-xs uppercase tracking-widest mb-4">Step 1 — Select Table</p>
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">Step 1 — Order Type</p>
+
+      <div class="grid grid-cols-2 gap-3">
+
+        <!-- Dine-In -->
+        <button type="button" data-order-type="DINE_IN"
+                onclick="selectOrderType('DINE_IN')"
+                class="order-type-card text-left p-4 rounded-lg border border-elevated/60
+                       hover:border-accent/40 transition-all duration-150 cursor-pointer
+                       bg-elevated/30 hover:bg-elevated/60 focus:outline-none">
+          <p class="text-ivory text-sm font-medium">Dine-In</p>
+          <p class="text-sand text-xs mt-0.5">Guests seated at a table</p>
+        </button>
+
+        <!-- Takeaway -->
+        <button type="button" data-order-type="TAKEAWAY"
+                onclick="selectOrderType('TAKEAWAY')"
+                class="order-type-card text-left p-4 rounded-lg border border-elevated/60
+                       hover:border-accent/40 transition-all duration-150 cursor-pointer
+                       bg-elevated/30 hover:bg-elevated/60 focus:outline-none">
+          <p class="text-ivory text-sm font-medium">Takeaway</p>
+          <p class="text-sand text-xs mt-0.5">Walk-in, picking up order</p>
+        </button>
+
+        <!-- Online Order -->
+        <button type="button" data-order-type="ONLINE_ORDER"
+                onclick="selectOrderType('ONLINE_ORDER')"
+                class="order-type-card text-left p-4 rounded-lg border border-elevated/60
+                       hover:border-accent/40 transition-all duration-150 cursor-pointer
+                       bg-elevated/30 hover:bg-elevated/60 focus:outline-none">
+          <p class="text-ivory text-sm font-medium">Online Order</p>
+          <p class="text-sand text-xs mt-0.5">Zomato / Swiggy platform</p>
+        </button>
+
+        <!-- Direct Delivery -->
+        <button type="button" data-order-type="DIRECT_DELIVERY"
+                onclick="selectOrderType('DIRECT_DELIVERY')"
+                class="order-type-card text-left p-4 rounded-lg border border-elevated/60
+                       hover:border-accent/40 transition-all duration-150 cursor-pointer
+                       bg-elevated/30 hover:bg-elevated/60 focus:outline-none">
+          <p class="text-ivory text-sm font-medium">Direct Delivery</p>
+          <p class="text-sand text-xs mt-0.5">WhatsApp / phone order</p>
+        </button>
+      </div>
+
+      <p th:if="*{#fields.hasErrors('orderType')}" th:errors="*{orderType}"
+         class="mt-2 text-red-400 text-xs"></p>
+    </div>
+
+    <!-- Step 2a: Table selection (DINE_IN only) -->
+    <div id="table-section" class="hidden bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">Step 2 — Select Table</p>
 
       <div th:if="${#lists.isEmpty(tables)}"
            class="py-8 text-center text-sand text-sm">
@@ -65,7 +118,6 @@
         </th:block>
       </div>
 
-      <!-- Selected table display -->
       <div id="selected-table-display" class="hidden mt-4 flex items-center gap-2">
         <span class="text-accent text-sm">✓ Selected:</span>
         <span id="selected-table-name" class="text-ivory text-sm font-medium"></span>
@@ -73,7 +125,6 @@
                 class="text-sand text-xs hover:text-ivory ml-2">× clear</button>
       </div>
 
-      <!-- Occupied table info banner -->
       <div id="occupied-banner" class="hidden mt-4 px-4 py-3 rounded-lg
                                        border border-amber-400/30 bg-amber-400/5 text-amber-400 text-sm">
         <p><strong id="occupied-table-name"></strong> already has active bills.</p>
@@ -84,13 +135,39 @@
          class="mt-2 text-red-400 text-xs"></p>
     </div>
 
-    <!-- Step 2: Customer (optional) -->
-    <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+    <!-- Step 2b: Platform selection (ONLINE_ORDER only) -->
+    <div id="platform-section" class="hidden bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">Step 2 — Platform</p>
+      <div class="flex gap-3">
+        <button type="button" data-platform="ZOMATO"
+                onclick="selectPlatform('ZOMATO')"
+                class="platform-card flex-1 p-4 rounded-lg border border-elevated/60
+                       hover:border-red-400/40 transition-all duration-150 cursor-pointer
+                       bg-elevated/30 hover:bg-elevated/60 focus:outline-none text-center">
+          <p class="text-ivory text-sm font-medium">Zomato</p>
+        </button>
+        <button type="button" data-platform="SWIGGY"
+                onclick="selectPlatform('SWIGGY')"
+                class="platform-card flex-1 p-4 rounded-lg border border-elevated/60
+                       hover:border-orange-400/40 transition-all duration-150 cursor-pointer
+                       bg-elevated/30 hover:bg-elevated/60 focus:outline-none text-center">
+          <p class="text-ivory text-sm font-medium">Swiggy</p>
+        </button>
+      </div>
+      <div id="selected-platform-display" class="hidden mt-3 flex items-center gap-2">
+        <span class="text-accent text-sm">✓ Platform:</span>
+        <span id="selected-platform-name" class="text-ivory text-sm font-medium"></span>
+        <button type="button" onclick="clearPlatform()"
+                class="text-sand text-xs hover:text-ivory ml-2">× clear</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Customer (optional, all order types) -->
+    <div id="customer-section" class="hidden bg-surface rounded-xl border border-elevated/60 p-5">
       <p class="text-sand text-xs uppercase tracking-widest mb-4">
-        Step 2 — Customer <span class="normal-case text-sand/50">(optional)</span>
+        Step 3 — Customer <span class="normal-case text-sand/50">(optional)</span>
       </p>
 
-      <!-- Search box -->
       <div class="relative mb-3">
         <input type="text"
                id="customerSearchInput"
@@ -106,7 +183,6 @@
 
       <div id="customer-results" class="mb-3"></div>
 
-      <!-- Selected customer display -->
       <div id="selected-customer-display"
            class="hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-elevated/50 border border-elevated/60">
         <span class="text-accent text-xs">✓</span>
@@ -125,7 +201,7 @@
     </div>
 
     <!-- Submit -->
-    <div class="flex items-center gap-3">
+    <div id="submit-section" class="hidden flex items-center gap-3">
       <button type="submit"
               class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
                      text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200">
@@ -136,6 +212,46 @@
   </form>
 
 <script>
+var currentOrderType = null;
+
+function selectOrderType(type) {
+  currentOrderType = type;
+  document.getElementById('orderType').value = type;
+
+  // Highlight the selected card
+  document.querySelectorAll('.order-type-card').forEach(function(card) {
+    card.classList.remove('ring-2', 'ring-accent', 'border-accent');
+    card.classList.add('border-elevated/60');
+  });
+  var selected = document.querySelector('[data-order-type="' + type + '"]');
+  if (selected) {
+    selected.classList.remove('border-elevated/60');
+    selected.classList.add('ring-2', 'ring-accent', 'border-accent');
+  }
+
+  // Show/hide conditional sections
+  var tableSection    = document.getElementById('table-section');
+  var platformSection = document.getElementById('platform-section');
+
+  if (type === 'DINE_IN') {
+    tableSection.classList.remove('hidden');
+    platformSection.classList.add('hidden');
+    clearPlatform();
+  } else if (type === 'ONLINE_ORDER') {
+    tableSection.classList.add('hidden');
+    platformSection.classList.remove('hidden');
+    clearTable();
+  } else {
+    tableSection.classList.add('hidden');
+    platformSection.classList.add('hidden');
+    clearTable();
+    clearPlatform();
+  }
+
+  document.getElementById('customer-section').classList.remove('hidden');
+  document.getElementById('submit-section').classList.remove('hidden');
+}
+
 function selectTable(id, status, name) {
   document.querySelectorAll('[data-id]').forEach(function(el) {
     el.classList.remove('ring-2', 'ring-accent', 'border-accent');
@@ -165,8 +281,36 @@ function clearTable() {
     el.classList.add('border-elevated/60');
   });
   document.getElementById('cafeTableId').value = '';
-  document.getElementById('selected-table-display').classList.add('hidden');
-  document.getElementById('occupied-banner').classList.add('hidden');
+  var display = document.getElementById('selected-table-display');
+  if (display) display.classList.add('hidden');
+  var banner = document.getElementById('occupied-banner');
+  if (banner) banner.classList.add('hidden');
+}
+
+function selectPlatform(platform) {
+  document.getElementById('onlineOrderPlatform').value = platform;
+  document.querySelectorAll('.platform-card').forEach(function(card) {
+    card.classList.remove('ring-2', 'ring-accent', 'border-accent');
+    card.classList.add('border-elevated/60');
+  });
+  var selected = document.querySelector('[data-platform="' + platform + '"]');
+  if (selected) {
+    selected.classList.remove('border-elevated/60');
+    selected.classList.add('ring-2', 'ring-accent', 'border-accent');
+  }
+  var label = platform === 'ZOMATO' ? 'Zomato' : 'Swiggy';
+  document.getElementById('selected-platform-name').textContent = label;
+  document.getElementById('selected-platform-display').classList.remove('hidden');
+}
+
+function clearPlatform() {
+  document.getElementById('onlineOrderPlatform').value = '';
+  document.querySelectorAll('.platform-card').forEach(function(card) {
+    card.classList.remove('ring-2', 'ring-accent', 'border-accent');
+    card.classList.add('border-elevated/60');
+  });
+  var display = document.getElementById('selected-platform-display');
+  if (display) display.classList.add('hidden');
 }
 
 function selectCustomer(phone, name, isVip) {

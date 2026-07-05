@@ -29,6 +29,7 @@ import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.DiscountType;
 import in.bulletbeats.domain.shared.enums.MovementType;
+import in.bulletbeats.domain.shared.enums.OrderType;
 import in.bulletbeats.domain.shared.exception.BillNotEditableException;
 import in.bulletbeats.domain.shared.exception.EmptyBillException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
@@ -123,7 +124,7 @@ public class BillingService {
             List<Predicate> preds = new ArrayList<>();
 
             if (!isCount) {
-                root.fetch("cafeTable", JoinType.INNER);
+                root.fetch("cafeTable", JoinType.LEFT);
                 query.distinct(true);
             }
 
@@ -148,9 +149,17 @@ public class BillingService {
 
     @Transactional
     public Bill createBill(CreateBillDto dto, Long userId) {
-        CafeTable table = cafeTableService.getById(dto.getCafeTableId());
-        if (!table.isActive()) {
-            throw new TableNotActiveException("Table '" + table.getName() + "' is not active");
+        OrderType orderType = dto.getOrderType() != null ? dto.getOrderType() : OrderType.DINE_IN;
+
+        CafeTable table = null;
+        if (orderType == OrderType.DINE_IN) {
+            if (dto.getCafeTableId() == null) {
+                throw new IllegalArgumentException("A table must be selected for dine-in orders");
+            }
+            table = cafeTableService.getById(dto.getCafeTableId());
+            if (!table.isActive()) {
+                throw new TableNotActiveException("Table '" + table.getName() + "' is not active");
+            }
         }
 
         Customer customer = null;
@@ -160,18 +169,27 @@ public class BillingService {
         }
 
         String billNumber = billNumberService.generateBillNumber();
-        Bill bill = Bill.builder()
+        Bill.BillBuilder builder = Bill.builder()
                 .billNumber(billNumber)
+                .orderType(orderType)
                 .cafeTable(table)
-                .customer(customer)
-                .build();
+                .customer(customer);
+
+        if (orderType == OrderType.ONLINE_ORDER && dto.getOnlineOrderPlatform() != null) {
+            builder.onlineOrderPlatform(dto.getOnlineOrderPlatform());
+        }
+
+        Bill bill = builder.build();
         bill = billRepository.save(bill);
 
         String staffName = userService.getUserById(userId).getUsername();
+        String location = table != null ? table.getName() : orderType.getDisplayName();
         activityLogService.log(bill.getId(), ActorType.STAFF, staffName,
-                "Bill created for " + table.getName() + " by " + staffName);
+                "Bill created for " + location + " by " + staffName);
 
-        cafeTableService.markOccupied(table.getId());
+        if (table != null) {
+            cafeTableService.markOccupied(table.getId());
+        }
         return bill;
     }
 
@@ -379,7 +397,9 @@ public class BillingService {
         activityLogService.log(billId, ActorType.STAFF, staffName,
                 "[" + t + "] Bill paid via " + dto.getMethod().getDisplayName() + " by " + staffName);
 
-        checkAndFreeTable(bill.getCafeTable().getId());
+        if (bill.getCafeTable() != null) {
+            checkAndFreeTable(bill.getCafeTable().getId());
+        }
         return bill;
     }
 
@@ -412,7 +432,9 @@ public class BillingService {
                 "[" + t + "] Bill cancelled by " + staffName);
 
         menuService.recomputeAllAutoMode();
-        checkAndFreeTable(bill.getCafeTable().getId());
+        if (bill.getCafeTable() != null) {
+            checkAndFreeTable(bill.getCafeTable().getId());
+        }
         return bill;
     }
 
@@ -481,9 +503,13 @@ public class BillingService {
         Bill bill = getBillById(billId);
         String cafeName = appConfigService.get("cafe.name", "Bullet Beats Café");
 
+        String location = bill.getCafeTable() != null
+                ? bill.getCafeTable().getName()
+                : bill.getOrderType().getDisplayName();
+
         StringBuilder sb = new StringBuilder();
         sb.append("🧾 Bill #").append(bill.getBillNumber()).append("\n");
-        sb.append(cafeName).append(" — ").append(bill.getCafeTable().getName()).append("\n");
+        sb.append(cafeName).append(" — ").append(location).append("\n");
         if (bill.getCustomer() != null) {
             sb.append("Customer: ").append(bill.getCustomer().getName()).append("\n");
         }

@@ -11,6 +11,8 @@ import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.CafeTable;
 import in.bulletbeats.domain.billing.service.BillingService;
 import in.bulletbeats.domain.shared.enums.BillStatus;
+import in.bulletbeats.domain.shared.enums.OnlineOrderPlatform;
+import in.bulletbeats.domain.shared.enums.OrderType;
 import in.bulletbeats.domain.billing.service.CafeTableService;
 import in.bulletbeats.domain.crm.service.CustomerService;
 import in.bulletbeats.domain.menu.service.CategoryService;
@@ -87,6 +89,8 @@ public class BillingController {
         model.addAttribute("tables", cafeTableService.getAllActive());
         model.addAttribute("activeBillsByTable", billingService.getActiveBillCountByTable());
         model.addAttribute("dto", new CreateBillDto());
+        model.addAttribute("orderTypes", OrderType.values());
+        model.addAttribute("platforms", OnlineOrderPlatform.values());
         return "billing/new";
     }
 
@@ -96,6 +100,8 @@ public class BillingController {
         if (result.hasErrors()) {
             model.addAttribute("tables", cafeTableService.getAllActive());
             model.addAttribute("activeBillsByTable", billingService.getActiveBillCountByTable());
+            model.addAttribute("orderTypes", OrderType.values());
+            model.addAttribute("platforms", OnlineOrderPlatform.values());
             return "billing/new";
         }
         Bill bill = billingService.createBill(dto, currentUserId(auth));
@@ -173,6 +179,9 @@ public class BillingController {
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public String transferForm(@PathVariable Long id, Model model) {
         Bill bill = billingService.getBillById(id);
+        if (bill.getCafeTable() == null) {
+            return "redirect:/bills/" + id;
+        }
         Long currentTableId = bill.getCafeTable().getId();
         List<CafeTable> freeTables = cafeTableService.getAllActive().stream()
                 .filter(t -> t.isFree() && !t.getId().equals(currentTableId))
@@ -191,6 +200,9 @@ public class BillingController {
                                 @Valid @ModelAttribute TableTransferDto dto,
                                 Authentication auth, Model model) {
         Bill bill = billingService.getBillById(id);
+        if (bill.getCafeTable() == null) {
+            return "redirect:/bills/" + id;
+        }
         TableTransferResult result = tableTransferService.transferTable(
                 bill.getCafeTable().getId(), dto.getToTableId(), currentUserId(auth));
         model.addAttribute("result", result);
