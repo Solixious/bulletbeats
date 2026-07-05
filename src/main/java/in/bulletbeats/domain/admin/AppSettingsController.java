@@ -43,6 +43,8 @@ public class AppSettingsController {
         appConfigService.set("cafe.address",       dto.getCafeAddress() != null ? dto.getCafeAddress().trim() : "");
         appConfigService.set("gst.rate",           dto.getGstRate().toPlainString());
         appConfigService.set("gst.inclusive",      String.valueOf(dto.isGstInclusive()));
+        appConfigService.set("bill.show_gst",      String.valueOf(dto.isShowGstOnBill()));
+        appConfigService.set("cafe.gstin",         dto.getGstin() != null ? dto.getGstin().trim() : "");
         appConfigService.set("loyalty.earn_rate",  dto.getLoyaltyEarnRate().toPlainString());
         appConfigService.set("app.base-url",       dto.getAppBaseUrl() != null ? dto.getAppBaseUrl().trim() : "");
         return "redirect:/admin/settings?saved";
@@ -73,6 +75,8 @@ public class AppSettingsController {
         dto.setCafeAddress(appConfigService.get("cafe.address", ""));
         dto.setGstRate(appConfigService.getDecimal("gst.rate", new BigDecimal("18.00")));
         dto.setGstInclusive(appConfigService.getBoolean("gst.inclusive", false));
+        dto.setShowGstOnBill(appConfigService.getBoolean("bill.show_gst", true));
+        dto.setGstin(appConfigService.get("cafe.gstin", ""));
         dto.setLoyaltyEarnRate(appConfigService.getDecimal("loyalty.earn_rate", new BigDecimal("10.00")));
         dto.setAppBaseUrl(appConfigService.get("app.base-url", ""));
         dto.setIdleTimeoutMinutes(appConfigService.getInt("table.idle.timeout.minutes", 10));

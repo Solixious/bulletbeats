@@ -24,6 +24,10 @@ public class AppSettingsDto {
 
     private boolean gstInclusive;
 
+    private boolean showGstOnBill = true;
+
+    private String gstin;
+
     @NotNull
     @DecimalMin("0.00")
     private BigDecimal loyaltyEarnRate;

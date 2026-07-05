@@ -136,12 +136,17 @@
       <span class="text-emerald-400"
             th:text="'−₹' + ${#numbers.formatDecimal(managerDiscount, 1, 2)}"></span>
     </div>
-    <div class="flex justify-between text-sm">
+    <div th:if="${showGstOnBill}" class="flex justify-between text-sm">
       <span class="text-sand"
             th:with="rate=${bill.gstRate != null ? bill.gstRate.stripTrailingZeros().toPlainString() : '0'}"
             th:text="${bill.gstInclusive} ? 'GST (' + ${rate} + '%, incl.)' : 'GST (' + ${rate} + '%)'"></span>
       <span class="text-ivory"
             th:text="'₹' + ${#numbers.formatDecimal(bill.gstAmount, 1, 2)}"></span>
+    </div>
+    <div th:if="${showGstOnBill and gstin != null and !#strings.isEmpty(gstin)}"
+         class="flex justify-between text-xs">
+      <span class="text-sand/60">GSTIN</span>
+      <span class="text-sand/80 font-mono" th:text="${gstin}"></span>
     </div>
     <div class="flex justify-between text-base pt-1.5 border-t border-elevated/60 mt-1.5">
       <span class="text-ivory font-medium">Total</span>

@@ -123,6 +123,10 @@ public class BillingController {
                 appConfigService.get("student.discount.percentage", "10"));
         model.addAttribute("minBillAmount",
                 appConfigService.getDecimal("student.discount.min_bill_amount", new BigDecimal("200.00")));
+        model.addAttribute("showGstOnBill",
+                appConfigService.getBoolean("bill.show_gst", true));
+        model.addAttribute("gstin",
+                appConfigService.get("cafe.gstin", ""));
         return "billing/detail";
     }
 
@@ -412,6 +416,10 @@ public class BillingController {
                 appConfigService.get("student.discount.percentage", "10"));
         model.addAttribute("minBillAmount",
                 appConfigService.getDecimal("student.discount.min_bill_amount", new BigDecimal("200.00")));
+        model.addAttribute("showGstOnBill",
+                appConfigService.getBoolean("bill.show_gst", true));
+        model.addAttribute("gstin",
+                appConfigService.get("cafe.gstin", ""));
         return "billing/fragments/bill-panel :: bill-panel";
     }
 

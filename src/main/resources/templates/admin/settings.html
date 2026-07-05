@@ -103,6 +103,27 @@
           </div>
         </div>
 
+        <div>
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" th:field="*{showGstOnBill}"
+                   class="mt-0.5 accent-[#00D4FF]"/>
+            <div>
+              <p class="text-ivory text-sm font-medium">Show GST breakdown on bill</p>
+              <p class="text-sand text-xs mt-0.5">When enabled, the GST line appears on customer-facing bills.</p>
+            </div>
+          </label>
+        </div>
+
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">GSTIN <span class="text-sand/50 normal-case">(optional)</span></label>
+          <input type="text" th:field="*{gstin}" maxlength="15"
+                 placeholder="e.g. 29ABCDE1234F1Z5"
+                 class="w-full bg-elevated rounded-lg px-3 py-2 text-ivory text-sm font-mono
+                        border border-elevated/60 focus:border-accent outline-none
+                        transition-colors placeholder-sand/40"/>
+          <p class="text-sand text-xs mt-1">If set, your GSTIN is printed on the bill alongside the GST breakdown.</p>
+        </div>
+
       </div>
     </div>
 
