@@ -70,7 +70,10 @@ public class NotificationService {
             from = properties.getFromNumber();
             to = toPhone;
         }
-        Message.creator(new PhoneNumber(to), new PhoneNumber(from), message).create();
+        log.info("Sending {} — from={} to={}", channel, from, to);
+        Message msg = Message.creator(new PhoneNumber(to), new PhoneNumber(from), message).create();
+        log.info("Twilio response — SID={} Status={} ErrorCode={} ErrorMessage={}",
+                msg.getSid(), msg.getStatus(), msg.getErrorCode(), msg.getErrorMessage());
     }
 
     private static boolean hasText(String s) {
