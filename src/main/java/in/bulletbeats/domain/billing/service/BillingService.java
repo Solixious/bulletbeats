@@ -555,10 +555,9 @@ public class BillingService {
     public void sendBillViaWhatsapp(Long billId) {
         Bill bill = getBillById(billId);
         if (bill.getCustomer() == null || bill.getCustomer().getPhone() == null) {
-            log.warn("Cannot send notification: bill {} has no customer/phone", billId);
-            return;
+            throw new IllegalStateException("Bill has no customer or phone number linked");
         }
-        notificationService.sendBillNotification(buildNotificationData(bill));
+        notificationService.sendBillNotificationNow(buildNotificationData(bill));
     }
 
     private BillNotificationData buildNotificationData(Bill bill) {

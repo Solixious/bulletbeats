@@ -38,23 +38,43 @@ public class NotificationService {
     }
 
     /**
-     * Send a bill notification silently — errors are logged, not thrown.
-     * Uses a Content Template when TWILIO_CONTENT_SID is set (required for
-     * business-initiated WhatsApp messages outside a 24-hour session window).
-     * Falls back to free-form text if no template is configured.
-     * Respects the notification.enabled flag.
+     * Auto-send on payment — silent, checks the notification.enabled flag.
      */
     public void sendBillNotification(BillNotificationData data) {
-        if (!isEnabled() || !isConfigured()) return;
+        if (!isEnabled()) {
+            log.debug("Notification skipped — notification.enabled is false");
+            return;
+        }
+        if (!isConfigured()) {
+            log.warn("Notification skipped — Twilio credentials not configured");
+            return;
+        }
         try {
-            if (hasTemplate()) {
-                doSendTemplate(data);
-            } else {
-                doSend(data.toPhone(), data.formattedText(), data.channel());
-            }
+            dispatchBill(data);
         } catch (Exception e) {
             log.error("Failed to send {} bill notification to {}: {}",
                     data.channel(), data.toPhone(), e.getMessage());
+        }
+    }
+
+    /**
+     * Explicit manual send (staff-triggered button) — throws on any error,
+     * bypasses the notification.enabled flag, still requires configuration.
+     */
+    public void sendBillNotificationNow(BillNotificationData data) {
+        if (!isConfigured()) {
+            throw new IllegalStateException(
+                    "Twilio not configured — set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, "
+                    + "TWILIO_WHATSAPP_FROM, and TWILIO_CONTENT_SID");
+        }
+        dispatchBill(data);
+    }
+
+    private void dispatchBill(BillNotificationData data) {
+        if (hasTemplate()) {
+            doSendTemplate(data);
+        } else {
+            doSend(data.toPhone(), data.formattedText(), data.channel());
         }
     }
 
