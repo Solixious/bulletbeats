@@ -18,9 +18,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class NotificationService {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final AppConfigService appConfigService;
     private final TwilioProperties properties;
-    private final ObjectMapper objectMapper;
 
     @PostConstruct
     void initTwilio() {
@@ -148,7 +149,7 @@ public class NotificationService {
      */
     private String buildTemplateVars(BillNotificationData data) {
         try {
-            return objectMapper.writeValueAsString(Map.of(
+            return OBJECT_MAPPER.writeValueAsString(Map.of(
                     "1", data.customerName() != null ? data.customerName() : "",
                     "2", data.cafeName() != null ? data.cafeName() : "",
                     "3", data.breakdown() != null ? data.breakdown() : ""
