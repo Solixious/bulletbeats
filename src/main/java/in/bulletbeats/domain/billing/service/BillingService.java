@@ -2,6 +2,7 @@ package in.bulletbeats.domain.billing.service;
 
 import in.bulletbeats.domain.admin.AppConfigService;
 import in.bulletbeats.domain.billing.ActivityLogService;
+import in.bulletbeats.domain.notification.BillNotificationData;
 import in.bulletbeats.domain.notification.NotificationChannel;
 import in.bulletbeats.domain.notification.NotificationService;
 import in.bulletbeats.domain.billing.dto.AddBillItemDto;
@@ -405,11 +406,7 @@ public class BillingService {
         }
 
         if (bill.getCustomer() != null && bill.getCustomer().getPhone() != null) {
-            String text = generateWhatsappText(bill.getId());
-            NotificationChannel channel = bill.getCustomer().getNotificationPreference() != null
-                    ? bill.getCustomer().getNotificationPreference()
-                    : NotificationChannel.WHATSAPP;
-            notificationService.sendBillNotification(bill.getCustomer().getPhone(), text, channel);
+            notificationService.sendBillNotification(buildNotificationData(bill));
         }
 
         return bill;
@@ -561,11 +558,57 @@ public class BillingService {
             log.warn("Cannot send notification: bill {} has no customer/phone", billId);
             return;
         }
-        String text = generateWhatsappText(billId);
+        notificationService.sendBillNotification(buildNotificationData(bill));
+    }
+
+    private BillNotificationData buildNotificationData(Bill bill) {
+        String cafeName = appConfigService.get("cafe.name", "Bullet Beats Café");
         NotificationChannel channel = bill.getCustomer().getNotificationPreference() != null
                 ? bill.getCustomer().getNotificationPreference()
                 : NotificationChannel.WHATSAPP;
-        notificationService.testSend(bill.getCustomer().getPhone(), text, channel);
+        return new BillNotificationData(
+                bill.getCustomer().getPhone(),
+                channel,
+                bill.getCustomer().getName(),
+                cafeName,
+                generateBillBreakdown(bill),
+                generateWhatsappText(bill.getId())
+        );
+    }
+
+    private String generateBillBreakdown(Bill bill) {
+        String location = bill.getCafeTable() != null
+                ? bill.getCafeTable().getName()
+                : bill.getOrderType().getDisplayName();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Bill #").append(bill.getBillNumber());
+        if (bill.getCreatedAt() != null) {
+            sb.append(" | ").append(bill.getCreatedAt().format(DISPLAY_FMT));
+        }
+        sb.append(" | ").append(location).append("\n\n");
+
+        for (BillItem item : bill.getItems()) {
+            sb.append(item.getItemName())
+              .append(" x").append(item.getQuantity())
+              .append("  ₹").append(item.getLineTotal().setScale(2, RoundingMode.HALF_UP))
+              .append("\n");
+        }
+
+        sb.append("\nSubtotal  ₹").append(bill.getSubtotal().setScale(2, RoundingMode.HALF_UP)).append("\n");
+        if (bill.getDiscountType() != null && bill.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+            sb.append("Discount (").append(bill.getDiscountType().getDisplayName()).append(")")
+              .append("  -₹").append(bill.getDiscountAmount().setScale(2, RoundingMode.HALF_UP)).append("\n");
+        }
+        sb.append("GST (").append(bill.getGstRate().stripTrailingZeros().toPlainString()).append("%)")
+          .append("  ₹").append(bill.getGstAmount().setScale(2, RoundingMode.HALF_UP)).append("\n");
+        sb.append("*Total  ₹").append(bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP)).append("*");
+
+        paymentRepository.findByBillId(bill.getId()).ifPresent(p ->
+            sb.append("\n\nPaid via ").append(p.getMethod().getDisplayName())
+        );
+
+        return sb.toString();
     }
 
     private void recalculateTotals(Bill bill) {

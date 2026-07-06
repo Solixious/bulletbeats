@@ -21,7 +21,7 @@ public class NotificationService {
     void initTwilio() {
         if (isConfigured()) {
             Twilio.init(properties.getAccountSid(), properties.getAuthToken());
-            log.info("Twilio initialized");
+            log.info("Twilio initialized (template={})", hasTemplate() ? properties.getContentSid() : "none");
         }
     }
 
@@ -33,22 +33,34 @@ public class NotificationService {
         return hasText(properties.getAccountSid()) && hasText(properties.getAuthToken());
     }
 
+    public boolean hasTemplate() {
+        return hasText(properties.getContentSid());
+    }
+
     /**
-     * Send a notification silently — errors are logged, not thrown.
+     * Send a bill notification silently — errors are logged, not thrown.
+     * Uses a Content Template when TWILIO_CONTENT_SID is set (required for
+     * business-initiated WhatsApp messages outside a 24-hour session window).
+     * Falls back to free-form text if no template is configured.
      * Respects the notification.enabled flag.
      */
-    public void sendBillNotification(String toPhone, String message, NotificationChannel channel) {
+    public void sendBillNotification(BillNotificationData data) {
         if (!isEnabled() || !isConfigured()) return;
         try {
-            doSend(toPhone, message, channel);
+            if (hasTemplate()) {
+                doSendTemplate(data);
+            } else {
+                doSend(data.toPhone(), data.formattedText(), data.channel());
+            }
         } catch (Exception e) {
-            log.error("Failed to send {} notification to {}: {}", channel, toPhone, e.getMessage());
+            log.error("Failed to send {} bill notification to {}: {}",
+                    data.channel(), data.toPhone(), e.getMessage());
         }
     }
 
     /**
-     * Send a notification immediately — throws on any error.
-     * Ignores the notification.enabled flag (used for admin test sends).
+     * Send a free-form test message immediately — throws on any error.
+     * Ignores the notification.enabled flag (admin use only).
      */
     public void testSend(String toPhone, String message, NotificationChannel channel) {
         if (!isConfigured()) {
@@ -60,11 +72,26 @@ public class NotificationService {
         log.info("Test notification sent via {} to {}", channel, toPhone);
     }
 
+    private void doSendTemplate(BillNotificationData data) {
+        String from = whatsappFrom();
+        String to = "whatsapp:" + data.toPhone();
+
+        String vars = buildTemplateVars(data);
+        log.info("Sending template {} — from={} to={} vars={}", properties.getContentSid(), from, to, vars);
+
+        Message msg = Message.creator(new PhoneNumber(to), new PhoneNumber(from), "")
+                .setContentSid(properties.getContentSid())
+                .setContentVariables(vars)
+                .create();
+
+        log.info("Twilio response — SID={} Status={} ErrorCode={} ErrorMessage={}",
+                msg.getSid(), msg.getStatus(), msg.getErrorCode(), msg.getErrorMessage());
+    }
+
     private void doSend(String toPhone, String message, NotificationChannel channel) {
         String from, to;
         if (channel == NotificationChannel.WHATSAPP) {
-            String raw = properties.getWhatsappFrom();
-            from = raw.startsWith("whatsapp:") ? raw : "whatsapp:" + raw;
+            from = whatsappFrom();
             to = "whatsapp:" + toPhone;
         } else {
             from = properties.getFromNumber();
@@ -74,6 +101,36 @@ public class NotificationService {
         Message msg = Message.creator(new PhoneNumber(to), new PhoneNumber(from), message).create();
         log.info("Twilio response — SID={} Status={} ErrorCode={} ErrorMessage={}",
                 msg.getSid(), msg.getStatus(), msg.getErrorCode(), msg.getErrorMessage());
+    }
+
+    private String whatsappFrom() {
+        String raw = properties.getWhatsappFrom();
+        return raw.startsWith("whatsapp:") ? raw : "whatsapp:" + raw;
+    }
+
+    /**
+     * Variables match the approved template placeholders:
+     *   {{1}} = customer name
+     *   {{2}} = cafe name
+     *   {{3}} = full bill breakdown (bill#, date, items, subtotal, GST, total, payment)
+     *
+     * Template body:
+     *   Hi {{1}}, here is your bill from {{2}}.
+     *
+     *   {{3}}
+     *
+     *   Thank you for visiting!
+     */
+    private String buildTemplateVars(BillNotificationData data) {
+        return String.format("{\"1\":\"%s\",\"2\":\"%s\",\"3\":\"%s\"}",
+                escape(data.customerName()),
+                escape(data.cafeName()),
+                escape(data.breakdown()));
+    }
+
+    private static String escape(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private static boolean hasText(String s) {

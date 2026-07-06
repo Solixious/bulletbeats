@@ -22,4 +22,7 @@ public class TwilioProperties {
 
     /** WhatsApp sender (E.164, e.g. +14155238886) — set via TWILIO_WHATSAPP_FROM */
     private String whatsappFrom = "";
+
+    /** Content Template SID (HX...) for bill receipts — set via TWILIO_CONTENT_SID */
+    private String contentSid = "";
 }
