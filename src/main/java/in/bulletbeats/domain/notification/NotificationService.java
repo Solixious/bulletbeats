@@ -1,5 +1,7 @@
 package in.bulletbeats.domain.notification;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
@@ -9,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -16,6 +20,7 @@ public class NotificationService {
 
     private final AppConfigService appConfigService;
     private final TwilioProperties properties;
+    private final ObjectMapper objectMapper;
 
     @PostConstruct
     void initTwilio() {
@@ -142,15 +147,15 @@ public class NotificationService {
      *   Thank you for visiting!
      */
     private String buildTemplateVars(BillNotificationData data) {
-        return String.format("{\"1\":\"%s\",\"2\":\"%s\",\"3\":\"%s\"}",
-                escape(data.customerName()),
-                escape(data.cafeName()),
-                escape(data.breakdown()));
-    }
-
-    private static String escape(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+        try {
+            return objectMapper.writeValueAsString(Map.of(
+                    "1", data.customerName() != null ? data.customerName() : "",
+                    "2", data.cafeName() != null ? data.cafeName() : "",
+                    "3", data.breakdown() != null ? data.breakdown() : ""
+            ));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize template variables", e);
+        }
     }
 
     private static boolean hasText(String s) {
