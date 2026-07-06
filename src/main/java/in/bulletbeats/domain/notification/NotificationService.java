@@ -100,7 +100,7 @@ public class NotificationService {
 
     private void doSendTemplate(BillNotificationData data) {
         String from = whatsappFrom();
-        String to = "whatsapp:" + data.toPhone();
+        String to = "whatsapp:" + normalizePhone(data.toPhone());
 
         String vars = buildTemplateVars(data);
         log.info("Sending template {} — from={} to={} vars={}", properties.getContentSid(), from, to, vars);
@@ -116,12 +116,13 @@ public class NotificationService {
 
     private void doSend(String toPhone, String message, NotificationChannel channel) {
         String from, to;
+        String normalized = normalizePhone(toPhone);
         if (channel == NotificationChannel.WHATSAPP) {
             from = whatsappFrom();
-            to = "whatsapp:" + toPhone;
+            to = "whatsapp:" + normalized;
         } else {
             from = properties.getFromNumber();
-            to = toPhone;
+            to = normalized;
         }
         log.info("Sending {} — from={} to={}", channel, from, to);
         Message msg = Message.creator(new PhoneNumber(to), new PhoneNumber(from), message).create();
@@ -132,6 +133,16 @@ public class NotificationService {
     private String whatsappFrom() {
         String raw = properties.getWhatsappFrom();
         return raw.startsWith("whatsapp:") ? raw : "whatsapp:" + raw;
+    }
+
+    /** Ensures the number is in E.164 format. Bare 10-digit numbers get +91 prepended. */
+    private static String normalizePhone(String phone) {
+        if (phone == null) return phone;
+        String digits = phone.replaceAll("[\\s\\-()]", "");
+        if (digits.startsWith("+")) return digits;
+        if (digits.startsWith("91") && digits.length() == 12) return "+" + digits;
+        if (digits.length() == 10) return "+91" + digits;
+        return digits;
     }
 
     /**
