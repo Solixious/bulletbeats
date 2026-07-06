@@ -145,29 +145,40 @@
   </header>
 
   <!-- ── Category tabs (sticky below topbar) ───────────────────────── -->
-  <div class="fixed top-14 left-0 right-0 z-40 bg-base border-b border-elevated/40
-              cat-tabs overflow-x-auto flex items-center gap-1 px-3 py-2">
-    <!-- "All" tab -->
-    <button id="tab-all"
-            class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold
-                   bg-accent text-base transition-all"
-            th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},billId=${billId},customerName=${customerName},customerId=${customerId})}"
-            hx-target="#menu-grid"
-            hx-swap="innerHTML"
-            onclick="setActiveTab(this)">
-      All
-    </button>
-    <button th:each="dto : ${menuDto.categories}"
-            th:id="'tab-' + ${dto.category.id}"
-            class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm border border-elevated/60
-                   text-sand hover:text-ivory hover:border-accent/40 transition-all"
-            th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},categoryId=${dto.category.id},billId=${billId},customerName=${customerName},customerId=${customerId})}"
-            hx-target="#menu-grid"
-            hx-swap="innerHTML"
-            th:onclick="'setActiveTab(this)'"
-            th:text="${dto.category.name}">
-      Category
-    </button>
+  <div class="fixed top-14 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
+    <div id="qr-cat-scroll" class="cat-tabs overflow-x-auto flex items-center gap-1 px-3 py-2">
+      <!-- "All" tab -->
+      <button id="tab-all"
+              class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold
+                     bg-accent text-base transition-all"
+              th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},billId=${billId},customerName=${customerName},customerId=${customerId})}"
+              hx-target="#menu-grid"
+              hx-swap="innerHTML"
+              onclick="setActiveTab(this)">
+        All
+      </button>
+      <button th:each="dto : ${menuDto.categories}"
+              th:id="'tab-' + ${dto.category.id}"
+              class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm border border-elevated/60
+                     text-sand hover:text-ivory hover:border-accent/40 transition-all"
+              th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},categoryId=${dto.category.id},billId=${billId},customerName=${customerName},customerId=${customerId})}"
+              hx-target="#menu-grid"
+              hx-swap="innerHTML"
+              th:onclick="'setActiveTab(this)'"
+              th:text="${dto.category.name}">
+        Category
+      </button>
+    </div>
+    <!-- Scroll hint: hidden once user reaches the end -->
+    <div id="qr-cat-hint"
+         class="pointer-events-none absolute right-0 top-0 bottom-0 flex items-center justify-end pr-2"
+         style="background: linear-gradient(to right, transparent, #1C1C1C 60%); padding-left: 2.5rem;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="#00D4FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+           style="opacity:0.8">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </div>
   </div>
 
   <!-- ── Menu grid ──────────────────────────────────────────────────── -->
@@ -226,6 +237,19 @@
       el.classList.add('bg-accent', 'text-base', 'font-bold');
       el.classList.remove('border', 'border-elevated/60', 'text-sand');
     }
+
+    // Category scroll hint
+    (function() {
+      var scroll = document.getElementById('qr-cat-scroll');
+      var hint   = document.getElementById('qr-cat-hint');
+      if (!scroll || !hint) return;
+      function updateHint() {
+        var atEnd = scroll.scrollLeft + scroll.clientWidth >= scroll.scrollWidth - 4;
+        hint.style.display = atEnd ? 'none' : 'flex';
+      }
+      scroll.addEventListener('scroll', updateHint, { passive: true });
+      updateHint();
+    })();
 
     // Lightbox
     function openLightbox(src) {

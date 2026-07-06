@@ -46,26 +46,37 @@
   <main class="max-w-2xl mx-auto px-4 py-8">
 
     <!-- Category filter -->
-    <div th:if="${!#lists.isEmpty(categories)}"
-         class="cat-tabs overflow-x-auto flex gap-2 mb-6 pb-0.5">
-      <button id="tab-all"
-              class="cat-tab flex-shrink-0 px-4 py-1.5 text-xs rounded-full border transition-colors
-                     bg-accent/20 text-accent border-accent/50"
-              hx-get="/public/menu/items"
-              hx-target="#items-list"
-              hx-swap="outerHTML"
-              onclick="setActiveTab(this)">All</button>
-      <button th:each="cat : ${categories}"
-              th:id="'tab-' + ${cat.id}"
-              th:text="${cat.name}"
-              th:attr="hx-get='/public/menu/items?categoryId=' + ${cat.id}"
-              hx-target="#items-list"
-              hx-swap="outerHTML"
-              th:classappend="${selectedCategoryId == cat.id}
-                              ? 'bg-accent/20 text-accent border-accent/50'
-                              : 'text-sand border-elevated/60 hover:text-ivory'"
-              class="cat-tab flex-shrink-0 px-4 py-1.5 text-xs rounded-full border transition-colors cursor-pointer"
-              onclick="setActiveTab(this)">Category</button>
+    <div th:if="${!#lists.isEmpty(categories)}" class="relative mb-6">
+      <div id="pub-cat-scroll" class="cat-tabs overflow-x-auto flex gap-2 pb-0.5">
+        <button id="tab-all"
+                class="cat-tab flex-shrink-0 px-4 py-1.5 text-xs rounded-full border transition-colors
+                       bg-accent/20 text-accent border-accent/50"
+                hx-get="/public/menu/items"
+                hx-target="#items-list"
+                hx-swap="outerHTML"
+                onclick="setActiveTab(this)">All</button>
+        <button th:each="cat : ${categories}"
+                th:id="'tab-' + ${cat.id}"
+                th:text="${cat.name}"
+                th:attr="hx-get='/public/menu/items?categoryId=' + ${cat.id}"
+                hx-target="#items-list"
+                hx-swap="outerHTML"
+                th:classappend="${selectedCategoryId == cat.id}
+                                ? 'bg-accent/20 text-accent border-accent/50'
+                                : 'text-sand border-elevated/60 hover:text-ivory'"
+                class="cat-tab flex-shrink-0 px-4 py-1.5 text-xs rounded-full border transition-colors cursor-pointer"
+                onclick="setActiveTab(this)">Category</button>
+      </div>
+      <!-- Scroll hint: hidden once user reaches the end -->
+      <div id="pub-cat-hint"
+           class="pointer-events-none absolute right-0 top-0 bottom-0 flex items-center justify-end pr-2"
+           style="background: linear-gradient(to right, transparent, #1C1C1C 60%); padding-left: 2.5rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+             fill="none" stroke="#00D4FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+             style="opacity:0.8">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>
     </div>
 
     <!-- Item list (fragment target) -->
@@ -155,6 +166,17 @@
       el.classList.add('bg-accent/20', 'text-accent', 'border-accent/50');
       el.classList.remove('text-sand', 'border-elevated/60');
     }
+    (function() {
+      var scroll = document.getElementById('pub-cat-scroll');
+      var hint   = document.getElementById('pub-cat-hint');
+      if (!scroll || !hint) return;
+      function updateHint() {
+        var atEnd = scroll.scrollLeft + scroll.clientWidth >= scroll.scrollWidth - 4;
+        hint.style.display = atEnd ? 'none' : 'flex';
+      }
+      scroll.addEventListener('scroll', updateHint, { passive: true });
+      updateHint();
+    })();
     function pubOpenImage(src) {
       document.getElementById('pub-lightbox-img').src = src;
       document.getElementById('pub-lightbox').classList.remove('hidden');
