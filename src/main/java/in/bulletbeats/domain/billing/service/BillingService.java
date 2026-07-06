@@ -2,6 +2,8 @@ package in.bulletbeats.domain.billing.service;
 
 import in.bulletbeats.domain.admin.AppConfigService;
 import in.bulletbeats.domain.billing.ActivityLogService;
+import in.bulletbeats.domain.notification.NotificationChannel;
+import in.bulletbeats.domain.notification.NotificationService;
 import in.bulletbeats.domain.billing.dto.AddBillItemDto;
 import in.bulletbeats.domain.billing.dto.ApplyDiscountDto;
 import in.bulletbeats.domain.billing.dto.CreateBillDto;
@@ -84,6 +86,7 @@ public class BillingService {
     private final AppConfigService appConfigService;
     private final ActivityLogService activityLogService;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     public List<Bill> getActiveBills() {
         return billRepository.findActiveBills(TERMINAL);
@@ -400,6 +403,15 @@ public class BillingService {
         if (bill.getCafeTable() != null) {
             checkAndFreeTable(bill.getCafeTable().getId());
         }
+
+        if (bill.getCustomer() != null && bill.getCustomer().getPhone() != null) {
+            String text = generateWhatsappText(bill.getId());
+            NotificationChannel channel = bill.getCustomer().getNotificationPreference() != null
+                    ? bill.getCustomer().getNotificationPreference()
+                    : NotificationChannel.WHATSAPP;
+            notificationService.sendBillNotification(bill.getCustomer().getPhone(), text, channel);
+        }
+
         return bill;
     }
 
@@ -545,8 +557,15 @@ public class BillingService {
 
     public void sendBillViaWhatsapp(Long billId) {
         Bill bill = getBillById(billId);
-        log.info("WhatsApp send stub: bill {} to customer {}",
-                billId, bill.getCustomer() != null ? bill.getCustomer().getPhone() : "N/A");
+        if (bill.getCustomer() == null || bill.getCustomer().getPhone() == null) {
+            log.warn("Cannot send notification: bill {} has no customer/phone", billId);
+            return;
+        }
+        String text = generateWhatsappText(billId);
+        NotificationChannel channel = bill.getCustomer().getNotificationPreference() != null
+                ? bill.getCustomer().getNotificationPreference()
+                : NotificationChannel.WHATSAPP;
+        notificationService.testSend(bill.getCustomer().getPhone(), text, channel);
     }
 
     private void recalculateTotals(Bill bill) {

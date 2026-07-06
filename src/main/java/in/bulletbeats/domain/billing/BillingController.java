@@ -402,7 +402,11 @@ public class BillingController {
 
     @PostMapping("/{id}/whatsapp-send")
     public String whatsappSend(@PathVariable Long id, Model model) {
-        billingService.sendBillViaWhatsapp(id);
+        try {
+            billingService.sendBillViaWhatsapp(id);
+        } catch (Exception e) {
+            model.addAttribute("error", e.getMessage());
+        }
         return "billing/fragments/whatsapp-stub :: whatsapp-stub";
     }
 

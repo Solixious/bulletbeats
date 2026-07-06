@@ -120,6 +120,12 @@
 			<artifactId>caffeine</artifactId>
 			<!-- version managed by Spring Boot BOM -->
 		</dependency>
+
+		<dependency>
+			<groupId>com.twilio.sdk</groupId>
+			<artifactId>twilio</artifactId>
+			<version>10.1.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="result">
+  <div th:if="${success}"
+       class="px-3 py-2 rounded-lg border border-emerald-400/20 bg-emerald-400/5 text-emerald-400/80 text-xs">
+    Sent via <span th:text="${channel}">WHATSAPP</span> to <span th:text="${phone}">+91...</span>
+  </div>
+  <div th:if="${error}"
+       class="px-3 py-2 rounded-lg border border-red-400/20 bg-red-400/5 text-red-400/80 text-xs"
+       th:text="${error}">
+  </div>
+</th:block>
+</body>
+</html>

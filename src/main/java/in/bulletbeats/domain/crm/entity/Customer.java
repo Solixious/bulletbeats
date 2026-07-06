@@ -1,5 +1,6 @@
 package in.bulletbeats.domain.crm.entity;
 
+import in.bulletbeats.domain.notification.NotificationChannel;
 import in.bulletbeats.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -54,6 +55,11 @@ public class Customer extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private int notesCount = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private NotificationChannel notificationPreference = NotificationChannel.WHATSAPP;
 
     @Column(nullable = false)
     @Builder.Default

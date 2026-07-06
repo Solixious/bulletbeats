@@ -1,5 +1,6 @@
 package in.bulletbeats.domain.admin;
 
+import in.bulletbeats.domain.notification.NotificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +23,7 @@ import java.util.Set;
 public class AppSettingsController {
 
     private final AppConfigService appConfigService;
+    private final NotificationService notificationService;
 
     @GetMapping
     public String settings(Model model) {
@@ -30,6 +32,9 @@ public class AppSettingsController {
                 appConfigService.get("student.discount.percentage", "10.00"));
         model.addAttribute("studentMinBillAmount",
                 appConfigService.get("student.discount.min_bill_amount", "200.00"));
+        model.addAttribute("notificationEnabled",
+                appConfigService.getBoolean("notification.enabled", false));
+        model.addAttribute("notificationConfigured", notificationService.isConfigured());
         return "admin/settings";
     }
 
@@ -54,7 +59,8 @@ public class AppSettingsController {
             "table.idle.timeout.minutes",
             "app.base-url",
             "student.discount.percentage",
-            "student.discount.min_bill_amount"
+            "student.discount.min_bill_amount",
+            "notification.enabled"
     );
 
     @PostMapping("/key")

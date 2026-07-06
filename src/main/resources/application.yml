@@ -88,6 +88,13 @@ app:
     login-max-attempts: 5
     login-lockout-minutes: 15
 
+# ── Twilio (Notification Service) ────────────────────────────
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID:}
+  auth-token: ${TWILIO_AUTH_TOKEN:}
+  from-number: ${TWILIO_FROM_NUMBER:}
+  whatsapp-from: ${TWILIO_WHATSAPP_FROM:}
+
 # ── Logging (console only — Docker captures stdout) ──────────
 logging:
   pattern:
