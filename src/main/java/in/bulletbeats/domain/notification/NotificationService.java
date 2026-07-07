@@ -149,29 +149,46 @@ public class NotificationService {
      * Variables match the approved template placeholders:
      *   {{1}} = customer name
      *   {{2}} = cafe name
-     *   {{3}} = full bill breakdown (bill#, date, items, subtotal, GST, total, payment)
+     *   {{3}} = bill number (e.g. BB-20260706-0001)
+     *   {{4}} = date (e.g. 06 Jul 2026, 08:10)
+     *   {{5}} = table / location (e.g. Table 1)
+     *   {{6}} = items summary — single line (e.g. Tea x1 ₹25.00 | Coffee x2 ₹50.00)
+     *   {{7}} = total (e.g. ₹25.00)
+     *   {{8}} = payment method (e.g. Cash)
      *
      * Template body:
      *   Hi {{1}}, here is your bill from {{2}}.
      *
-     *   {{3}}
+     *   Bill #{{3}}
+     *   Date: {{4}}
+     *   Table: {{5}}
+     *
+     *   Items: {{6}}
+     *
+     *   Total: {{7}}
+     *   Paid via: {{8}}
      *
      *   Thank you for visiting!
      */
     private String buildTemplateVars(BillNotificationData data) {
         try {
-            // WhatsApp template variable values must not contain newlines — flatten to single line
-            String breakdown = data.breakdown() != null
-                    ? data.breakdown().replace("\n", " ").replaceAll(" {2,}", " ").trim()
-                    : "";
             return OBJECT_MAPPER.writeValueAsString(Map.of(
-                    "1", data.customerName() != null ? data.customerName() : "",
-                    "2", data.cafeName() != null ? data.cafeName() : "",
-                    "3", breakdown
+                    "1", orEmpty(data.customerName()),
+                    "2", orEmpty(data.cafeName()),
+                    "3", orEmpty(data.billNumber()),
+                    "4", orEmpty(data.date()),
+                    "5", orEmpty(data.location()),
+                    "6", orEmpty(data.itemsSummary()),
+                    "7", orEmpty(data.total()),
+                    "8", orEmpty(data.paidVia())
             ));
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize template variables", e);
         }
+    }
+
+    private static String orEmpty(String s) {
+        return s != null ? s : "";
     }
 
     private static boolean hasText(String s) {

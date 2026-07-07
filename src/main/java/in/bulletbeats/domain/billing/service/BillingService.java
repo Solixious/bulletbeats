@@ -63,6 +63,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -565,49 +566,39 @@ public class BillingService {
         NotificationChannel channel = bill.getCustomer().getNotificationPreference() != null
                 ? bill.getCustomer().getNotificationPreference()
                 : NotificationChannel.WHATSAPP;
+
+        String location = bill.getCafeTable() != null
+                ? bill.getCafeTable().getName()
+                : bill.getOrderType().getDisplayName();
+
+        String date = bill.getCreatedAt() != null
+                ? bill.getCreatedAt().format(DISPLAY_FMT)
+                : "";
+
+        String itemsSummary = bill.getItems().stream()
+                .map(i -> i.getItemName() + " x" + i.getQuantity()
+                        + " ₹" + i.getLineTotal().setScale(2, RoundingMode.HALF_UP))
+                .collect(Collectors.joining(" | "));
+
+        String total = "₹" + bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
+
+        String paidVia = paymentRepository.findByBillId(bill.getId())
+                .map(p -> p.getMethod().getDisplayName())
+                .orElse("N/A");
+
         return new BillNotificationData(
                 bill.getCustomer().getPhone(),
                 channel,
                 bill.getCustomer().getName(),
                 cafeName,
-                generateBillBreakdown(bill),
+                bill.getBillNumber(),
+                date,
+                location,
+                itemsSummary,
+                total,
+                paidVia,
                 generateWhatsappText(bill.getId())
         );
-    }
-
-    private String generateBillBreakdown(Bill bill) {
-        String location = bill.getCafeTable() != null
-                ? bill.getCafeTable().getName()
-                : bill.getOrderType().getDisplayName();
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Bill #").append(bill.getBillNumber());
-        if (bill.getCreatedAt() != null) {
-            sb.append(" | ").append(bill.getCreatedAt().format(DISPLAY_FMT));
-        }
-        sb.append(" | ").append(location).append("\n\n");
-
-        for (BillItem item : bill.getItems()) {
-            sb.append(item.getItemName())
-              .append(" x").append(item.getQuantity())
-              .append("  ₹").append(item.getLineTotal().setScale(2, RoundingMode.HALF_UP))
-              .append("\n");
-        }
-
-        sb.append("\nSubtotal  ₹").append(bill.getSubtotal().setScale(2, RoundingMode.HALF_UP)).append("\n");
-        if (bill.getDiscountType() != null && bill.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
-            sb.append("Discount (").append(bill.getDiscountType().getDisplayName()).append(")")
-              .append("  -₹").append(bill.getDiscountAmount().setScale(2, RoundingMode.HALF_UP)).append("\n");
-        }
-        sb.append("GST (").append(bill.getGstRate().stripTrailingZeros().toPlainString()).append("%)")
-          .append("  ₹").append(bill.getGstAmount().setScale(2, RoundingMode.HALF_UP)).append("\n");
-        sb.append("*Total  ₹").append(bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP)).append("*");
-
-        paymentRepository.findByBillId(bill.getId()).ifPresent(p ->
-            sb.append("\n\nPaid via ").append(p.getMethod().getDisplayName())
-        );
-
-        return sb.toString();
     }
 
     private void recalculateTotals(Bill bill) {
