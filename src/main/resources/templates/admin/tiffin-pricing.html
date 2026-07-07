@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Tiffin Pricing — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-2xl mx-auto">
+
+  <a href="/admin/settings"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Settings
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide">Tiffin Pricing</h1>
+    <p class="text-sand text-sm mt-0.5">Set monthly subscription prices per meal type</p>
+  </div>
+
+  <div th:if="${success}"
+       class="mb-4 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm"
+       th:text="${success}"></div>
+
+  <form th:action="@{/admin/tiffin/pricing}"
+        th:object="${dto}"
+        method="post"
+        class="bg-surface rounded-xl border border-elevated/60 p-6 space-y-6">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+    <div class="grid grid-cols-1 gap-5">
+
+      <!-- Breakfast -->
+      <div class="flex items-center gap-4 p-4 rounded-lg bg-elevated/30 border border-elevated/60">
+        <span class="text-3xl flex-shrink-0">🌅</span>
+        <div class="flex-1">
+          <p class="text-ivory font-medium mb-0.5">Breakfast</p>
+          <p class="text-sand text-xs">Monthly subscription price for breakfast only</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="text-sand text-sm">₹</span>
+          <input type="number"
+                 th:field="*{breakfastPrice}"
+                 step="0.01" min="0"
+                 class="w-28 bg-elevated border border-elevated/60 focus:border-accent
+                        rounded-lg px-3 py-2 text-ivory text-sm text-right outline-none
+                        transition-all duration-200 focus:shadow-neon-sm"/>
+          <span class="text-sand text-xs whitespace-nowrap">/ month</span>
+        </div>
+        <p th:if="${#fields.hasErrors('breakfastPrice')}"
+           th:errors="*{breakfastPrice}"
+           class="text-red-400 text-xs mt-1"></p>
+      </div>
+
+      <!-- Lunch -->
+      <div class="flex items-center gap-4 p-4 rounded-lg bg-elevated/30 border border-elevated/60">
+        <span class="text-3xl flex-shrink-0">☀️</span>
+        <div class="flex-1">
+          <p class="text-ivory font-medium mb-0.5">Lunch</p>
+          <p class="text-sand text-xs">Monthly subscription price for lunch only</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="text-sand text-sm">₹</span>
+          <input type="number"
+                 th:field="*{lunchPrice}"
+                 step="0.01" min="0"
+                 class="w-28 bg-elevated border border-elevated/60 focus:border-accent
+                        rounded-lg px-3 py-2 text-ivory text-sm text-right outline-none
+                        transition-all duration-200 focus:shadow-neon-sm"/>
+          <span class="text-sand text-xs whitespace-nowrap">/ month</span>
+        </div>
+        <p th:if="${#fields.hasErrors('lunchPrice')}"
+           th:errors="*{lunchPrice}"
+           class="text-red-400 text-xs mt-1"></p>
+      </div>
+
+      <!-- Dinner -->
+      <div class="flex items-center gap-4 p-4 rounded-lg bg-elevated/30 border border-elevated/60">
+        <span class="text-3xl flex-shrink-0">🌙</span>
+        <div class="flex-1">
+          <p class="text-ivory font-medium mb-0.5">Dinner</p>
+          <p class="text-sand text-xs">Monthly subscription price for dinner only</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="text-sand text-sm">₹</span>
+          <input type="number"
+                 th:field="*{dinnerPrice}"
+                 step="0.01" min="0"
+                 class="w-28 bg-elevated border border-elevated/60 focus:border-accent
+                        rounded-lg px-3 py-2 text-ivory text-sm text-right outline-none
+                        transition-all duration-200 focus:shadow-neon-sm"/>
+          <span class="text-sand text-xs whitespace-nowrap">/ month</span>
+        </div>
+        <p th:if="${#fields.hasErrors('dinnerPrice')}"
+           th:errors="*{dinnerPrice}"
+           class="text-red-400 text-xs mt-1"></p>
+      </div>
+    </div>
+
+    <!-- Combination preview -->
+    <div class="pt-4 border-t border-elevated/60">
+      <p class="text-sand text-xs uppercase tracking-widest mb-3">Combination Examples</p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+        <div class="p-3 rounded-lg bg-elevated/20 border border-elevated/60">
+          <p class="text-sand mb-1">B + L</p>
+          <p class="text-ivory font-medium">₹<span id="bl-price">—</span>/mo</p>
+        </div>
+        <div class="p-3 rounded-lg bg-elevated/20 border border-elevated/60">
+          <p class="text-sand mb-1">L + D</p>
+          <p class="text-ivory font-medium">₹<span id="ld-price">—</span>/mo</p>
+        </div>
+        <div class="p-3 rounded-lg bg-elevated/20 border border-elevated/60">
+          <p class="text-sand mb-1">B + L + D</p>
+          <p class="text-ivory font-medium">₹<span id="bld-price">—</span>/mo</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 pt-2">
+      <button type="submit"
+              class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                     text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        SAVE PRICES
+      </button>
+    </div>
+  </form>
+
+<script>
+function updateCombinations() {
+  var b = parseFloat(document.querySelector('[name="breakfastPrice"]').value) || 0;
+  var l = parseFloat(document.querySelector('[name="lunchPrice"]').value) || 0;
+  var d = parseFloat(document.querySelector('[name="dinnerPrice"]').value) || 0;
+  document.getElementById('bl-price').textContent = (b + l).toLocaleString('en-IN');
+  document.getElementById('ld-price').textContent = (l + d).toLocaleString('en-IN');
+  document.getElementById('bld-price').textContent = (b + l + d).toLocaleString('en-IN');
+}
+document.querySelectorAll('input[type="number"]').forEach(function(el) {
+  el.addEventListener('input', updateCombinations);
+});
+updateCombinations();
+</script>
+
+</main>
+</body>
+</html>

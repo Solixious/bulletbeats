@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="customer-search-results">
+
+  <div th:if="${!#lists.isEmpty(customers)}"
+       class="bg-elevated rounded-lg border border-elevated/60 divide-y divide-elevated/40 overflow-hidden mt-2">
+    <button th:each="c : ${customers}"
+            type="button"
+            th:attr="onclick='selectTiffinCustomer(' + ${c.id} + ', &quot;' + ${c.name} + '&quot;, &quot;' + ${c.phone} + '&quot;)'"
+            class="w-full text-left px-4 py-2.5 hover:bg-elevated/60 transition-colors flex items-center gap-3">
+      <div class="flex-1 min-w-0">
+        <p class="text-ivory text-sm truncate" th:text="${c.name}"></p>
+        <p class="text-sand text-xs" th:text="${c.phone}"></p>
+      </div>
+      <span th:if="${c.vip}"
+            class="flex-shrink-0 px-1.5 py-0.5 text-xs rounded-full font-bold
+                   text-amber-400 border border-amber-400/40 bg-amber-400/10">VIP</span>
+    </button>
+  </div>
+
+  <div th:if="${#lists.isEmpty(customers) and q != null and !#strings.isEmpty(q)}"
+       class="mt-2 px-4 py-3 rounded-lg bg-elevated/40 border border-dashed border-sand/30 text-sand text-xs">
+    No customer found. <a href="/customers" class="text-accent hover:underline">Create a customer first</a>.
+  </div>
+
+</th:block>
+</body>
+</html>

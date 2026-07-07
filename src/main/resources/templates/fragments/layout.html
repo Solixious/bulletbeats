@@ -140,6 +140,12 @@
           <span class="text-base">👥</span> Customers
         </a>
 
+        <a href="/tiffin"
+           th:classappend="${uri.startsWith('/tiffin')} ? ${activeClass} : ${inactiveClass}"
+           class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+          <span class="text-base">🍱</span> Tiffin
+        </a>
+
         <!-- Share menu — visible to Manager+ -->
         <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
            href="/admin/share"
@@ -185,6 +191,11 @@
              th:classappend="${uri.startsWith('/admin/settings')} ? ${activeClass} : ${inactiveClass}"
              class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
             <span class="text-base">⚙</span> Settings
+          </a>
+          <a href="/admin/tiffin/pricing"
+             th:classappend="${uri.startsWith('/admin/tiffin')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">🍱</span> Tiffin Pricing
           </a>
         </div>
 

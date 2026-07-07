@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${editing} ? 'Edit Tiffin Subscription — Bullet Beats Café' : 'New Tiffin Subscription — Bullet Beats Café'">
+    Tiffin — Bullet Beats Café
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-2xl mx-auto">
+
+  <a href="/tiffin"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Tiffin
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide"
+        th:text="${editing} ? 'Edit Subscription' : 'New Tiffin Subscription'"></h1>
+    <p class="text-sand text-sm mt-0.5">Set up a customer's monthly tiffin delivery</p>
+  </div>
+
+  <form th:action="${editing} ? @{/tiffin/{id}(id=${subscriptionId})} : @{/tiffin}"
+        th:object="${dto}"
+        method="post"
+        class="space-y-6">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <input type="hidden" th:field="*{customerId}" id="customerId"/>
+
+    <!-- Customer selection (hidden when editing) -->
+    <div th:unless="${editing}" class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">Customer</p>
+
+      <div id="selected-customer-display"
+           th:classappend="${dto.customerId != null} ? '' : 'hidden'"
+           class="flex items-center gap-2 px-3 py-2 rounded-lg bg-elevated/50 border border-elevated/60 mb-3">
+        <span class="text-accent text-xs">✓</span>
+        <span id="selected-customer-name" class="text-ivory text-sm"
+              th:text="${dto.customerName}"></span>
+        <button type="button" onclick="clearTiffinCustomer()"
+                class="ml-auto text-sand text-xs hover:text-ivory">× clear</button>
+      </div>
+
+      <div id="customer-search-section"
+           th:classappend="${dto.customerId != null} ? 'hidden' : ''">
+        <input type="text"
+               placeholder="Search by name or phone..."
+               hx-get="/tiffin/customer-search"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#customer-search-results"
+               name="q"
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                      outline-none transition-all duration-200 focus:shadow-neon-sm"/>
+        <div id="customer-search-results"></div>
+      </div>
+
+      <p th:if="${#fields.hasErrors('customerId')}"
+         th:errors="*{customerId}"
+         class="mt-2 text-red-400 text-xs"></p>
+    </div>
+
+    <!-- Customer display for edit mode -->
+    <div th:if="${editing}" class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-2">Customer</p>
+      <p class="text-ivory" th:text="${dto.customerName}"></p>
+      <p class="text-sand text-xs mt-0.5">Customer cannot be changed after creation</p>
+    </div>
+
+    <!-- Meals -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">Meals to Deliver</p>
+      <p th:if="${#fields.hasErrors('hasBreakfast')}"
+         th:errors="*{hasBreakfast}"
+         class="mb-3 text-red-400 text-xs"></p>
+
+      <div class="grid grid-cols-3 gap-3">
+        <label th:classappend="*{hasBreakfast} ? 'ring-2 ring-amber-400 border-amber-400' : 'border-elevated/60'"
+               class="flex flex-col items-center gap-2 p-4 rounded-lg border cursor-pointer
+                      hover:border-amber-400/50 transition-all duration-150 bg-elevated/30">
+          <input type="checkbox" th:field="*{hasBreakfast}" class="sr-only"/>
+          <span class="text-2xl">🌅</span>
+          <span class="text-ivory text-sm font-medium">Breakfast</span>
+        </label>
+
+        <label th:classappend="*{hasLunch} ? 'ring-2 ring-emerald-400 border-emerald-400' : 'border-elevated/60'"
+               class="flex flex-col items-center gap-2 p-4 rounded-lg border cursor-pointer
+                      hover:border-emerald-400/50 transition-all duration-150 bg-elevated/30">
+          <input type="checkbox" th:field="*{hasLunch}" class="sr-only"/>
+          <span class="text-2xl">☀️</span>
+          <span class="text-ivory text-sm font-medium">Lunch</span>
+        </label>
+
+        <label th:classappend="*{hasDinner} ? 'ring-2 ring-accent border-accent' : 'border-elevated/60'"
+               class="flex flex-col items-center gap-2 p-4 rounded-lg border cursor-pointer
+                      hover:border-accent/50 transition-all duration-150 bg-elevated/30">
+          <input type="checkbox" th:field="*{hasDinner}" class="sr-only"/>
+          <span class="text-2xl">🌙</span>
+          <span class="text-ivory text-sm font-medium">Dinner</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Delivery Days -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">Delivery Days</p>
+
+      <div class="flex gap-3 mb-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" th:field="*{allDays}" th:value="true"
+                 id="allDaysTrue"
+                 onchange="toggleCustomDays(true)"
+                 class="accent-accent"/>
+          <span class="text-ivory text-sm">All Days</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" th:field="*{allDays}" th:value="false"
+                 id="allDaysFalse"
+                 onchange="toggleCustomDays(false)"
+                 class="accent-accent"/>
+          <span class="text-ivory text-sm">Custom Days</span>
+        </label>
+      </div>
+
+      <div id="custom-days-section"
+           th:classappend="*{allDays} ? 'hidden' : ''"
+           class="grid grid-cols-7 gap-2">
+        <th:block th:each="day : ${ {'MON','TUE','WED','THU','FRI','SAT','SUN'} }">
+          <label th:classappend="${#lists.contains(dto.selectedDays, day)} ? 'ring-2 ring-accent border-accent bg-accent/10' : 'border-elevated/60'"
+                 class="flex flex-col items-center gap-1 p-2 rounded-lg border cursor-pointer
+                        hover:border-accent/50 transition-all text-center">
+            <input type="checkbox"
+                   name="selectedDays"
+                   th:value="${day}"
+                   th:checked="${#lists.contains(dto.selectedDays, day)}"
+                   class="sr-only"/>
+            <span class="text-ivory text-xs font-medium" th:text="${day}"></span>
+          </label>
+        </th:block>
+      </div>
+
+      <p th:if="${#fields.hasErrors('selectedDays')}"
+         th:errors="*{selectedDays}"
+         class="mt-2 text-red-400 text-xs"></p>
+    </div>
+
+    <!-- Start date (create only) -->
+    <div th:unless="${editing}" class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">Start Date</p>
+      <input type="date"
+             th:field="*{startDate}"
+             class="bg-elevated border border-elevated/60 focus:border-accent
+                    rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                    transition-all duration-200 focus:shadow-neon-sm"/>
+      <p th:if="${#fields.hasErrors('startDate')}"
+         th:errors="*{startDate}"
+         class="mt-2 text-red-400 text-xs"></p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3">
+      <button type="submit"
+              class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                     text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        <span th:text="${editing} ? 'SAVE CHANGES' : 'CREATE SUBSCRIPTION'"></span>
+      </button>
+      <a th:href="${editing} ? @{/tiffin/{id}(id=${subscriptionId})} : '/tiffin'"
+         class="text-sand text-sm hover:text-ivory transition-colors">Cancel</a>
+    </div>
+  </form>
+
+<script>
+function selectTiffinCustomer(id, name, phone) {
+  document.getElementById('customerId').value = id;
+  document.getElementById('selected-customer-name').textContent = name + ' · ' + phone;
+  document.getElementById('selected-customer-display').classList.remove('hidden');
+  document.getElementById('customer-search-section').classList.add('hidden');
+}
+
+function clearTiffinCustomer() {
+  document.getElementById('customerId').value = '';
+  document.getElementById('selected-customer-display').classList.add('hidden');
+  document.getElementById('customer-search-section').classList.remove('hidden');
+  document.getElementById('customer-search-results').innerHTML = '';
+}
+
+function toggleCustomDays(allDays) {
+  var section = document.getElementById('custom-days-section');
+  if (allDays) {
+    section.classList.add('hidden');
+  } else {
+    section.classList.remove('hidden');
+  }
+}
+
+// Highlight meal cards on checkbox change
+document.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+  cb.addEventListener('change', function() {
+    var label = this.closest('label');
+    if (!label) return;
+    if (this.name === 'selectedDays') {
+      label.classList.toggle('ring-2', this.checked);
+      label.classList.toggle('ring-accent', this.checked);
+      label.classList.toggle('border-accent', this.checked);
+      label.classList.toggle('bg-accent/10', this.checked);
+      label.classList.toggle('border-elevated/60', !this.checked);
+    } else if (this.name === 'hasBreakfast') {
+      label.classList.toggle('ring-2', this.checked);
+      label.classList.toggle('ring-amber-400', this.checked);
+      label.classList.toggle('border-amber-400', this.checked);
+    } else if (this.name === 'hasLunch') {
+      label.classList.toggle('ring-2', this.checked);
+      label.classList.toggle('ring-emerald-400', this.checked);
+      label.classList.toggle('border-emerald-400', this.checked);
+    } else if (this.name === 'hasDinner') {
+      label.classList.toggle('ring-2', this.checked);
+      label.classList.toggle('ring-accent', this.checked);
+      label.classList.toggle('border-accent', this.checked);
+    }
+  });
+});
+</script>
+
+</main>
+</body>
+</html>

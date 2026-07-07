@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${subscription.customer.name} + ' — Tiffin — Bullet Beats Café'">
+    Tiffin Detail
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-3xl mx-auto">
+
+  <a href="/tiffin"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Tiffin
+  </a>
+
+  <!-- Flash message -->
+  <div th:if="${success}"
+       class="mb-4 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm"
+       th:text="${success}"></div>
+
+  <!-- Header -->
+  <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide"
+          th:text="${subscription.customer.name}"></h1>
+      <p class="text-sand text-sm mt-0.5" th:text="${subscription.customer.phone}"></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span th:if="${subscription.status.name() == 'ACTIVE'}"
+            class="px-3 py-1 text-xs rounded-full font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+        Active
+      </span>
+      <span th:if="${subscription.status.name() == 'PAUSED'}"
+            class="px-3 py-1 text-xs rounded-full font-bold bg-amber-400/10 border border-amber-400/30 text-amber-400">
+        Paused
+      </span>
+      <span th:if="${subscription.status.name() == 'CANCELLED'}"
+            class="px-3 py-1 text-xs rounded-full font-bold bg-red-500/10 border border-red-500/30 text-red-400">
+        Cancelled
+      </span>
+      <a th:unless="${subscription.status.name() == 'CANCELLED'}"
+         th:href="@{/tiffin/{id}/edit(id=${subscription.id})}"
+         class="px-3 py-1 text-xs rounded-lg border border-elevated/60 text-sand
+                hover:text-ivory hover:border-sand/40 transition-all font-heading tracking-widest">
+        EDIT
+      </a>
+    </div>
+  </div>
+
+  <!-- Subscription info -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="bg-surface rounded-xl border border-elevated/60 p-4">
+      <p class="text-sand text-xs uppercase tracking-widest mb-2">Meals</p>
+      <div class="flex gap-2 flex-wrap">
+        <span th:if="${subscription.hasBreakfast}"
+              class="px-2 py-1 text-xs rounded bg-amber-400/10 border border-amber-400/30 text-amber-400 font-medium">
+          🌅 Breakfast
+        </span>
+        <span th:if="${subscription.hasLunch}"
+              class="px-2 py-1 text-xs rounded bg-emerald-400/10 border border-emerald-400/30 text-emerald-400 font-medium">
+          ☀️ Lunch
+        </span>
+        <span th:if="${subscription.hasDinner}"
+              class="px-2 py-1 text-xs rounded bg-accent/10 border border-accent/30 text-accent font-medium">
+          🌙 Dinner
+        </span>
+      </div>
+    </div>
+
+    <div class="bg-surface rounded-xl border border-elevated/60 p-4">
+      <p class="text-sand text-xs uppercase tracking-widest mb-2">Delivery Days</p>
+      <p class="text-ivory text-sm">
+        <span th:if="${subscription.allDays}">Every Day</span>
+        <span th:unless="${subscription.allDays}" th:text="${subscription.customDays}"></span>
+      </p>
+    </div>
+
+    <div class="bg-surface rounded-xl border border-elevated/60 p-4">
+      <p class="text-sand text-xs uppercase tracking-widest mb-2">Monthly Cost</p>
+      <p class="text-ivory text-xl font-heading tracking-wide">
+        ₹<span th:text="${#numbers.formatDecimal(monthlyPrice, 1, 'COMMA', 0, 'POINT')}"></span>
+      </p>
+      <p class="text-sand text-xs mt-0.5">per month</p>
+    </div>
+  </div>
+
+  <div class="bg-surface rounded-xl border border-elevated/60 p-4 mb-6">
+    <p class="text-sand text-xs uppercase tracking-widest mb-1">Active Since</p>
+    <p class="text-ivory text-sm" th:text="${#temporals.format(subscription.startDate, 'd MMMM yyyy')}"></p>
+  </div>
+
+  <!-- Controls (active/paused only) -->
+  <div th:unless="${subscription.status.name() == 'CANCELLED'}" class="space-y-4 mb-6">
+
+    <!-- Pause form -->
+    <div th:if="${subscription.status.name() == 'ACTIVE'}"
+         class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">Pause Delivery</p>
+
+      <form th:action="@{/tiffin/{id}/pause(id=${subscription.id})}"
+            th:object="${pauseDto}"
+            method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+        <div th:replace="~{tiffin/fragments/pause-form :: pause-form}"></div>
+
+        <div class="mt-4 flex items-center gap-3">
+          <button type="submit"
+                  class="px-5 py-2 rounded-lg bg-amber-400/10 border border-amber-400/30 text-amber-400
+                         font-heading tracking-widest text-xs hover:bg-amber-400/20 transition-all">
+            PAUSE TIFFIN
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Resume button -->
+    <div th:if="${subscription.status.name() == 'PAUSED'}"
+         class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-2">Resume Delivery</p>
+      <p class="text-sand text-sm mb-4">Subscription is currently paused. Click to resume deliveries.</p>
+      <form th:action="@{/tiffin/{id}/resume(id=${subscription.id})}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <button type="submit"
+                class="px-5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
+                       font-heading tracking-widest text-xs hover:bg-emerald-500/20 transition-all">
+          RESUME TIFFIN
+        </button>
+      </form>
+    </div>
+
+    <!-- Cancel (manager/admin only) -->
+    <div sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+         class="bg-surface rounded-xl border border-red-500/20 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-2">Cancel Subscription</p>
+      <p class="text-sand text-sm mb-4">This will permanently cancel the tiffin subscription.</p>
+      <form th:action="@{/tiffin/{id}/cancel(id=${subscription.id})}" method="post"
+            onsubmit="return bbConfirm(this, 'Cancel this tiffin subscription? This cannot be undone.')">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <button type="submit"
+                class="px-5 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400
+                       font-heading tracking-widest text-xs hover:bg-red-500/20 transition-all">
+          CANCEL SUBSCRIPTION
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pause history -->
+  <div th:if="${!#lists.isEmpty(pauses)}" class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+    <div class="px-5 py-3 border-b border-elevated/60">
+      <p class="text-sand text-xs uppercase tracking-widest">Pause History</p>
+    </div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-5 py-3 text-left">From</th>
+          <th class="px-5 py-3 text-left">Until</th>
+          <th class="px-5 py-3 text-left">Note</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-elevated/40">
+        <tr th:each="p : ${pauses}" class="text-ivory">
+          <td class="px-5 py-3 text-sm" th:text="${#temporals.format(p.pauseFrom, 'd MMM yyyy')}"></td>
+          <td class="px-5 py-3 text-sm">
+            <span th:if="${p.pauseUntil != null}" th:text="${#temporals.format(p.pauseUntil, 'd MMM yyyy')}"></span>
+            <span th:if="${p.pauseUntil == null}" class="text-sand italic">Indefinite</span>
+          </td>
+          <td class="px-5 py-3 text-sand text-xs" th:text="${p.note ?: '—'}"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+</body>
+</html>

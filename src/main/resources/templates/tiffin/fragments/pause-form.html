@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="pause-form">
+
+  <div class="space-y-4">
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-sand text-xs uppercase tracking-widest block mb-1.5">Pause From</label>
+        <input type="date"
+               th:field="*{pauseFrom}"
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-3 py-2 text-ivory text-sm outline-none transition-all"/>
+        <p th:if="${#fields.hasErrors('pauseFrom')}"
+           th:errors="*{pauseFrom}"
+           class="mt-1 text-red-400 text-xs"></p>
+      </div>
+      <div>
+        <label class="text-sand text-xs uppercase tracking-widest block mb-1.5">
+          Pause Until <span class="normal-case text-sand/50">(leave blank = indefinite)</span>
+        </label>
+        <input type="date"
+               th:field="*{pauseUntil}"
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-3 py-2 text-ivory text-sm outline-none transition-all"/>
+      </div>
+    </div>
+    <div>
+      <label class="text-sand text-xs uppercase tracking-widest block mb-1.5">Note (optional)</label>
+      <input type="text"
+             th:field="*{note}"
+             placeholder="e.g. Customer travelling"
+             class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                    rounded-lg px-3 py-2 text-ivory text-sm outline-none transition-all
+                    placeholder-sand/40"/>
+    </div>
+  </div>
+
+</th:block>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Tiffin — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Tiffin Service</h1>
+      <p class="text-sand text-sm mt-0.5">Manage monthly tiffin subscriptions</p>
+    </div>
+    <a href="/tiffin/new"
+       class="px-4 py-2 rounded-lg bg-accent text-base font-heading tracking-widest text-xs
+              hover:shadow-neon hover:brightness-110 transition-all duration-200 flex-shrink-0">
+      + ADD SUBSCRIBER
+    </a>
+  </div>
+
+  <!-- Flash message -->
+  <div th:if="${success}"
+       class="mb-4 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm"
+       th:text="${success}"></div>
+
+  <!-- Filter tabs -->
+  <div class="flex gap-1 mb-5">
+    <a href="/tiffin?filter=active"
+       th:classappend="${filter == 'active'} ? 'bg-accent/10 border-accent/40 text-accent' : 'border-elevated/60 text-sand hover:text-ivory hover:border-sand/40'"
+       class="px-4 py-1.5 rounded-lg border text-xs font-heading tracking-widest transition-all">
+      ACTIVE
+    </a>
+    <a href="/tiffin?filter=all"
+       th:classappend="${filter == 'all'} ? 'bg-accent/10 border-accent/40 text-accent' : 'border-elevated/60 text-sand hover:text-ivory hover:border-sand/40'"
+       class="px-4 py-1.5 rounded-lg border text-xs font-heading tracking-widest transition-all">
+      ALL
+    </a>
+  </div>
+
+  <!-- Subscriber table -->
+  <div th:if="${#lists.isEmpty(subscriptions)}"
+       class="py-16 text-center text-sand">
+    <p class="text-lg">No tiffin subscribers yet.</p>
+    <a href="/tiffin/new" class="text-accent hover:underline text-sm mt-2 inline-block">Add the first one</a>
+  </div>
+
+  <div th:unless="${#lists.isEmpty(subscriptions)}"
+       class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-5 py-3 text-left">Customer</th>
+          <th class="px-5 py-3 text-left">Meals</th>
+          <th class="px-5 py-3 text-left">Delivery Days</th>
+          <th class="px-5 py-3 text-right">Monthly</th>
+          <th class="px-5 py-3 text-left">Status</th>
+          <th class="px-5 py-3 text-left">Since</th>
+          <th class="px-3 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-elevated/40">
+        <tr th:each="sub : ${subscriptions}"
+            class="hover:bg-elevated/20 transition-colors">
+          <td class="px-5 py-3">
+            <a th:href="@{/tiffin/{id}(id=${sub.id})}"
+               class="text-ivory font-medium hover:text-accent transition-colors"
+               th:text="${sub.customer.name}"></a>
+            <p class="text-sand text-xs" th:text="${sub.customer.phone}"></p>
+          </td>
+          <td class="px-5 py-3">
+            <div class="flex gap-1 flex-wrap">
+              <span th:if="${sub.hasBreakfast}"
+                    class="px-1.5 py-0.5 text-xs rounded bg-amber-400/10 border border-amber-400/30 text-amber-400">
+                B
+              </span>
+              <span th:if="${sub.hasLunch}"
+                    class="px-1.5 py-0.5 text-xs rounded bg-emerald-400/10 border border-emerald-400/30 text-emerald-400">
+                L
+              </span>
+              <span th:if="${sub.hasDinner}"
+                    class="px-1.5 py-0.5 text-xs rounded bg-accent/10 border border-accent/30 text-accent">
+                D
+              </span>
+            </div>
+          </td>
+          <td class="px-5 py-3 text-sand">
+            <span th:if="${sub.allDays}">All Days</span>
+            <span th:unless="${sub.allDays}" th:text="${sub.customDays}"></span>
+          </td>
+          <td class="px-5 py-3 text-right text-ivory font-medium">
+            ₹<span th:text="${#numbers.formatDecimal(monthlyPrices[sub.id], 1, 'COMMA', 0, 'POINT')}"></span>
+          </td>
+          <td class="px-5 py-3">
+            <span th:if="${sub.status.name() == 'ACTIVE'}"
+                  class="px-2 py-0.5 text-xs rounded-full font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+              Active
+            </span>
+            <span th:if="${sub.status.name() == 'PAUSED'}"
+                  class="px-2 py-0.5 text-xs rounded-full font-bold bg-amber-400/10 border border-amber-400/30 text-amber-400">
+              Paused
+            </span>
+            <span th:if="${sub.status.name() == 'CANCELLED'}"
+                  class="px-2 py-0.5 text-xs rounded-full font-bold bg-red-500/10 border border-red-500/30 text-red-400">
+              Cancelled
+            </span>
+          </td>
+          <td class="px-5 py-3 text-sand text-xs"
+              th:text="${#temporals.format(sub.startDate, 'd MMM yyyy')}"></td>
+          <td class="px-3 py-3">
+            <a th:href="@{/tiffin/{id}(id=${sub.id})}"
+               class="text-sand text-xs hover:text-accent transition-colors">View →</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Legend -->
+  <div class="mt-4 flex gap-4 text-xs text-sand">
+    <span><span class="text-amber-400 font-bold">B</span> = Breakfast</span>
+    <span><span class="text-emerald-400 font-bold">L</span> = Lunch</span>
+    <span><span class="text-accent font-bold">D</span> = Dinner</span>
+  </div>
+
+</main>
+</body>
+</html>

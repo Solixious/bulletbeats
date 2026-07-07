@@ -1,0 +1,159 @@
+package in.bulletbeats.domain.tiffin.service;
+
+import in.bulletbeats.domain.crm.entity.Customer;
+import in.bulletbeats.domain.crm.repository.CustomerRepository;
+import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
+import in.bulletbeats.domain.tiffin.TiffinMealType;
+import in.bulletbeats.domain.tiffin.TiffinStatus;
+import in.bulletbeats.domain.tiffin.dto.TiffinPauseDto;
+import in.bulletbeats.domain.tiffin.dto.TiffinPricingDto;
+import in.bulletbeats.domain.tiffin.dto.TiffinSubscriptionDto;
+import in.bulletbeats.domain.tiffin.entity.TiffinPause;
+import in.bulletbeats.domain.tiffin.entity.TiffinPricing;
+import in.bulletbeats.domain.tiffin.entity.TiffinSubscription;
+import in.bulletbeats.domain.tiffin.repository.TiffinPauseRepository;
+import in.bulletbeats.domain.tiffin.repository.TiffinPricingRepository;
+import in.bulletbeats.domain.tiffin.repository.TiffinSubscriptionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class TiffinService {
+
+    private final TiffinSubscriptionRepository subscriptionRepository;
+    private final TiffinPricingRepository pricingRepository;
+    private final TiffinPauseRepository pauseRepository;
+    private final CustomerRepository customerRepository;
+
+    public List<TiffinSubscription> getActiveAndPaused() {
+        return subscriptionRepository.findByStatusInWithCustomer(
+                List.of(TiffinStatus.ACTIVE, TiffinStatus.PAUSED));
+    }
+
+    public List<TiffinSubscription> getAll() {
+        return subscriptionRepository.findAllWithCustomer();
+    }
+
+    public TiffinSubscription getById(Long id) {
+        return subscriptionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tiffin subscription not found"));
+    }
+
+    public boolean hasActiveSubscription(Long customerId) {
+        return subscriptionRepository.existsByCustomerIdAndStatusIn(
+                customerId, List.of(TiffinStatus.ACTIVE, TiffinStatus.PAUSED));
+    }
+
+    @Transactional
+    public TiffinSubscription subscribe(TiffinSubscriptionDto dto) {
+        Customer customer = customerRepository.findById(dto.getCustomerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+
+        TiffinSubscription sub = TiffinSubscription.builder()
+                .customer(customer)
+                .status(TiffinStatus.ACTIVE)
+                .hasBreakfast(dto.isHasBreakfast())
+                .hasLunch(dto.isHasLunch())
+                .hasDinner(dto.isHasDinner())
+                .allDays(dto.isAllDays())
+                .customDays(dto.isAllDays() ? null : dto.getCustomDaysString())
+                .startDate(dto.getStartDate())
+                .build();
+
+        return subscriptionRepository.save(sub);
+    }
+
+    @Transactional
+    public void update(Long id, TiffinSubscriptionDto dto) {
+        TiffinSubscription sub = getById(id);
+        sub.setHasBreakfast(dto.isHasBreakfast());
+        sub.setHasLunch(dto.isHasLunch());
+        sub.setHasDinner(dto.isHasDinner());
+        sub.setAllDays(dto.isAllDays());
+        sub.setCustomDays(dto.isAllDays() ? null : dto.getCustomDaysString());
+        subscriptionRepository.save(sub);
+    }
+
+    @Transactional
+    public void pause(Long id, TiffinPauseDto dto) {
+        TiffinSubscription sub = getById(id);
+        TiffinPause pause = TiffinPause.builder()
+                .subscription(sub)
+                .pauseFrom(dto.getPauseFrom())
+                .pauseUntil(dto.getPauseUntil())
+                .note(dto.getNote())
+                .build();
+        pauseRepository.save(pause);
+
+        if (!dto.getPauseFrom().isAfter(LocalDate.now())) {
+            sub.setStatus(TiffinStatus.PAUSED);
+            subscriptionRepository.save(sub);
+        }
+    }
+
+    @Transactional
+    public void resume(Long id) {
+        TiffinSubscription sub = getById(id);
+        sub.setStatus(TiffinStatus.ACTIVE);
+        subscriptionRepository.save(sub);
+    }
+
+    @Transactional
+    public void cancel(Long id) {
+        TiffinSubscription sub = getById(id);
+        sub.setStatus(TiffinStatus.CANCELLED);
+        subscriptionRepository.save(sub);
+    }
+
+    public List<TiffinPricing> getAllPricing() {
+        return pricingRepository.findAll();
+    }
+
+    public Map<String, BigDecimal> getPricingMap() {
+        Map<String, BigDecimal> map = new java.util.LinkedHashMap<>();
+        pricingRepository.findAll().forEach(p -> map.put(p.getMealType().name(), p.getPricePerMonth()));
+        return map;
+    }
+
+    private Map<TiffinMealType, BigDecimal> getPricingByType() {
+        Map<TiffinMealType, BigDecimal> map = new EnumMap<>(TiffinMealType.class);
+        pricingRepository.findAll().forEach(p -> map.put(p.getMealType(), p.getPricePerMonth()));
+        return map;
+    }
+
+    @Transactional
+    public void updatePricing(TiffinPricingDto dto) {
+        updateMealPrice(TiffinMealType.BREAKFAST, dto.getBreakfastPrice());
+        updateMealPrice(TiffinMealType.LUNCH, dto.getLunchPrice());
+        updateMealPrice(TiffinMealType.DINNER, dto.getDinnerPrice());
+    }
+
+    private void updateMealPrice(TiffinMealType mealType, BigDecimal price) {
+        pricingRepository.findByMealType(mealType).ifPresent(p -> {
+            p.setPricePerMonth(price);
+            pricingRepository.save(p);
+        });
+    }
+
+    public BigDecimal calculateMonthlyPrice(TiffinSubscription sub) {
+        Map<TiffinMealType, BigDecimal> prices = getPricingByType();
+        BigDecimal total = BigDecimal.ZERO;
+        if (sub.isHasBreakfast()) total = total.add(prices.getOrDefault(TiffinMealType.BREAKFAST, BigDecimal.ZERO));
+        if (sub.isHasLunch())     total = total.add(prices.getOrDefault(TiffinMealType.LUNCH,     BigDecimal.ZERO));
+        if (sub.isHasDinner())    total = total.add(prices.getOrDefault(TiffinMealType.DINNER,    BigDecimal.ZERO));
+        return total;
+    }
+
+    public List<TiffinPause> getPausesForSubscription(Long subscriptionId) {
+        return pauseRepository.findBySubscriptionIdOrderByPauseFromDesc(subscriptionId);
+    }
+}
