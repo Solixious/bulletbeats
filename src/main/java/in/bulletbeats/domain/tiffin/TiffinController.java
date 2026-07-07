@@ -1,5 +1,6 @@
 package in.bulletbeats.domain.tiffin;
 
+import in.bulletbeats.domain.crm.entity.Customer;
 import in.bulletbeats.domain.crm.service.CustomerService;
 import in.bulletbeats.domain.tiffin.dto.TiffinPauseDto;
 import in.bulletbeats.domain.tiffin.dto.TiffinSubscriptionDto;
@@ -53,6 +54,19 @@ public class TiffinController {
         model.addAttribute("q", q.trim());
         model.addAttribute("customers", q.isBlank() ? List.of() : customerService.search(q.trim()));
         return "tiffin/fragments/customer-search-results :: customer-search-results";
+    }
+
+    @PostMapping("/quick-create-customer")
+    public String quickCreateCustomer(@RequestParam(defaultValue = "") String name,
+                                      @RequestParam(defaultValue = "") String phone,
+                                      Model model) {
+        if (name.isBlank() || phone.isBlank()) {
+            model.addAttribute("error", "Name and phone are required");
+            return "tiffin/fragments/customer-search-results :: quick-create-error";
+        }
+        Customer customer = customerService.findOrCreateByPhone(phone.trim(), name.trim(), null);
+        model.addAttribute("customer", customer);
+        return "tiffin/fragments/customer-search-results :: quick-create-success";
     }
 
     @PostMapping

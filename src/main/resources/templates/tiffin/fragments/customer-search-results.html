@@ -20,10 +20,47 @@
   </div>
 
   <div th:if="${#lists.isEmpty(customers) and q != null and !#strings.isEmpty(q)}"
-       class="mt-2 px-4 py-3 rounded-lg bg-elevated/40 border border-dashed border-sand/30 text-sand text-xs">
-    No customer found. <a href="/customers" class="text-accent hover:underline">Create a customer first</a>.
+       class="mt-2 px-4 py-4 rounded-lg bg-elevated/40 border border-dashed border-sand/30">
+    <p class="text-sand text-xs mb-3">No customer found for "<span class="text-ivory" th:text="${q}"></span>". Add them now:</p>
+    <form hx-post="/tiffin/quick-create-customer"
+          hx-target="#customer-search-results"
+          hx-swap="innerHTML"
+          class="space-y-2">
+      <input type="text" name="name" th:value="${q}" placeholder="Full name" required
+             class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                    rounded-lg px-3 py-2 text-ivory text-sm placeholder-sand/40
+                    outline-none transition-all duration-200 focus:shadow-neon-sm"/>
+      <input type="text" name="phone" placeholder="Phone number" required
+             class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                    rounded-lg px-3 py-2 text-ivory text-sm placeholder-sand/40
+                    outline-none transition-all duration-200 focus:shadow-neon-sm"/>
+      <div class="flex items-center gap-3 pt-1">
+        <button type="submit"
+                class="px-4 py-1.5 rounded-lg bg-accent text-base text-xs font-heading
+                       tracking-widest hover:brightness-110 transition-all duration-200">
+          ADD CUSTOMER
+        </button>
+        <button type="button"
+                onclick="document.getElementById('customer-search-results').innerHTML = ''"
+                class="text-sand text-xs hover:text-ivory transition-colors">
+          Cancel
+        </button>
+      </div>
+    </form>
   </div>
 
 </th:block>
+
+<th:block th:fragment="quick-create-success">
+  <script th:inline="javascript">
+    selectTiffinCustomer([[${customer.id}]], [[${customer.name}]], [[${customer.phone}]]);
+  </script>
+</th:block>
+
+<th:block th:fragment="quick-create-error">
+  <div class="mt-2 px-3 py-2 rounded-lg bg-red-900/30 border border-red-500/40 text-red-400 text-xs"
+       th:text="${error}"></div>
+</th:block>
+
 </body>
 </html>
