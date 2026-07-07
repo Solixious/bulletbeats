@@ -160,10 +160,14 @@ public class NotificationService {
      */
     private String buildTemplateVars(BillNotificationData data) {
         try {
+            // WhatsApp template variable values must not contain newlines — flatten to single line
+            String breakdown = data.breakdown() != null
+                    ? data.breakdown().replace("\n", " ").replaceAll(" {2,}", " ").trim()
+                    : "";
             return OBJECT_MAPPER.writeValueAsString(Map.of(
                     "1", data.customerName() != null ? data.customerName() : "",
                     "2", data.cafeName() != null ? data.cafeName() : "",
-                    "3", data.breakdown() != null ? data.breakdown() : ""
+                    "3", breakdown
             ));
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize template variables", e);
