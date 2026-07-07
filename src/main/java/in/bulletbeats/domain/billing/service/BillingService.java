@@ -511,45 +511,42 @@ public class BillingService {
 
     public String generateWhatsappText(Long billId) {
         Bill bill = getBillById(billId);
-        String cafeName = appConfigService.get("cafe.name", "Bullet Beats Café");
 
+        String customerName = bill.getCustomer() != null ? bill.getCustomer().getName() : "there";
         String location = bill.getCafeTable() != null
                 ? bill.getCafeTable().getName()
                 : bill.getOrderType().getDisplayName();
+        String date = bill.getCreatedAt() != null
+                ? bill.getCreatedAt().format(DISPLAY_FMT)
+                : "";
+
+        String itemsSummary = bill.getItems().stream()
+                .map(i -> i.getItemName() + " x" + i.getQuantity()
+                        + " ₹" + i.getLineTotal().setScale(2, RoundingMode.HALF_UP))
+                .collect(Collectors.joining(" | "));
+
+        String paidVia = paymentRepository.findByBillId(billId)
+                .map(p -> p.getMethod().getDisplayName())
+                .orElse("N/A");
 
         StringBuilder sb = new StringBuilder();
-        sb.append("🧾 Bill #").append(bill.getBillNumber()).append("\n");
-        sb.append(cafeName).append(" — ").append(location).append("\n");
-        if (bill.getCustomer() != null) {
-            sb.append("Customer: ").append(bill.getCustomer().getName()).append("\n");
-        }
-        if (bill.getCreatedAt() != null) {
-            sb.append(bill.getCreatedAt().format(DISPLAY_FMT)).append("\n");
-        }
-        sb.append("\n");
+        sb.append("Hi ").append(customerName)
+          .append(", thank you for dining with us. Here is the summary of your bill from Bullet Beats Cafe.\n\n");
 
-        for (BillItem item : bill.getItems()) {
-            sb.append(item.getItemName())
-              .append(" x").append(item.getQuantity())
-              .append("  ₹").append(item.getLineTotal().setScale(2, RoundingMode.HALF_UP))
-              .append("\n");
-        }
+        sb.append("*Invoice Details*\n");
+        sb.append("• Bill Number: #").append(bill.getBillNumber()).append("\n");
+        sb.append("• Date of Issue: ").append(date).append("\n");
+        sb.append("• Table Assignment: ").append(location).append("\n\n");
 
-        sb.append("---\n");
-        sb.append("Subtotal          ₹").append(bill.getSubtotal().setScale(2, RoundingMode.HALF_UP)).append("\n");
-        if (bill.getDiscountType() != null && bill.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
-            sb.append("Discount (").append(bill.getDiscountType().getDisplayName()).append(")")
-              .append("  -₹").append(bill.getDiscountAmount().setScale(2, RoundingMode.HALF_UP)).append("\n");
-        }
-        sb.append("GST (").append(bill.getGstRate().stripTrailingZeros().toPlainString()).append("%)")
-          .append("  ₹").append(bill.getGstAmount().setScale(2, RoundingMode.HALF_UP)).append("\n");
-        sb.append("Total             ₹").append(bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP)).append("\n");
+        sb.append("*Order Summary*\n");
+        sb.append("Your ordered items include: ").append(itemsSummary).append("\n\n");
 
-        paymentRepository.findByBillId(billId).ifPresent(p ->
-            sb.append("\nPayment: ").append(p.getMethod().getDisplayName()).append("\n")
-        );
+        sb.append("*Payment Details*\n");
+        sb.append("• Total Amount Due: ₹")
+          .append(bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP)).append("\n");
+        sb.append("• Payment Method: ").append(paidVia).append("\n\n");
 
-        sb.append("\nThank you for visiting!\n— ").append(cafeName);
+        sb.append("If you have any questions about this receipt, please reply directly to this message.");
         return sb.toString();
     }
 
@@ -562,7 +559,6 @@ public class BillingService {
     }
 
     private BillNotificationData buildNotificationData(Bill bill) {
-        String cafeName = appConfigService.get("cafe.name", "Bullet Beats Café");
         NotificationChannel channel = bill.getCustomer().getNotificationPreference() != null
                 ? bill.getCustomer().getNotificationPreference()
                 : NotificationChannel.WHATSAPP;
@@ -590,7 +586,6 @@ public class BillingService {
                 bill.getCustomer().getPhone(),
                 channel,
                 bill.getCustomer().getName(),
-                cafeName,
                 bill.getBillNumber(),
                 date,
                 location,

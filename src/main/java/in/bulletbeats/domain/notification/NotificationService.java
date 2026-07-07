@@ -148,39 +148,40 @@ public class NotificationService {
     /**
      * Variables match the approved template placeholders:
      *   {{1}} = customer name
-     *   {{2}} = cafe name
-     *   {{3}} = bill number (e.g. BB-20260706-0001)
-     *   {{4}} = date (e.g. 06 Jul 2026, 08:10)
-     *   {{5}} = table / location (e.g. Table 1)
-     *   {{6}} = items summary — single line (e.g. Tea x1 ₹25.00 | Coffee x2 ₹50.00)
-     *   {{7}} = total (e.g. ₹25.00)
-     *   {{8}} = payment method (e.g. Cash)
+     *   {{2}} = bill number (e.g. BB-20260706-0001)
+     *   {{3}} = date (e.g. 06 Jul 2026, 08:10)
+     *   {{4}} = table / location (e.g. Table 1)
+     *   {{5}} = items summary — single line (e.g. Tea x1 ₹25.00 | Coffee x2 ₹50.00)
+     *   {{6}} = total (e.g. ₹25.00)
+     *   {{7}} = payment method (e.g. Cash)
      *
      * Template body:
-     *   Hi {{1}}, here is your bill from {{2}}.
+     *   Hi {{1}}, thank you for dining with us. Here is the summary of your bill from Bullet Beats Cafe.
      *
-     *   Bill #{{3}}
-     *   Date: {{4}}
-     *   Table: {{5}}
+     *   *Invoice Details*
+     *   • Bill Number: #{{2}}
+     *   • Date of Issue: {{3}}
+     *   • Table Assignment: {{4}}
      *
-     *   Items: {{6}}
+     *   *Order Summary*
+     *   Your ordered items include: {{5}}
      *
-     *   Total: {{7}}
-     *   Paid via: {{8}}
+     *   *Payment Details*
+     *   • Total Amount Due: {{6}}
+     *   • Payment Method: {{7}}
      *
-     *   Thank you for visiting!
+     *   If you have any questions about this receipt, please reply directly to this message.
      */
     private String buildTemplateVars(BillNotificationData data) {
         try {
             return OBJECT_MAPPER.writeValueAsString(Map.of(
                     "1", orEmpty(data.customerName()),
-                    "2", orEmpty(data.cafeName()),
-                    "3", orEmpty(data.billNumber()),
-                    "4", orEmpty(data.date()),
-                    "5", orEmpty(data.location()),
-                    "6", orEmpty(data.itemsSummary()),
-                    "7", orEmpty(data.total()),
-                    "8", orEmpty(data.paidVia())
+                    "2", orEmpty(data.billNumber()),
+                    "3", orEmpty(data.date()),
+                    "4", orEmpty(data.location()),
+                    "5", orEmpty(data.itemsSummary()),
+                    "6", orEmpty(data.total()),
+                    "7", orEmpty(data.paidVia())
             ));
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize template variables", e);
