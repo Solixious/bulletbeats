@@ -78,7 +78,7 @@
                 class="text-accent/70 text-xs hover:text-accent transition-colors">+ Add customer</button>
       </div>
       <!-- Inline customer search (hidden until toggled) -->
-      <div id="bill-customer-search-section" class="hidden mt-2">
+      <div id="bill-customer-search-section" class="hidden mt-2" hx-preserve>
         <input type="text"
                placeholder="Search by name or phone..."
                th:attr="hx-get=@{/bills/{id}/customer-search-panel(id=${bill.id})}"

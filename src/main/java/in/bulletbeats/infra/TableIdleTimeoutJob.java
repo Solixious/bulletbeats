@@ -61,9 +61,12 @@ public class TableIdleTimeoutJob {
 
             List<Bill> activeBills = billRepository.findByCafeTableIdAndStatusIn(table.getId(), ACTIVE_STATUSES);
 
+            LocalDateTime billCutoff = LocalDateTime.now().minusMinutes(effectiveTimeout);
             boolean allEmpty = activeBills.stream().allMatch(b -> b.getItems().isEmpty());
+            boolean allOldEnough = activeBills.stream()
+                    .allMatch(b -> b.getCreatedAt() != null && b.getCreatedAt().isBefore(billCutoff));
 
-            if (allEmpty) {
+            if (allEmpty && allOldEnough) {
                 String t = LocalTime.now().format(TIME_FMT);
                 for (Bill bill : activeBills) {
                     bill.setStatus(BillStatus.CANCELLED);
