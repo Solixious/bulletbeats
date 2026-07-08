@@ -97,6 +97,9 @@ public class BillingController {
     @PostMapping
     public String createBill(@Valid @ModelAttribute("dto") CreateBillDto dto,
                              BindingResult result, Authentication auth, Model model) {
+        if (dto.getOrderType() == OrderType.DINE_IN && dto.getCafeTableId() == null) {
+            result.rejectValue("cafeTableId", "table.required", "Please select a table for dine-in orders");
+        }
         if (result.hasErrors()) {
             model.addAttribute("tables", cafeTableService.getAllActive());
             model.addAttribute("activeBillsByTable", billingService.getActiveBillCountByTable());
