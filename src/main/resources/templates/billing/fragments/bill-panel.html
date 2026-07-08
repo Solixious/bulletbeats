@@ -304,18 +304,18 @@
   <!-- Bill status section (confirm / pay / cancel) -->
   <th:block th:replace="~{billing/fragments/bill-status :: bill-status}"/>
 
-</th:block>
-
-<script th:if="${bill != null and bill.status != null and bill.status.name() == 'DRAFT'}">
-function toggleBillCustomerSearch() {
-  var section = document.getElementById('bill-customer-search-section');
-  if (!section) return;
-  section.classList.toggle('hidden');
-  if (!section.classList.contains('hidden')) {
-    var input = section.querySelector('input');
-    if (input) input.focus();
+  <script th:if="${bill.status.name() == 'DRAFT'}">
+  function toggleBillCustomerSearch() {
+    var section = document.getElementById('bill-customer-search-section');
+    if (!section) return;
+    section.classList.toggle('hidden');
+    if (!section.classList.contains('hidden')) {
+      var input = section.querySelector('input');
+      if (input) input.focus();
+    }
   }
-}
-</script>
+  </script>
+
+</th:block>
 </body>
 </html>
