@@ -425,6 +425,34 @@ public class BillingService {
     }
 
     @Transactional
+    public Bill linkCustomer(Long billId, String phone, String name, Long userId) {
+        Bill bill = getBillById(billId);
+        if (bill.getStatus() != BillStatus.DRAFT) {
+            throw new BillNotEditableException("Customer can only be changed on a DRAFT bill");
+        }
+        Customer customer = customerService.findOrCreateByPhone(phone.trim(), name.trim(), userId);
+        bill.setCustomer(customer);
+        return billRepository.save(bill);
+    }
+
+    @Transactional
+    public Bill unlinkCustomer(Long billId, Long userId) {
+        Bill bill = getBillById(billId);
+        if (bill.getStatus() != BillStatus.DRAFT) {
+            throw new BillNotEditableException("Customer can only be changed on a DRAFT bill");
+        }
+        if (bill.isStudentDiscountApplied()) {
+            bill.setStudentDiscountApplied(false);
+            bill.setStudentDiscountAppliedBy(null);
+            bill.setStudentDiscountAppliedAt(null);
+            bill.setStudentDiscountAmount(BigDecimal.ZERO);
+            recalculateTotals(bill);
+        }
+        bill.setCustomer(null);
+        return billRepository.save(bill);
+    }
+
+    @Transactional
     public Bill cancelBill(Long billId, Long userId) {
         Bill bill = getBillById(billId);
         if (bill.getStatus() == BillStatus.PAID) {

@@ -47,5 +47,57 @@
   </div>
 
 </th:block>
+
+<!-- ── Bill-panel variant: clicking a result directly POSTs to link the customer ── -->
+<th:block th:fragment="bill-panel-customer-results">
+
+  <div th:if="${!#lists.isEmpty(customers)}"
+       class="bg-elevated rounded-lg border border-elevated/60 divide-y divide-elevated/40 overflow-hidden mt-1">
+    <form th:each="c : ${customers}"
+          th:attr="hx-post=@{/bills/{id}/link-customer(id=${billId})}"
+          hx-target="#bill-panel"
+          hx-swap="innerHTML">
+      <input type="hidden" name="phone" th:value="${c.phone}"/>
+      <input type="hidden" name="name" th:value="${c.name}"/>
+      <button type="submit"
+              class="w-full text-left px-3 py-2 hover:bg-elevated/60 transition-colors flex items-center gap-2">
+        <div class="flex-1 min-w-0">
+          <p class="text-ivory text-xs font-medium truncate" th:text="${c.name}"></p>
+          <p class="text-sand text-xs" th:text="${c.phone}"></p>
+        </div>
+        <span th:if="${c.vip}"
+              class="flex-shrink-0 px-1.5 py-0.5 text-xs rounded-full font-bold
+                     text-amber-400 border border-amber-400/40 bg-amber-400/10">VIP</span>
+        <span class="flex-shrink-0 text-sand/60 text-xs" th:text="${c.loyaltyPoints} + ' pts'"></span>
+      </button>
+    </form>
+  </div>
+
+  <div th:if="${#lists.isEmpty(customers) and q != null and !#strings.isEmpty(q)}"
+       class="mt-1 px-3 py-3 rounded-lg bg-elevated/40 border border-dashed border-sand/30">
+    <p class="text-sand text-xs mb-2">No customer found for "<span class="text-ivory" th:text="${q}"></span>". Add them now:</p>
+    <form th:attr="hx-post=@{/bills/{id}/link-customer(id=${billId})}"
+          hx-target="#bill-panel"
+          hx-swap="innerHTML"
+          class="space-y-1.5">
+      <input type="text" name="name" th:value="${q}" placeholder="Full name" required
+             class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                    rounded-lg px-3 py-1.5 text-ivory text-xs placeholder-sand/40
+                    outline-none transition-all duration-200"/>
+      <input type="text" name="phone" placeholder="Phone number" required
+             class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                    rounded-lg px-3 py-1.5 text-ivory text-xs placeholder-sand/40
+                    outline-none transition-all duration-200"/>
+      <div class="flex items-center gap-2 pt-0.5">
+        <button type="submit"
+                class="px-3 py-1 rounded-lg bg-accent text-base text-xs font-heading
+                       tracking-widest hover:brightness-110 transition-all duration-200">
+          ADD &amp; LINK
+        </button>
+      </div>
+    </form>
+  </div>
+
+</th:block>
 </body>
 </html>

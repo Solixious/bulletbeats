@@ -246,6 +246,34 @@ public class BillingController {
         return "billing/fragments/customer-results :: customer-results";
     }
 
+    @GetMapping("/{id}/customer-search-panel")
+    public String billCustomerSearch(@PathVariable Long id,
+                                     @RequestParam(defaultValue = "") String q,
+                                     Model model) {
+        model.addAttribute("q", q.trim());
+        model.addAttribute("billId", id);
+        model.addAttribute("customers", q.isBlank() ? java.util.List.of()
+                : customerService.search(q.trim()));
+        return "billing/fragments/customer-results :: bill-panel-customer-results";
+    }
+
+    @PostMapping("/{id}/link-customer")
+    public String linkCustomer(@PathVariable Long id,
+                               @RequestParam(defaultValue = "") String phone,
+                               @RequestParam(defaultValue = "") String name,
+                               Authentication auth, Model model) {
+        if (!phone.isBlank()) {
+            billingService.linkCustomer(id, phone, name.isBlank() ? phone : name, currentUserId(auth));
+        }
+        return billPanelResponse(billingService.getBillById(id), auth, model);
+    }
+
+    @PostMapping("/{id}/unlink-customer")
+    public String unlinkCustomer(@PathVariable Long id, Authentication auth, Model model) {
+        billingService.unlinkCustomer(id, currentUserId(auth));
+        return billPanelResponse(billingService.getBillById(id), auth, model);
+    }
+
     // ── Add / remove / update items (HTMX) ───────────────────────────────
 
     @PostMapping("/{id}/items")

@@ -52,8 +52,45 @@
         Direct Delivery
       </span>
     </div>
-    <p class="text-sand text-xs mt-0.5"
+    <!-- Customer row — static for non-DRAFT -->
+    <p th:unless="${bill.status.name() == 'DRAFT'}"
+       class="text-sand text-xs mt-0.5"
        th:text="${bill.customer != null} ? ${bill.customer.name} + ' · ' + ${bill.customer.phone} : 'Walk-in'"></p>
+
+    <!-- Customer row — interactive for DRAFT -->
+    <div th:if="${bill.status.name() == 'DRAFT'}" class="mt-1">
+      <!-- Customer is set -->
+      <div th:if="${bill.customer != null}" class="flex items-center gap-2 flex-wrap">
+        <span class="text-sand text-xs"
+              th:text="${bill.customer.name} + ' · ' + ${bill.customer.phone}"></span>
+        <button type="button" onclick="toggleBillCustomerSearch()"
+                class="text-accent/70 text-xs hover:text-accent transition-colors">change</button>
+        <button type="button"
+                th:attr="hx-post=@{/bills/{id}/unlink-customer(id=${bill.id})}"
+                hx-target="#bill-panel"
+                hx-swap="innerHTML"
+                class="text-sand/40 text-xs hover:text-red-400 transition-colors">× remove</button>
+      </div>
+      <!-- No customer -->
+      <div th:if="${bill.customer == null}">
+        <span class="text-sand text-xs">Walk-in · </span>
+        <button type="button" onclick="toggleBillCustomerSearch()"
+                class="text-accent/70 text-xs hover:text-accent transition-colors">+ Add customer</button>
+      </div>
+      <!-- Inline customer search (hidden until toggled) -->
+      <div id="bill-customer-search-section" class="hidden mt-2">
+        <input type="text"
+               placeholder="Search by name or phone..."
+               th:attr="hx-get=@{/bills/{id}/customer-search-panel(id=${bill.id})}"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#bill-customer-results"
+               name="q"
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-3 py-1.5 text-ivory text-xs placeholder-sand/40
+                      outline-none transition-all duration-200"/>
+        <div id="bill-customer-results"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Items table -->
@@ -268,5 +305,17 @@
   <th:block th:replace="~{billing/fragments/bill-status :: bill-status}"/>
 
 </th:block>
+
+<script th:if="${bill != null and bill.status != null and bill.status.name() == 'DRAFT'}">
+function toggleBillCustomerSearch() {
+  var section = document.getElementById('bill-customer-search-section');
+  if (!section) return;
+  section.classList.toggle('hidden');
+  if (!section.classList.contains('hidden')) {
+    var input = section.querySelector('input');
+    if (input) input.focus();
+  }
+}
+</script>
 </body>
 </html>
