@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="thread">
+
+  <div class="flex flex-col h-full overflow-hidden">
+
+    <!-- Thread header -->
+    <div class="flex-shrink-0 px-5 py-3.5 border-b border-elevated/60 bg-surface/80 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full bg-accent/10 border border-accent/30
+                  flex items-center justify-center flex-shrink-0">
+        <span class="text-accent text-base">💬</span>
+      </div>
+      <div class="min-w-0">
+        <p class="text-ivory text-sm font-semibold truncate" th:text="${displayName}"></p>
+        <div class="flex items-center gap-2">
+          <p class="text-sand text-xs" th:text="${fromNumber}"></p>
+          <a th:if="${customer != null}"
+             th:href="@{/customers/{id}(id=${customer.id})}"
+             class="text-xs text-accent hover:underline">
+            View profile
+          </a>
+        </div>
+      </div>
+      <div th:if="${customer == null}"
+           class="ml-auto flex-shrink-0">
+        <span class="text-xs text-sand/60 italic">Not in customer list</span>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3" id="messages-scroll">
+
+      <div th:if="${messages.isEmpty()}"
+           class="flex items-center justify-center h-full">
+        <p class="text-sand text-sm">No messages found</p>
+      </div>
+
+      <th:block th:each="msg, iter : ${messages}">
+
+        <!-- Date separator when date changes -->
+        <div th:with="prevMsg=${iter.index > 0 ? messages[iter.index - 1] : null}"
+             th:if="${prevMsg == null or
+                      !#temporals.format(msg.receivedAt, 'yyyy-MM-dd').equals(
+                        #temporals.format(prevMsg.receivedAt, 'yyyy-MM-dd'))}"
+             class="flex items-center gap-3 my-2">
+          <div class="flex-1 h-px bg-elevated/60"></div>
+          <span class="text-xs text-sand/50 flex-shrink-0"
+                th:text="${#temporals.format(msg.receivedAt, 'dd MMM yyyy')}"></span>
+          <div class="flex-1 h-px bg-elevated/60"></div>
+        </div>
+
+        <!-- Message bubble -->
+        <div class="flex items-end gap-2 max-w-lg">
+          <div class="flex-1 bg-elevated rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm">
+            <p class="text-ivory text-sm leading-relaxed whitespace-pre-wrap break-words"
+               th:text="${msg.body != null ? msg.body : '(media message)'}"></p>
+            <p class="text-sand/50 text-xs mt-1 text-right"
+               th:text="${#temporals.format(msg.receivedAt, 'HH:mm')}"></p>
+          </div>
+        </div>
+
+      </th:block>
+
+    </div>
+
+  </div>
+
+  <!-- Scroll to bottom on load -->
+  <script>
+    (function() {
+      var el = document.getElementById('messages-scroll');
+      if (el) el.scrollTop = el.scrollHeight;
+    })();
+  </script>
+
+</th:block>
+
+</body>
+</html>

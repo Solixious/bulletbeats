@@ -146,6 +146,12 @@
           <span class="text-base">🍱</span> Tiffin
         </a>
 
+        <a href="/whatsapp/inbox"
+           th:classappend="${uri.startsWith('/whatsapp')} ? ${activeClass} : ${inactiveClass}"
+           class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+          <span class="text-base">💬</span> WhatsApp
+        </a>
+
         <!-- Share menu — visible to Manager+ -->
         <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
            href="/admin/share"

@@ -12,6 +12,9 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     Optional<Customer> findByPhone(String phone);
 
+    @Query("SELECT c FROM Customer c WHERE c.phone = :local OR c.phone = :e164")
+    Optional<Customer> findByNormalizedPhone(@Param("local") String local, @Param("e164") String e164);
+
     boolean existsByPhone(String phone);
 
     @Query("""

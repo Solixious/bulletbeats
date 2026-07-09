@@ -86,11 +86,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/webhook/**"))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         "/login", "/setup", "/error",
                         "/css/**", "/js/**", "/images/**", "/webjars/**",
-                        "/qr/**", "/public/**"
+                        "/qr/**", "/public/**", "/webhook/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>WhatsApp Inbox — Bullet Beats Café</title>
+</head>
+<body>
+<main class="h-full flex overflow-hidden">
+
+  <!-- ── Conversation list ──────────────────────────────────────── -->
+  <div class="w-72 flex-shrink-0 border-r border-elevated/60 flex flex-col overflow-hidden bg-surface">
+
+    <div class="px-4 py-4 border-b border-elevated/60 flex-shrink-0">
+      <h2 class="font-heading text-xl text-ivory tracking-wide">WhatsApp Inbox</h2>
+      <p class="text-xs text-sand mt-0.5">Incoming customer messages</p>
+    </div>
+
+    <div class="flex-1 overflow-y-auto divide-y divide-elevated/30" id="conversation-list">
+
+      <th:block th:each="conv : ${conversations}">
+        <button th:hx-get="${'/whatsapp/inbox/thread?number=' + conv.fromNumber}"
+                hx-target="#thread-panel"
+                hx-swap="innerHTML"
+                class="w-full text-left px-4 py-3 hover:bg-elevated/50
+                       transition-colors duration-150 group">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5">
+                <!-- green dot if customer known -->
+                <span th:if="${conv.customerId != null}"
+                      class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"
+                      title="Known customer"></span>
+                <span th:if="${conv.customerId == null}"
+                      class="w-1.5 h-1.5 rounded-full bg-sand/40 flex-shrink-0"
+                      title="Unknown number"></span>
+                <p class="text-sm text-ivory font-medium truncate"
+                   th:text="${conv.displayName}"></p>
+              </div>
+              <p class="text-xs text-sand truncate mt-0.5 pl-3"
+                 th:text="${conv.lastMessage != null ? conv.lastMessage : '(media / no text)'}"></p>
+            </div>
+            <div class="flex-shrink-0 text-right">
+              <p class="text-xs text-sand/60"
+                 th:text="${#temporals.format(conv.lastReceivedAt, 'dd MMM')}"></p>
+              <p class="text-xs text-sand/40 mt-0.5"
+                 th:text="${conv.messageCount + (conv.messageCount == 1 ? ' msg' : ' msgs')}"></p>
+            </div>
+          </div>
+        </button>
+      </th:block>
+
+      <div th:if="${conversations.isEmpty()}"
+           class="px-4 py-10 text-center">
+        <p class="text-sand text-sm">No messages yet</p>
+        <p class="text-sand/50 text-xs mt-1">
+          Configure your Twilio webhook to<br>
+          <code class="text-accent/70">/webhook/whatsapp</code>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Thread panel ───────────────────────────────────────────── -->
+  <div class="flex-1 flex flex-col overflow-hidden" id="thread-panel">
+    <div class="flex-1 flex items-center justify-center">
+      <div class="text-center">
+        <p class="text-4xl mb-3">💬</p>
+        <p class="text-ivory text-sm font-medium">Select a conversation</p>
+        <p class="text-sand text-xs mt-1">Choose a message from the list to view the thread</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>
