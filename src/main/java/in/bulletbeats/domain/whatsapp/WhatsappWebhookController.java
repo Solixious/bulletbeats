@@ -1,6 +1,7 @@
 package in.bulletbeats.domain.whatsapp;
 
 import in.bulletbeats.domain.whatsapp.service.WhatsappMessageService;
+import in.bulletbeats.domain.whatsapp.service.WhatsappSseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class WhatsappWebhookController {
 
     private final WhatsappMessageService messageService;
+    private final WhatsappSseService sseService;
 
     /**
      * Twilio calls this endpoint when a WhatsApp message is received.
@@ -32,6 +34,7 @@ public class WhatsappWebhookController {
                 return ResponseEntity.badRequest().body("Missing From");
             }
             messageService.processIncoming(from, body, messageSid);
+            sseService.notifyNewMessage();
         } catch (Exception e) {
             // Log and return 200 so Twilio does not retry
             log.error("Error processing WhatsApp webhook from={}: {}", from, e.getMessage(), e);

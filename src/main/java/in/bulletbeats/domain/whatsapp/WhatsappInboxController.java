@@ -3,10 +3,13 @@ package in.bulletbeats.domain.whatsapp;
 import in.bulletbeats.domain.crm.entity.Customer;
 import in.bulletbeats.domain.whatsapp.entity.WhatsappMessage;
 import in.bulletbeats.domain.whatsapp.service.WhatsappMessageService;
+import in.bulletbeats.domain.whatsapp.service.WhatsappSseService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +20,12 @@ import java.util.Optional;
 public class WhatsappInboxController {
 
     private final WhatsappMessageService messageService;
+    private final WhatsappSseService sseService;
+
+    @GetMapping(value = "/inbox/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter events() {
+        return sseService.subscribe();
+    }
 
     @GetMapping("/inbox")
     public String inbox(Model model) {

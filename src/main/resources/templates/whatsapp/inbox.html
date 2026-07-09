@@ -15,12 +15,16 @@
       <p class="text-xs text-sand mt-0.5">Incoming customer messages</p>
     </div>
 
-    <div class="flex-1 overflow-y-auto"
-         id="conversation-list"
-         hx-get="/whatsapp/inbox/conversations"
-         hx-trigger="every 15s"
-         hx-swap="innerHTML">
-      <th:block th:replace="~{whatsapp/fragments/conversation-list :: conversation-list}"></th:block>
+    <!-- SSE parent — connection is scoped to the sidebar so it drops cleanly on nav -->
+    <div hx-ext="sse" sse-connect="/whatsapp/inbox/events"
+         class="flex-1 overflow-y-auto flex flex-col min-h-0">
+      <div id="conversation-list"
+           hx-get="/whatsapp/inbox/conversations"
+           hx-trigger="sse:newMessage"
+           hx-swap="innerHTML"
+           class="flex-1">
+        <th:block th:replace="~{whatsapp/fragments/conversation-list :: conversation-list}"></th:block>
+      </div>
     </div>
 
   </div>
@@ -37,6 +41,8 @@
   </div>
 
 </main>
+
+<script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
 
 <script>
   // Track which conversation is selected so we can re-highlight it
