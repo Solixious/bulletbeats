@@ -18,7 +18,7 @@
     <div class="flex-1 overflow-y-auto divide-y divide-elevated/30" id="conversation-list">
 
       <th:block th:each="conv : ${conversations}">
-        <button th:hx-get="${'/whatsapp/inbox/thread?number=' + conv.fromNumber}"
+        <button th:attr="hx-get=@{/whatsapp/inbox/thread(number=${conv.fromNumber})}"
                 hx-target="#thread-panel"
                 hx-swap="innerHTML"
                 class="w-full text-left px-4 py-3 hover:bg-elevated/50
