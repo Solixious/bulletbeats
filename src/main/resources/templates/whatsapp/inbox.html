@@ -15,50 +15,14 @@
       <p class="text-xs text-sand mt-0.5">Incoming customer messages</p>
     </div>
 
-    <div class="flex-1 overflow-y-auto divide-y divide-elevated/30" id="conversation-list">
-
-      <th:block th:each="conv : ${conversations}">
-        <button th:attr="hx-get=@{/whatsapp/inbox/thread(number=${conv.fromNumber})}"
-                hx-target="#thread-panel"
-                hx-swap="innerHTML"
-                class="w-full text-left px-4 py-3 hover:bg-elevated/50
-                       transition-colors duration-150 group">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-1.5">
-                <!-- green dot if customer known -->
-                <span th:if="${conv.customerId != null}"
-                      class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"
-                      title="Known customer"></span>
-                <span th:if="${conv.customerId == null}"
-                      class="w-1.5 h-1.5 rounded-full bg-sand/40 flex-shrink-0"
-                      title="Unknown number"></span>
-                <p class="text-sm text-ivory font-medium truncate"
-                   th:text="${conv.displayName}"></p>
-              </div>
-              <p class="text-xs text-sand truncate mt-0.5 pl-3"
-                 th:text="${conv.lastMessage != null ? conv.lastMessage : '(media / no text)'}"></p>
-            </div>
-            <div class="flex-shrink-0 text-right">
-              <p class="text-xs text-sand/60"
-                 th:text="${#temporals.format(conv.lastReceivedAt, 'dd MMM')}"></p>
-              <p class="text-xs text-sand/40 mt-0.5"
-                 th:text="${conv.messageCount + (conv.messageCount == 1 ? ' msg' : ' msgs')}"></p>
-            </div>
-          </div>
-        </button>
-      </th:block>
-
-      <div th:if="${conversations.isEmpty()}"
-           class="px-4 py-10 text-center">
-        <p class="text-sand text-sm">No messages yet</p>
-        <p class="text-sand/50 text-xs mt-1">
-          Configure your Twilio webhook to<br>
-          <code class="text-accent/70">/webhook/whatsapp</code>
-        </p>
-      </div>
-
+    <div class="flex-1 overflow-y-auto"
+         id="conversation-list"
+         hx-get="/whatsapp/inbox/conversations"
+         hx-trigger="every 15s"
+         hx-swap="innerHTML">
+      <th:block th:replace="~{whatsapp/fragments/conversation-list :: conversation-list}"></th:block>
     </div>
+
   </div>
 
   <!-- ── Thread panel ───────────────────────────────────────────── -->
@@ -67,11 +31,61 @@
       <div class="text-center">
         <p class="text-4xl mb-3">💬</p>
         <p class="text-ivory text-sm font-medium">Select a conversation</p>
-        <p class="text-sand text-xs mt-1">Choose a message from the list to view the thread</p>
+        <p class="text-sand text-xs mt-1">Messages will auto-refresh every 8 seconds</p>
       </div>
     </div>
   </div>
 
 </main>
+
+<script>
+  // Track which conversation is selected so we can re-highlight it
+  // after the conversation list auto-refreshes.
+  var _selectedNumber = null;
+
+  document.getElementById('conversation-list').addEventListener('click', function(e) {
+    var btn = e.target.closest('button[data-number]');
+    if (btn) _selectedNumber = btn.dataset.number;
+  });
+
+  // Re-apply highlight after each conversation list refresh
+  document.addEventListener('htmx:afterSwap', function(e) {
+    if (e.detail.target && e.detail.target.id === 'conversation-list' && _selectedNumber) {
+      var btn = document.querySelector(
+        '#conversation-list button[data-number="' + _selectedNumber + '"]'
+      );
+      if (btn) {
+        btn.style.borderLeft = '3px solid #00D4FF';
+        btn.style.backgroundColor = 'rgba(51,51,51,0.7)';
+      }
+    }
+  });
+
+  // Highlight the clicked button immediately on click
+  document.getElementById('conversation-list').addEventListener('htmx:beforeRequest', function(e) {
+    document.querySelectorAll('#conversation-list button').forEach(function(b) {
+      b.style.borderLeft = '';
+      b.style.backgroundColor = '';
+    });
+    var btn = e.target.closest('button[data-number]');
+    if (btn) {
+      btn.style.borderLeft = '3px solid #00D4FF';
+      btn.style.backgroundColor = 'rgba(51,51,51,0.7)';
+    }
+  });
+
+  // Before messages-scroll is polled, record whether user is near the bottom
+  if (!window._waScrollHandlerSet) {
+    window._waScrollHandlerSet = true;
+    document.addEventListener('htmx:beforeSwap', function(e) {
+      if (e.detail.target && e.detail.target.id === 'messages-scroll') {
+        var el = e.detail.target;
+        el.dataset.wasNearBottom =
+          String(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
+      }
+    });
+  }
+</script>
+
 </body>
 </html>

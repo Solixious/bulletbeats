@@ -38,10 +38,16 @@ public class WhatsappMessageService {
                 .fromNumber(toNumber)
                 .body(body)
                 .direction(MessageDirection.OUTBOUND)
+                .isRead(true)
                 .receivedAt(LocalDateTime.now())
                 .build();
         messageRepository.save(msg);
         log.info("WhatsApp reply sent to={}", toNumber);
+    }
+
+    @Transactional
+    public void markThreadAsRead(String fromNumber) {
+        messageRepository.markAllAsRead(fromNumber, MessageDirection.INBOUND);
     }
 
     /** Returns true if the customer sent a message within the last 24 hours. */
@@ -103,6 +109,7 @@ public class WhatsappMessageService {
                 row.getLastBody(),
                 row.getLastReceivedAt(),
                 row.getMessageCount() != null ? row.getMessageCount() : 0L,
+                row.getUnreadCount() != null ? row.getUnreadCount() : 0L,
                 customerId
         );
     }
@@ -142,6 +149,7 @@ public class WhatsappMessageService {
             String lastMessage,
             LocalDateTime lastReceivedAt,
             long messageCount,
+            long unreadCount,
             Long customerId
     ) {}
 }

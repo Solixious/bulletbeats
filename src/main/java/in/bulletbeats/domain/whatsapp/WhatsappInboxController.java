@@ -24,10 +24,27 @@ public class WhatsappInboxController {
         return "whatsapp/inbox";
     }
 
+    /** Polled by the conversation list every 15 s to refresh names + unread counts. */
+    @GetMapping("/inbox/conversations")
+    public String conversationList(Model model) {
+        model.addAttribute("conversations", messageService.getConversations());
+        return "whatsapp/fragments/conversation-list :: conversation-list";
+    }
+
+    /** Loads (or reloads) the full thread panel for a given number. Marks messages as read. */
     @GetMapping("/inbox/thread")
     public String thread(@RequestParam String number, Model model) {
+        messageService.markThreadAsRead(number);
         populateThread(number, model, null);
         return "whatsapp/fragments/thread :: thread";
+    }
+
+    /** Polled by the open thread every 8 s — returns only the messages area. Marks as read. */
+    @GetMapping("/inbox/thread/messages")
+    public String messagesOnly(@RequestParam String number, Model model) {
+        messageService.markThreadAsRead(number);
+        model.addAttribute("messages", messageService.getThread(number));
+        return "whatsapp/fragments/thread :: messages-body";
     }
 
     @PostMapping("/inbox/reply")
@@ -37,6 +54,7 @@ public class WhatsappInboxController {
         String error = null;
         try {
             messageService.sendReply(toNumber, body);
+            messageService.markThreadAsRead(toNumber);
         } catch (Exception e) {
             error = e.getMessage();
         }

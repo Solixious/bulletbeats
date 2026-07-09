@@ -32,4 +32,8 @@ public class WhatsappMessage extends BaseEntity {
     @Column(nullable = false, length = 10)
     @Builder.Default
     private MessageDirection direction = MessageDirection.INBOUND;
+
+    @Column(name = "is_read", nullable = false)
+    @Builder.Default
+    private boolean isRead = false;
 }

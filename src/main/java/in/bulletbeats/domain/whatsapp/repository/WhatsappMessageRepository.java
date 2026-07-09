@@ -3,7 +3,9 @@ package in.bulletbeats.domain.whatsapp.repository;
 import in.bulletbeats.domain.whatsapp.entity.MessageDirection;
 import in.bulletbeats.domain.whatsapp.entity.WhatsappMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,18 +20,25 @@ public interface WhatsappMessageRepository extends JpaRepository<WhatsappMessage
     Optional<WhatsappMessage> findTopByFromNumberAndDirectionOrderByReceivedAtDesc(
             String fromNumber, MessageDirection direction);
 
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE WhatsappMessage m SET m.isRead = true " +
+           "WHERE m.fromNumber = :fromNumber AND m.direction = :direction AND m.isRead = false")
+    int markAllAsRead(@Param("fromNumber") String fromNumber,
+                      @Param("direction") MessageDirection direction);
+
     /**
-     * Returns one row per sender with their latest message body, timestamp, and total count.
-     * Ordered newest-first by last received message.
+     * One row per sender: last message body, timestamp, total count, and unread INBOUND count.
+     * Ordered newest-first.
      */
     @Query(value = """
         SELECT
             m.from_number,
-            MAX(m.received_at)                                                          AS last_received_at,
-            COUNT(m.id)                                                                 AS message_count,
+            MAX(m.received_at)                                                               AS last_received_at,
+            COUNT(m.id)                                                                      AS message_count,
+            SUM(CASE WHEN m.direction = 'INBOUND' AND m.is_read = false THEN 1 ELSE 0 END)  AS unread_count,
             (SELECT m2.body FROM whatsapp_messages m2
              WHERE m2.from_number = m.from_number
-             ORDER BY m2.received_at DESC LIMIT 1)                                      AS last_body
+             ORDER BY m2.received_at DESC LIMIT 1)                                           AS last_body
         FROM whatsapp_messages m
         GROUP BY m.from_number
         ORDER BY MAX(m.received_at) DESC
@@ -40,6 +49,7 @@ public interface WhatsappMessageRepository extends JpaRepository<WhatsappMessage
         String getFromNumber();
         LocalDateTime getLastReceivedAt();
         Long getMessageCount();
+        Long getUnreadCount();
         String getLastBody();
     }
 }

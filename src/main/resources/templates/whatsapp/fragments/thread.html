@@ -2,16 +2,17 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 
+<!-- ── Full thread (loaded on conversation click) ───────────────── -->
 <th:block th:fragment="thread">
 
   <div class="flex flex-col h-full overflow-hidden">
 
-    <!-- ── Thread header ──────────────────────────────────────────── -->
+    <!-- Header -->
     <div class="flex-shrink-0 px-5 py-3.5 border-b border-elevated/60 bg-surface/80
                 flex items-center gap-3">
       <div class="w-9 h-9 rounded-full bg-accent/10 border border-accent/30
-                  flex items-center justify-center flex-shrink-0">
-        <span class="text-accent text-sm">WA</span>
+                  flex items-center justify-center flex-shrink-0 text-xs font-bold text-accent">
+        WA
       </div>
       <div class="min-w-0 flex-1">
         <p class="text-ivory text-sm font-semibold truncate" th:text="${displayName}"></p>
@@ -22,83 +23,43 @@
              class="text-xs text-accent hover:underline">View profile</a>
         </div>
       </div>
-      <!-- 24h window badge -->
       <div class="flex-shrink-0">
         <span th:if="${withinWindow}"
-              class="text-xs px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30">
+              class="text-xs px-2 py-0.5 rounded-full
+                     bg-green-500/15 text-green-400 border border-green-500/30">
           24h open
         </span>
         <span th:if="${!withinWindow}"
-              class="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              class="text-xs px-2 py-0.5 rounded-full
+                     bg-amber-500/15 text-amber-400 border border-amber-500/30">
           Window closed
         </span>
       </div>
     </div>
 
-    <!-- ── Messages ───────────────────────────────────────────────── -->
-    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-2" id="messages-scroll">
-
-      <div th:if="${messages.isEmpty()}"
-           class="flex items-center justify-center h-full">
-        <p class="text-sand text-sm">No messages</p>
-      </div>
-
-      <th:block th:each="msg, iter : ${messages}">
-
-        <!-- Date separator -->
-        <div th:with="prevMsg=${iter.index > 0 ? messages[iter.index - 1] : null}"
-             th:if="${prevMsg == null or
-                      !#temporals.format(msg.receivedAt, 'yyyy-MM-dd').equals(
-                        #temporals.format(prevMsg.receivedAt, 'yyyy-MM-dd'))}"
-             class="flex items-center gap-3 my-3">
-          <div class="flex-1 h-px bg-elevated/60"></div>
-          <span class="text-xs text-sand/50 flex-shrink-0 px-2"
-                th:text="${#temporals.format(msg.receivedAt, 'dd MMM yyyy')}"></span>
-          <div class="flex-1 h-px bg-elevated/60"></div>
-        </div>
-
-        <!-- INBOUND bubble (left) -->
-        <div th:if="${msg.direction.name() == 'INBOUND'}"
-             class="flex items-end gap-2">
-          <div class="max-w-xs lg:max-w-sm bg-elevated rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm">
-            <p class="text-ivory text-sm leading-relaxed whitespace-pre-wrap break-words"
-               th:text="${msg.body != null ? msg.body : '(media)'}"></p>
-            <p class="text-sand/50 text-xs mt-1"
-               th:text="${#temporals.format(msg.receivedAt, 'HH:mm')}"></p>
-          </div>
-        </div>
-
-        <!-- OUTBOUND bubble (right) -->
-        <div th:if="${msg.direction.name() == 'OUTBOUND'}"
-             class="flex items-end justify-end gap-2">
-          <div class="max-w-xs lg:max-w-sm bg-accent/15 border border-accent/20
-                      rounded-2xl rounded-br-sm px-4 py-2.5 shadow-sm">
-            <p class="text-ivory text-sm leading-relaxed whitespace-pre-wrap break-words"
-               th:text="${msg.body}"></p>
-            <p class="text-sand/50 text-xs mt-1 text-right"
-               th:text="${#temporals.format(msg.receivedAt, 'HH:mm')}"></p>
-          </div>
-        </div>
-
-      </th:block>
+    <!-- Messages — polled every 8 s, only this region refreshes -->
+    <div id="messages-scroll"
+         th:attr="hx-get=@{/whatsapp/inbox/thread/messages(number=${fromNumber})}"
+         hx-trigger="every 8s"
+         hx-swap="innerHTML"
+         class="flex-1 overflow-y-auto px-5 py-4 space-y-2">
+      <th:block th:replace="~{:: messages-body}"></th:block>
     </div>
 
-    <!-- ── Reply form ─────────────────────────────────────────────── -->
+    <!-- Reply form -->
     <div class="flex-shrink-0 border-t border-elevated/60 bg-surface p-4">
 
-      <!-- Send error -->
       <div th:if="${replyError != null}"
            class="mb-3 px-3 py-2 rounded-lg bg-red-500/15 border border-red-500/30
                   text-red-400 text-xs">
-        <span class="font-semibold">Failed to send:</span>
+        <span class="font-semibold">Failed to send: </span>
         <span th:text="${replyError}"></span>
       </div>
 
-      <!-- 24h window warning -->
       <div th:if="${!withinWindow}"
            class="mb-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25
                   text-amber-400 text-xs">
-        The 24-hour WhatsApp service window has closed. Replies may be rejected by WhatsApp until the customer messages again.
+        The 24-hour window has closed. Replies may be rejected until the customer messages again.
       </div>
 
       <form th:attr="hx-post=@{/whatsapp/inbox/reply}"
@@ -123,10 +84,66 @@
 
   </div>
 
+</th:block>
+
+
+<!-- ── Messages body (polled independently, also used inside thread) ── -->
+<th:block th:fragment="messages-body">
+
+  <div th:if="${messages.isEmpty()}"
+       class="flex items-center justify-center h-full py-10">
+    <p class="text-sand text-sm">No messages</p>
+  </div>
+
+  <th:block th:each="msg, iter : ${messages}">
+
+    <!-- Date separator -->
+    <div th:with="prevMsg=${iter.index > 0 ? messages[iter.index - 1] : null}"
+         th:if="${prevMsg == null or
+                  !#temporals.format(msg.receivedAt, 'yyyy-MM-dd').equals(
+                    #temporals.format(prevMsg.receivedAt, 'yyyy-MM-dd'))}"
+         class="flex items-center gap-3 my-3">
+      <div class="flex-1 h-px bg-elevated/60"></div>
+      <span class="text-xs text-sand/50 flex-shrink-0 px-2"
+            th:text="${#temporals.format(msg.receivedAt, 'dd MMM yyyy')}"></span>
+      <div class="flex-1 h-px bg-elevated/60"></div>
+    </div>
+
+    <!-- INBOUND (left) -->
+    <div th:if="${msg.direction.name() == 'INBOUND'}"
+         class="flex items-end gap-2">
+      <div class="max-w-xs lg:max-w-sm bg-elevated rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm">
+        <p class="text-ivory text-sm leading-relaxed whitespace-pre-wrap break-words"
+           th:text="${msg.body != null ? msg.body : '(media)'}"></p>
+        <p class="text-sand/50 text-xs mt-1"
+           th:text="${#temporals.format(msg.receivedAt, 'HH:mm')}"></p>
+      </div>
+    </div>
+
+    <!-- OUTBOUND (right) -->
+    <div th:if="${msg.direction.name() == 'OUTBOUND'}"
+         class="flex items-end justify-end gap-2">
+      <div class="max-w-xs lg:max-w-sm bg-accent/15 border border-accent/20
+                  rounded-2xl rounded-br-sm px-4 py-2.5 shadow-sm">
+        <p class="text-ivory text-sm leading-relaxed whitespace-pre-wrap break-words"
+           th:text="${msg.body}"></p>
+        <p class="text-sand/50 text-xs mt-1 text-right"
+           th:text="${#temporals.format(msg.receivedAt, 'HH:mm')}"></p>
+      </div>
+    </div>
+
+  </th:block>
+
+  <!-- Scroll to bottom, respecting user scroll position -->
   <script>
     (function() {
       var el = document.getElementById('messages-scroll');
-      if (el) el.scrollTop = el.scrollHeight;
+      if (!el) return;
+      // On first load wasNearBottom is unset, so scroll to bottom.
+      // On poll, only scroll if the user was already near the bottom.
+      if (el.dataset.wasNearBottom !== 'false') {
+        el.scrollTop = el.scrollHeight;
+      }
     })();
   </script>
 
