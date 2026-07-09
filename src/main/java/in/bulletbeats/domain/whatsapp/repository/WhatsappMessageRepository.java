@@ -20,6 +20,9 @@ public interface WhatsappMessageRepository extends JpaRepository<WhatsappMessage
     Optional<WhatsappMessage> findTopByFromNumberAndDirectionOrderByReceivedAtDesc(
             String fromNumber, MessageDirection direction);
 
+    @Query("SELECT COUNT(m) FROM WhatsappMessage m WHERE m.direction = :direction AND m.isRead = false")
+    long countUnread(@Param("direction") MessageDirection direction);
+
     @Modifying(clearAutomatically = true)
     @Query("UPDATE WhatsappMessage m SET m.isRead = true " +
            "WHERE m.fromNumber = :fromNumber AND m.direction = :direction AND m.isRead = false")

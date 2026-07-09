@@ -150,7 +150,13 @@
         <a href="/whatsapp/inbox"
            th:classappend="${uri.startsWith('/whatsapp')} ? ${activeClass} : ${inactiveClass}"
            class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
-          <span class="text-base">💬</span> WhatsApp
+          <span class="text-base">💬</span>
+          <span class="flex-1">WhatsApp</span>
+          <span th:if="${whatsappUnreadCount != null and whatsappUnreadCount > 0}"
+                th:text="${whatsappUnreadCount}"
+                class="px-1.5 py-0.5 text-xs rounded-full font-bold
+                       bg-amber-400/20 text-amber-400 border border-amber-400/40">
+          </span>
         </a>
 
         <!-- Share menu — visible to Manager+ -->

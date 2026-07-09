@@ -50,6 +50,11 @@ public class WhatsappMessageService {
         messageRepository.markAllAsRead(fromNumber, MessageDirection.INBOUND);
     }
 
+    @Transactional(readOnly = true)
+    public long totalUnreadCount() {
+        return messageRepository.countUnread(MessageDirection.INBOUND);
+    }
+
     /** Returns true if the customer sent a message within the last 24 hours. */
     @Transactional(readOnly = true)
     public boolean isWithin24HourWindow(String fromNumber) {
