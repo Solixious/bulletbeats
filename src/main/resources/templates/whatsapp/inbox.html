@@ -15,7 +15,7 @@
       <p class="text-xs text-sand mt-0.5">Incoming customer messages</p>
     </div>
 
-    <!-- SSE parent — connection is scoped to the sidebar so it drops cleanly on nav -->
+    <!-- SSE wrapper — connection lives as long as the sidebar is in the DOM -->
     <div hx-ext="sse" sse-connect="/whatsapp/inbox/events"
          class="flex-1 overflow-y-auto flex flex-col min-h-0">
       <div id="conversation-list"
@@ -40,23 +40,30 @@
     </div>
   </div>
 
-</main>
+  <script>
+    // ── Conversation highlight ────────────────────────────────────
+    var _selectedNumber = null;
 
-<script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+    // Capture the selected number when a conversation button is clicked
+    document.addEventListener('htmx:beforeRequest', function(e) {
+      var btn = e.target.closest
+              ? e.target.closest('#conversation-list button[data-number]')
+              : null;
+      if (!btn) return;
+      _selectedNumber = btn.dataset.number;
+      // Clear all highlights, then mark this one immediately
+      document.querySelectorAll('#conversation-list button[data-number]').forEach(function(b) {
+        b.style.borderLeft = '';
+        b.style.backgroundColor = '';
+      });
+      btn.style.borderLeft = '3px solid #00D4FF';
+      btn.style.backgroundColor = 'rgba(51,51,51,0.7)';
+    });
 
-<script>
-  // Track which conversation is selected so we can re-highlight it
-  // after the conversation list auto-refreshes.
-  var _selectedNumber = null;
-
-  document.getElementById('conversation-list').addEventListener('click', function(e) {
-    var btn = e.target.closest('button[data-number]');
-    if (btn) _selectedNumber = btn.dataset.number;
-  });
-
-  // Re-apply highlight after each conversation list refresh
-  document.addEventListener('htmx:afterSwap', function(e) {
-    if (e.detail.target && e.detail.target.id === 'conversation-list' && _selectedNumber) {
+    // Re-apply highlight after the conversation list is refreshed via SSE
+    document.addEventListener('htmx:afterSwap', function(e) {
+      if (!e.detail.target || e.detail.target.id !== 'conversation-list') return;
+      if (!_selectedNumber) return;
       var btn = document.querySelector(
         '#conversation-list button[data-number="' + _selectedNumber + '"]'
       );
@@ -64,34 +71,22 @@
         btn.style.borderLeft = '3px solid #00D4FF';
         btn.style.backgroundColor = 'rgba(51,51,51,0.7)';
       }
-    }
-  });
-
-  // Highlight the clicked button immediately on click
-  document.getElementById('conversation-list').addEventListener('htmx:beforeRequest', function(e) {
-    document.querySelectorAll('#conversation-list button').forEach(function(b) {
-      b.style.borderLeft = '';
-      b.style.backgroundColor = '';
     });
-    var btn = e.target.closest('button[data-number]');
-    if (btn) {
-      btn.style.borderLeft = '3px solid #00D4FF';
-      btn.style.backgroundColor = 'rgba(51,51,51,0.7)';
-    }
-  });
 
-  // Before messages-scroll is polled, record whether user is near the bottom
-  if (!window._waScrollHandlerSet) {
-    window._waScrollHandlerSet = true;
-    document.addEventListener('htmx:beforeSwap', function(e) {
-      if (e.detail.target && e.detail.target.id === 'messages-scroll') {
+    // ── Messages scroll position ──────────────────────────────────
+    // Record whether the user is near the bottom BEFORE a poll swap,
+    // so the messages-body script can decide whether to scroll down.
+    if (!window._waScrollHandlerSet) {
+      window._waScrollHandlerSet = true;
+      document.addEventListener('htmx:beforeSwap', function(e) {
+        if (!e.detail.target || e.detail.target.id !== 'messages-scroll') return;
         var el = e.detail.target;
         el.dataset.wasNearBottom =
           String(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
-      }
-    });
-  }
-</script>
+      });
+    }
+  </script>
 
+</main>
 </body>
 </html>
