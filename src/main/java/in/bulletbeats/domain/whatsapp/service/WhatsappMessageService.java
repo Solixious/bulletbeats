@@ -2,6 +2,9 @@ package in.bulletbeats.domain.whatsapp.service;
 
 import in.bulletbeats.domain.crm.entity.Customer;
 import in.bulletbeats.domain.crm.repository.CustomerRepository;
+import in.bulletbeats.domain.notification.NotificationChannel;
+import in.bulletbeats.domain.notification.NotificationService;
+import in.bulletbeats.domain.whatsapp.entity.MessageDirection;
 import in.bulletbeats.domain.whatsapp.entity.WhatsappMessage;
 import in.bulletbeats.domain.whatsapp.repository.WhatsappMessageRepository;
 import in.bulletbeats.domain.whatsapp.repository.WhatsappMessageRepository.ConversationRow;
@@ -21,6 +24,34 @@ public class WhatsappMessageService {
 
     private final WhatsappMessageRepository messageRepository;
     private final CustomerRepository customerRepository;
+    private final NotificationService notificationService;
+
+    /**
+     * Sends a free-form reply to the customer via WhatsApp and stores it as an OUTBOUND message.
+     * Throws if Twilio is not configured or if the 24-hour service window has closed.
+     */
+    @Transactional
+    public void sendReply(String toNumber, String body) {
+        notificationService.testSend(toNumber, body, NotificationChannel.WHATSAPP);
+
+        WhatsappMessage msg = WhatsappMessage.builder()
+                .fromNumber(toNumber)
+                .body(body)
+                .direction(MessageDirection.OUTBOUND)
+                .receivedAt(LocalDateTime.now())
+                .build();
+        messageRepository.save(msg);
+        log.info("WhatsApp reply sent to={}", toNumber);
+    }
+
+    /** Returns true if the customer sent a message within the last 24 hours. */
+    @Transactional(readOnly = true)
+    public boolean isWithin24HourWindow(String fromNumber) {
+        return messageRepository
+                .findTopByFromNumberAndDirectionOrderByReceivedAtDesc(fromNumber, MessageDirection.INBOUND)
+                .map(msg -> msg.getReceivedAt().isAfter(LocalDateTime.now().minusHours(24)))
+                .orElse(false);
+    }
 
     @Transactional
     public void processIncoming(String from, String body, String twilioSid) {

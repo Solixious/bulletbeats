@@ -6,9 +6,7 @@ import in.bulletbeats.domain.whatsapp.service.WhatsappMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,15 +26,34 @@ public class WhatsappInboxController {
 
     @GetMapping("/inbox/thread")
     public String thread(@RequestParam String number, Model model) {
+        populateThread(number, model, null);
+        return "whatsapp/fragments/thread :: thread";
+    }
+
+    @PostMapping("/inbox/reply")
+    public String reply(@RequestParam String toNumber,
+                        @RequestParam String body,
+                        Model model) {
+        String error = null;
+        try {
+            messageService.sendReply(toNumber, body);
+        } catch (Exception e) {
+            error = e.getMessage();
+        }
+        populateThread(toNumber, model, error);
+        return "whatsapp/fragments/thread :: thread";
+    }
+
+    private void populateThread(String number, Model model, String replyError) {
         List<WhatsappMessage> messages = messageService.getThread(number);
         Optional<Customer> customer = messageService.findCustomerByPhone(number);
-
         model.addAttribute("messages", messages);
         model.addAttribute("fromNumber", number);
         model.addAttribute("customer", customer.orElse(null));
         model.addAttribute("displayName",
                 customer.map(Customer::getName)
                         .orElseGet(() -> WhatsappMessageService.formatPhone(number)));
-        return "whatsapp/fragments/thread :: thread";
+        model.addAttribute("withinWindow", messageService.isWithin24HourWindow(number));
+        model.addAttribute("replyError", replyError);
     }
 }

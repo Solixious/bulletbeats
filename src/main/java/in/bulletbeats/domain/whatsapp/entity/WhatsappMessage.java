@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class WhatsappMessage extends BaseEntity {
 
+    /** The customer's phone number (E.164). Thread key for both directions. */
     @Column(name = "from_number", nullable = false, length = 30)
     private String fromNumber;
 
@@ -26,4 +27,9 @@ public class WhatsappMessage extends BaseEntity {
 
     @Column(name = "received_at", nullable = false)
     private LocalDateTime receivedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private MessageDirection direction = MessageDirection.INBOUND;
 }

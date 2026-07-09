@@ -1,17 +1,22 @@
 package in.bulletbeats.domain.whatsapp.repository;
 
+import in.bulletbeats.domain.whatsapp.entity.MessageDirection;
 import in.bulletbeats.domain.whatsapp.entity.WhatsappMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface WhatsappMessageRepository extends JpaRepository<WhatsappMessage, Long> {
 
     List<WhatsappMessage> findByFromNumberOrderByReceivedAtAsc(String fromNumber);
 
     boolean existsByTwilioSid(String twilioSid);
+
+    Optional<WhatsappMessage> findTopByFromNumberAndDirectionOrderByReceivedAtDesc(
+            String fromNumber, MessageDirection direction);
 
     /**
      * Returns one row per sender with their latest message body, timestamp, and total count.
