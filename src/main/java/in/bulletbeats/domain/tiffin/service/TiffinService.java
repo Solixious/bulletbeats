@@ -44,7 +44,7 @@ public class TiffinService {
     }
 
     public TiffinSubscription getById(Long id) {
-        return subscriptionRepository.findById(id)
+        return subscriptionRepository.findByIdWithCustomer(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tiffin subscription not found"));
     }
 
