@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="contact-view">
+
+  <!-- Customer header card -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6 space-y-4">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide" th:text="${customer.name}">Name</h1>
+    <div class="flex flex-wrap items-center gap-2">
+      <th:block th:replace="~{crm/fragments/vip-badge :: vip-badge}"></th:block>
+      <th:block th:replace="~{crm/fragments/student-badge :: student-badge}"></th:block>
+    </div>
+    <div th:if="${customer.isStudent}"
+         class="px-4 py-3 rounded-lg bg-blue-400/10 border border-blue-400/20 text-blue-400 text-xs">
+      <span class="font-medium">Student discount eligible.</span>
+      <span th:text="${studentDiscountPercentage}">10</span>% off bills over
+      ₹<span th:text="${#numbers.formatDecimal(minBillAmount, 1, 0)}">200</span>
+      · Used <span th:text="${customer.studentDiscountCount}">0</span> time(s).
+    </div>
+  </div>
+
+  <!-- Info grid -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+    <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+      <div>
+        <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Phone</p>
+        <p class="text-ivory text-sm font-mono" th:text="${customer.phone}"></p>
+      </div>
+      <div th:if="${customer.email != null}">
+        <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Email</p>
+        <p class="text-ivory text-sm" th:text="${customer.email}"></p>
+      </div>
+      <div th:if="${customer.dob != null}">
+        <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Date of Birth</p>
+        <p class="text-ivory text-sm"
+           th:text="${#temporals.format(customer.dob, 'dd MMM yyyy')}"></p>
+      </div>
+      <div>
+        <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Member Since</p>
+        <p class="text-ivory text-sm"
+           th:text="${customer.createdAt != null ? #temporals.format(customer.createdAt, 'dd MMM yyyy') : '—'}"></p>
+      </div>
+    </div>
+
+    <div th:if="${isManager}" class="mt-4 pt-4 border-t border-elevated/40">
+      <button th:attr="hx-get=@{/customers/{id}/contact-edit(id=${customer.id})}"
+              hx-target="#customer-contact-section"
+              hx-swap="innerHTML"
+              class="text-xs px-3 py-1.5 rounded border border-sand/30 text-sand
+                     hover:border-ivory/40 hover:text-ivory transition-colors">
+        Edit Name / Phone
+      </button>
+    </div>
+  </div>
+
+</th:block>
+
+<th:block th:fragment="contact-edit">
+
+  <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+    <p class="text-sand text-xs uppercase tracking-widest mb-4">Edit Contact Info</p>
+
+    <div th:if="${contactError}"
+         class="mb-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs"
+         th:text="${contactError}"></div>
+
+    <form th:attr="hx-post=@{/customers/{id}/edit-contact(id=${customer.id})}"
+          hx-target="#customer-contact-section"
+          hx-swap="innerHTML"
+          class="space-y-3">
+
+      <div>
+        <label class="text-sand text-xs uppercase tracking-widest mb-1 block">Name</label>
+        <input type="text" name="name" th:value="${customer.name}" required
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-3 py-2 text-ivory text-sm placeholder-sand/40
+                      outline-none transition-all duration-200"/>
+      </div>
+
+      <div>
+        <label class="text-sand text-xs uppercase tracking-widest mb-1 block">Phone</label>
+        <input type="text" name="phone" th:value="${customer.phone}" required
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-3 py-2 text-ivory text-sm font-mono placeholder-sand/40
+                      outline-none transition-all duration-200"/>
+      </div>
+
+      <div class="flex items-center gap-2 pt-1">
+        <button type="submit"
+                class="px-4 py-2 rounded-lg bg-accent text-base text-xs font-heading
+                       tracking-widest hover:brightness-110 transition-all duration-200">
+          SAVE
+        </button>
+        <button type="button"
+                th:attr="hx-get=@{/customers/{id}/contact-view(id=${customer.id})}"
+                hx-target="#customer-contact-section"
+                hx-swap="innerHTML"
+                class="px-3 py-2 text-xs text-sand hover:text-ivory transition-colors">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+</th:block>
+
+</body>
+</html>

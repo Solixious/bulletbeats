@@ -17,44 +17,9 @@
     <!-- ── LEFT COLUMN ─────────────────────────────────────────────── -->
     <div class="space-y-5">
 
-      <!-- Customer header card -->
-      <div class="bg-surface rounded-xl border border-elevated/60 p-6 space-y-4">
-        <h1 class="font-heading text-3xl text-ivory tracking-wide" th:text="${customer.name}">Name</h1>
-        <div class="flex flex-wrap items-center gap-2">
-          <th:block th:replace="~{crm/fragments/vip-badge :: vip-badge}"></th:block>
-          <th:block th:replace="~{crm/fragments/student-badge :: student-badge}"></th:block>
-        </div>
-        <div th:if="${customer.isStudent}"
-             class="px-4 py-3 rounded-lg bg-blue-400/10 border border-blue-400/20 text-blue-400 text-xs">
-          <span class="font-medium">Student discount eligible.</span>
-          <span th:text="${studentDiscountPercentage}">10</span>% off bills over
-          ₹<span th:text="${#numbers.formatDecimal(minBillAmount, 1, 0)}">200</span>
-          · Used <span th:text="${customer.studentDiscountCount}">0</span> time(s).
-        </div>
-      </div>
-
-      <!-- Info grid -->
-      <div class="bg-surface rounded-xl border border-elevated/60 p-5">
-        <div class="grid grid-cols-2 gap-x-6 gap-y-4">
-          <div>
-            <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Phone</p>
-            <p class="text-ivory text-sm font-mono" th:text="${customer.phone}"></p>
-          </div>
-          <div th:if="${customer.email != null}">
-            <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Email</p>
-            <p class="text-ivory text-sm" th:text="${customer.email}"></p>
-          </div>
-          <div th:if="${customer.dob != null}">
-            <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Date of Birth</p>
-            <p class="text-ivory text-sm"
-               th:text="${#temporals.format(customer.dob, 'dd MMM yyyy')}"></p>
-          </div>
-          <div>
-            <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Member Since</p>
-            <p class="text-ivory text-sm"
-               th:text="${customer.createdAt != null ? #temporals.format(customer.createdAt, 'dd MMM yyyy') : '—'}"></p>
-          </div>
-        </div>
+      <!-- Customer contact section (header card + info grid; swappable via HTMX) -->
+      <div id="customer-contact-section" class="space-y-5">
+        <th:block th:insert="~{crm/fragments/contact-section :: contact-view}"></th:block>
       </div>
 
       <!-- Stats row -->

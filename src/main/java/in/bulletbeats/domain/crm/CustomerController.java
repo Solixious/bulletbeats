@@ -122,6 +122,52 @@ public class CustomerController {
         return "crm/fragments/student-badge :: student-badge";
     }
 
+    @GetMapping("/{id}/contact-edit")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public String contactEditForm(@PathVariable Long id, Model model) {
+        model.addAttribute("customer", customerService.getById(id));
+        return "crm/fragments/contact-section :: contact-edit";
+    }
+
+    @GetMapping("/{id}/contact-view")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public String contactView(@PathVariable Long id, Model model, Authentication auth) {
+        model.addAttribute("customer", customerService.getById(id));
+        model.addAttribute("isManager", isManager(auth));
+        model.addAttribute("studentDiscountPercentage",
+                appConfigService.get("student.discount.percentage", "10"));
+        model.addAttribute("minBillAmount",
+                appConfigService.getDecimal("student.discount.min_bill_amount", new BigDecimal("200.00")));
+        return "crm/fragments/contact-section :: contact-view";
+    }
+
+    @PostMapping("/{id}/edit-contact")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public String updateContact(@PathVariable Long id,
+                                @RequestParam String name,
+                                @RequestParam String phone,
+                                Authentication auth, Model model) {
+        if (name == null || name.isBlank() || phone == null || phone.isBlank()) {
+            model.addAttribute("customer", customerService.getById(id));
+            model.addAttribute("contactError", "Name and phone are required");
+            return "crm/fragments/contact-section :: contact-edit";
+        }
+        try {
+            customerService.updateContact(id, name, phone, currentUserId(auth));
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("customer", customerService.getById(id));
+            model.addAttribute("contactError", e.getMessage());
+            return "crm/fragments/contact-section :: contact-edit";
+        }
+        model.addAttribute("customer", customerService.getById(id));
+        model.addAttribute("isManager", isManager(auth));
+        model.addAttribute("studentDiscountPercentage",
+                appConfigService.get("student.discount.percentage", "10"));
+        model.addAttribute("minBillAmount",
+                appConfigService.getDecimal("student.discount.min_bill_amount", new BigDecimal("200.00")));
+        return "crm/fragments/contact-section :: contact-view";
+    }
+
     @GetMapping("/search")
     public String search(@RequestParam(defaultValue = "") String q, Model model) {
         model.addAttribute("customers", customerService.search(q));

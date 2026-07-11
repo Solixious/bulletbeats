@@ -98,6 +98,18 @@ public class CustomerService {
     }
 
     @Transactional
+    public Customer updateContact(Long id, String name, String phone, Long updatedByUserId) {
+        Customer customer = getById(id);
+        String trimmedPhone = phone.trim();
+        if (!trimmedPhone.equals(customer.getPhone()) && customerRepository.existsByPhone(trimmedPhone)) {
+            throw new IllegalArgumentException("Phone " + trimmedPhone + " is already registered to another customer");
+        }
+        customer.setName(name.trim());
+        customer.setPhone(trimmedPhone);
+        return customerRepository.save(customer);
+    }
+
+    @Transactional
     public void incrementStudentDiscountCount(Long customerId) {
         Customer customer = getById(customerId);
         customer.setStudentDiscountCount(customer.getStudentDiscountCount() + 1);
