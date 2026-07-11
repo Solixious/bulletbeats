@@ -52,10 +52,42 @@
         Direct Delivery
       </span>
     </div>
-    <!-- Customer row — static for non-DRAFT -->
-    <p th:unless="${bill.status.name() == 'DRAFT'}"
-       class="text-sand text-xs mt-0.5"
-       th:text="${bill.customer != null} ? ${bill.customer.name} + ' · ' + ${bill.customer.phone} : 'Walk-in'"></p>
+    <!-- Customer row — non-DRAFT (managers can edit retroactively) -->
+    <div th:unless="${bill.status.name() == 'DRAFT'}" class="mt-1">
+      <!-- Customer is set -->
+      <div th:if="${bill.customer != null}" class="flex items-center gap-2 flex-wrap">
+        <span class="text-sand text-xs"
+              th:text="${bill.customer.name} + ' · ' + ${bill.customer.phone}"></span>
+        <th:block th:if="${isManager}">
+          <button type="button" onclick="toggleRetroCustomerSearch()"
+                  class="text-accent/70 text-xs hover:text-accent transition-colors">change</button>
+          <button type="button"
+                  th:attr="hx-post=@{/bills/{id}/unlink-customer-retroactive(id=${bill.id})}"
+                  hx-target="#bill-panel"
+                  hx-swap="innerHTML"
+                  class="text-sand/40 text-xs hover:text-red-400 transition-colors">× remove</button>
+        </th:block>
+      </div>
+      <!-- No customer -->
+      <div th:if="${bill.customer == null}" class="flex items-center gap-2">
+        <span class="text-sand text-xs">Walk-in</span>
+        <button th:if="${isManager}" type="button" onclick="toggleRetroCustomerSearch()"
+                class="text-accent/70 text-xs hover:text-accent transition-colors">+ Add customer</button>
+      </div>
+      <!-- Inline search (manager only) -->
+      <div th:if="${isManager}" id="retro-customer-search-section" class="hidden mt-2">
+        <input type="text"
+               placeholder="Search by name or phone..."
+               th:attr="hx-get=@{/bills/{id}/retro-customer-search(id=${bill.id})}"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#retro-customer-results"
+               name="q"
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-3 py-1.5 text-ivory text-xs placeholder-sand/40
+                      outline-none transition-all duration-200"/>
+        <div id="retro-customer-results"></div>
+      </div>
+    </div>
 
     <!-- Customer row — interactive for DRAFT -->
     <div th:if="${bill.status.name() == 'DRAFT'}" class="mt-1">
@@ -307,6 +339,18 @@
   <script th:if="${bill.status.name() == 'DRAFT'}">
   function toggleBillCustomerSearch() {
     var section = document.getElementById('bill-customer-search-section');
+    if (!section) return;
+    section.classList.toggle('hidden');
+    if (!section.classList.contains('hidden')) {
+      var input = section.querySelector('input');
+      if (input) input.focus();
+    }
+  }
+  </script>
+
+  <script th:if="${bill.status.name() != 'DRAFT' and isManager}">
+  function toggleRetroCustomerSearch() {
+    var section = document.getElementById('retro-customer-search-section');
     if (!section) return;
     section.classList.toggle('hidden');
     if (!section.classList.contains('hidden')) {

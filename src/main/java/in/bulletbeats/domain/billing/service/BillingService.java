@@ -453,6 +453,29 @@ public class BillingService {
     }
 
     @Transactional
+    public Bill linkCustomerRetroactively(Long billId, String phone, String name, Long userId) {
+        Bill bill = getBillById(billId);
+        Customer customer = customerService.findOrCreateByPhone(phone.trim(), name.trim(), userId);
+        bill.setCustomer(customer);
+        String staffName = userService.getUserById(userId).getUsername();
+        String t = LocalTime.now().format(TIME_FMT);
+        activityLogService.log(billId, ActorType.STAFF, staffName,
+                "[" + t + "] Customer linked retroactively by " + staffName);
+        return billRepository.save(bill);
+    }
+
+    @Transactional
+    public Bill unlinkCustomerRetroactively(Long billId, Long userId) {
+        Bill bill = getBillById(billId);
+        bill.setCustomer(null);
+        String staffName = userService.getUserById(userId).getUsername();
+        String t = LocalTime.now().format(TIME_FMT);
+        activityLogService.log(billId, ActorType.STAFF, staffName,
+                "[" + t + "] Customer unlinked retroactively by " + staffName);
+        return billRepository.save(bill);
+    }
+
+    @Transactional
     public Bill cancelBill(Long billId, Long userId) {
         Bill bill = getBillById(billId);
         if (bill.getStatus() == BillStatus.PAID) {

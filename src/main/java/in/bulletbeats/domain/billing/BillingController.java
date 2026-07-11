@@ -277,6 +277,37 @@ public class BillingController {
         return billPanelResponse(billingService.getBillById(id), auth, model);
     }
 
+    @GetMapping("/{id}/retro-customer-search")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public String retroCustomerSearch(@PathVariable Long id,
+                                      @RequestParam(defaultValue = "") String q,
+                                      Model model) {
+        model.addAttribute("q", q.trim());
+        model.addAttribute("billId", id);
+        model.addAttribute("customers", q.isBlank() ? java.util.List.of()
+                : customerService.search(q.trim()));
+        return "billing/fragments/customer-results :: retro-customer-results";
+    }
+
+    @PostMapping("/{id}/link-customer-retroactive")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public String linkCustomerRetroactive(@PathVariable Long id,
+                                          @RequestParam(defaultValue = "") String phone,
+                                          @RequestParam(defaultValue = "") String name,
+                                          Authentication auth, Model model) {
+        if (!phone.isBlank()) {
+            billingService.linkCustomerRetroactively(id, phone, name.isBlank() ? phone : name, currentUserId(auth));
+        }
+        return billPanelResponse(billingService.getBillById(id), auth, model);
+    }
+
+    @PostMapping("/{id}/unlink-customer-retroactive")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public String unlinkCustomerRetroactive(@PathVariable Long id, Authentication auth, Model model) {
+        billingService.unlinkCustomerRetroactively(id, currentUserId(auth));
+        return billPanelResponse(billingService.getBillById(id), auth, model);
+    }
+
     // ── Add / remove / update items (HTMX) ───────────────────────────────
 
     @PostMapping("/{id}/items")
