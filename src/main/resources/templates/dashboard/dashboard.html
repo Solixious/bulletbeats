@@ -140,7 +140,7 @@
     </div><!-- /Row 1 -->
 
     <!-- ── Row 2: Monthly comparison cards ───────────────────────── -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 
       <!-- Monthly Revenue card -->
       <div class="bg-surface rounded-2xl border border-elevated/60 p-6">
@@ -293,6 +293,31 @@
               <span>Last Month</span>
             </div>
           </div>
+        </div>
+
+      </div>
+
+      <!-- Tiffin Revenue card -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-6">
+
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-sand text-xs uppercase tracking-widest">Tiffin Revenue</p>
+          <p class="text-sand text-xs">Monthly</p>
+        </div>
+
+        <p class="font-heading text-5xl text-ivory leading-none"
+           th:text="'₹' + ${#numbers.formatDecimal(stats.tiffinMonthlyRevenue, 1, 'COMMA', 2, 'POINT')}">
+        </p>
+        <p class="text-sand text-sm mt-2"
+           th:text="${stats.tiffinActiveCount} + ' active subscriber' + (${stats.tiffinActiveCount} != 1 ? 's' : '')">
+        </p>
+
+        <div class="mt-4 pt-4 border-t border-elevated/60 flex items-center justify-between">
+          <span class="text-sand text-xs">Projected per month</span>
+          <a href="/tiffin"
+             class="text-xs text-accent/70 hover:text-accent transition-colors">
+            View subscribers →
+          </a>
         </div>
 
       </div>

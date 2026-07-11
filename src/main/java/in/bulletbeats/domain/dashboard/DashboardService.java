@@ -11,6 +11,7 @@ import in.bulletbeats.domain.dashboard.dto.TopItemDto;
 import in.bulletbeats.domain.inventory.repository.PurchaseOrderRepository;
 import in.bulletbeats.domain.inventory.repository.ReplenishmentRequestRepository;
 import in.bulletbeats.domain.inventory.service.InventoryService;
+import in.bulletbeats.domain.tiffin.service.TiffinService;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.ReplenishmentStatus;
 import in.bulletbeats.domain.shared.enums.TableStatus;
@@ -37,6 +38,7 @@ public class DashboardService {
     private final InventoryService inventoryService;
     private final ReplenishmentRequestRepository replenishmentRequestRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
+    private final TiffinService tiffinService;
 
     public DashboardStatsDto buildStats(boolean isManagerOrAdmin) {
         LocalDate today = LocalDate.now();
@@ -141,6 +143,10 @@ public class DashboardService {
                     .multiply(BigDecimal.valueOf(100)).intValue();
         }
 
+        // Tiffin monthly revenue
+        BigDecimal tiffinMonthlyRevenue = tiffinService.calculateTotalMonthlyTiffinRevenue();
+        long tiffinActiveCount = tiffinService.countActiveSubscriptions();
+
         // Top items today
         List<Object[]> rawTop = billItemRepository.findTopItemsForDate(today, 5);
         List<TopItemDto> topItems = rawTop.stream()
@@ -203,6 +209,7 @@ public class DashboardService {
                 vsGrocerySpendAmount, vsGrocerySpendPercent,
                 vsGrocerySpendAmount.signum() > 0,
                 groceryBarThisWidth, groceryBarLastWidth,
+                tiffinMonthlyRevenue, tiffinActiveCount,
                 activeBillCount, occupiedCount,
                 tables.size(), tableStatuses);
     }

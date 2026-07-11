@@ -22,4 +22,6 @@ public interface TiffinSubscriptionRepository extends JpaRepository<TiffinSubscr
     List<TiffinSubscription> findAllWithCustomer();
 
     boolean existsByCustomerIdAndStatusIn(Long customerId, List<TiffinStatus> statuses);
+
+    long countByStatusIn(List<TiffinStatus> statuses);
 }

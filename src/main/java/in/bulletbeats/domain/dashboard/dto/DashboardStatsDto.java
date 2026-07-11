@@ -54,6 +54,10 @@ public class DashboardStatsDto {
     private final int groceryBarThisWidth;
     private final int groceryBarLastWidth;
 
+    // Tiffin monthly revenue (Manager/Admin only)
+    private final BigDecimal tiffinMonthlyRevenue;
+    private final long tiffinActiveCount;
+
     // Active operations (all roles)
     private final long activeBillCount;
     private final long occupiedTableCount;
@@ -66,6 +70,8 @@ public class DashboardStatsDto {
             long totalTableCount,
             List<TableStatusDto> tableStatuses) {
         return DashboardStatsDto.builder()
+                .tiffinMonthlyRevenue(BigDecimal.ZERO)
+                .tiffinActiveCount(0L)
                 .activeBillCount(activeBillCount)
                 .occupiedTableCount(occupiedTableCount)
                 .totalTableCount(totalTableCount)
@@ -102,6 +108,8 @@ public class DashboardStatsDto {
             boolean vsGrocerySpendUp,
             int groceryBarThisWidth,
             int groceryBarLastWidth,
+            BigDecimal tiffinMonthlyRevenue,
+            long tiffinActiveCount,
             long activeBillCount,
             long occupiedTableCount,
             long totalTableCount,
@@ -135,6 +143,8 @@ public class DashboardStatsDto {
                 .vsGrocerySpendUp(vsGrocerySpendUp)
                 .groceryBarThisWidth(groceryBarThisWidth)
                 .groceryBarLastWidth(groceryBarLastWidth)
+                .tiffinMonthlyRevenue(tiffinMonthlyRevenue)
+                .tiffinActiveCount(tiffinActiveCount)
                 .activeBillCount(activeBillCount)
                 .occupiedTableCount(occupiedTableCount)
                 .totalTableCount(totalTableCount)

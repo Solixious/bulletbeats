@@ -156,4 +156,23 @@ public class TiffinService {
     public List<TiffinPause> getPausesForSubscription(Long subscriptionId) {
         return pauseRepository.findBySubscriptionIdOrderByPauseFromDesc(subscriptionId);
     }
+
+    public long countActiveSubscriptions() {
+        return subscriptionRepository.countByStatusIn(List.of(TiffinStatus.ACTIVE));
+    }
+
+    public BigDecimal calculateTotalMonthlyTiffinRevenue() {
+        List<TiffinSubscription> active = subscriptionRepository.findByStatusInWithCustomer(
+                List.of(TiffinStatus.ACTIVE));
+        Map<TiffinMealType, BigDecimal> prices = getPricingByType();
+        return active.stream()
+                .map(sub -> {
+                    BigDecimal total = BigDecimal.ZERO;
+                    if (sub.isHasBreakfast()) total = total.add(prices.getOrDefault(TiffinMealType.BREAKFAST, BigDecimal.ZERO));
+                    if (sub.isHasLunch())     total = total.add(prices.getOrDefault(TiffinMealType.LUNCH,     BigDecimal.ZERO));
+                    if (sub.isHasDinner())    total = total.add(prices.getOrDefault(TiffinMealType.DINNER,    BigDecimal.ZERO));
+                    return total;
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 }
