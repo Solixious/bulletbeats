@@ -108,6 +108,7 @@
       <table th:unless="${#lists.isEmpty(items)}" class="w-full text-left">
         <thead>
           <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+            <th th:if="${selectedCategoryId != null}" class="px-4 py-3 font-medium w-10"></th>
             <th class="px-4 py-3 font-medium">Name</th>
             <th class="px-4 py-3 font-medium">Type</th>
             <th class="px-4 py-3 font-medium">Category</th>
@@ -117,10 +118,14 @@
             <th class="px-4 py-3 font-medium">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="sortable-items">
           <tr th:each="item : ${items}"
+              th:data-id="${item.id}"
               th:classappend="${!item.isActive()} ? 'opacity-50' : ''"
               class="border-b border-elevated/40 hover:bg-elevated/10 transition-colors duration-100">
+
+            <td th:if="${selectedCategoryId != null}"
+                class="px-4 py-3 text-sand drag-handle cursor-grab active:cursor-grabbing select-none">⠿</td>
 
             <td class="px-4 py-3">
               <div class="flex items-center gap-2">
@@ -209,6 +214,39 @@
        class="mt-3 text-sand text-xs text-right"
        th:text="${#lists.size(items)} + ' item' + (${#lists.size(items)} == 1 ? '' : 's')">
     </p>
+
+    <p th:if="${selectedCategoryId != null and !#lists.isEmpty(items)}"
+       class="mt-1 text-sand/50 text-xs text-right">Drag rows to reorder — changes save automatically</p>
+    <p th:if="${selectedCategoryId == null and !#lists.isEmpty(items)}"
+       class="mt-1 text-sand/50 text-xs text-right">Select a category tab to drag-reorder items</p>
+
+    <script th:if="${selectedCategoryId != null}"
+            src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script th:if="${selectedCategoryId != null}">
+      (function () {
+        var tbody = document.getElementById('sortable-items');
+        if (!tbody || typeof Sortable === 'undefined') return;
+        Sortable.create(tbody, {
+          handle: '.drag-handle',
+          animation: 150,
+          onEnd: function () {
+            var rows = tbody.querySelectorAll('tr[data-id]');
+            var ids = Array.from(rows).map(function (r) { return r.dataset.id; });
+            var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+            var csrfToken  = document.querySelector('meta[name="_csrf"]').content;
+            fetch('/admin/menu/reorder', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'HX-Request': 'true',
+                [csrfHeader]: csrfToken
+              },
+              body: ids.map(function (id) { return 'ids=' + encodeURIComponent(id); }).join('&')
+            });
+          }
+        });
+      })();
+    </script>
 
   </div>
 

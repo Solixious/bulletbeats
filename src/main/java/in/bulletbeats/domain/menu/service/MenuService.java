@@ -187,6 +187,15 @@ public class MenuService {
     }
 
     @Transactional
+    public void reorderItems(List<Long> orderedIds) {
+        for (int i = 0; i < orderedIds.size(); i++) {
+            MenuItem item = getItemById(orderedIds.get(i));
+            item.setDisplayOrder(i);
+            menuItemRepository.save(item);
+        }
+    }
+
+    @Transactional
     public void deactivate(Long id) {
         MenuItem item = getItemById(id);
         imageStorageService.delete(item.getImagePath());

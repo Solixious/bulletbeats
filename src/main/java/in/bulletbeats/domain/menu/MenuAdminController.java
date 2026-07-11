@@ -14,6 +14,9 @@ import in.bulletbeats.domain.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -54,6 +57,19 @@ public class MenuAdminController {
             return "menu/admin/list :: menu-table";
         }
         return "menu/admin/list";
+    }
+
+    @PostMapping("/reorder")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> reorder(@RequestParam List<Long> ids,
+                                        HttpServletRequest request) {
+        menuService.reorderItems(ids);
+        if ("true".equals(request.getHeader("HX-Request"))) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header(HttpHeaders.LOCATION, "/admin/menu")
+                .build();
     }
 
     @GetMapping("/new")
