@@ -119,6 +119,10 @@ public class BillingService {
         return billRepository.findByCustomerIdOrderByCreatedAtDesc(customerId, pageable);
     }
 
+    public List<Bill> getRecentBillsForCustomer(Long customerId) {
+        return billRepository.findTop5ByCustomerIdOrderByCreatedAtDesc(customerId);
+    }
+
     public Page<Bill> getHistory(LocalDate from, LocalDate to, String phone, Pageable pageable) {
         final String p = (phone != null && !phone.isBlank()) ? phone.trim() : null;
         final LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;

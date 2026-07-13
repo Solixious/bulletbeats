@@ -1,6 +1,7 @@
 package in.bulletbeats.domain.crm;
 
 import in.bulletbeats.domain.admin.AppConfigService;
+import in.bulletbeats.domain.billing.service.BillingService;
 import in.bulletbeats.domain.crm.dto.AddNoteDto;
 import in.bulletbeats.domain.crm.service.CustomerService;
 import in.bulletbeats.domain.crm.service.LoyaltyService;
@@ -19,7 +20,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Controller
 @RequestMapping("/customers")
@@ -30,6 +30,7 @@ public class CustomerController {
     private final LoyaltyService loyaltyService;
     private final UserService userService;
     private final AppConfigService appConfigService;
+    private final BillingService billingService;
 
     private Long currentUserId(Authentication auth) {
         return ((User) auth.getPrincipal()).getId();
@@ -59,7 +60,7 @@ public class CustomerController {
         model.addAttribute("loyaltyPoints", loyaltyService.getPointsBalance(id));
         model.addAttribute("loyaltyTransactions",
                 manager ? loyaltyService.getTransactionsForCustomer(id, PageRequest.of(0, 10)) : null);
-        model.addAttribute("recentBills", List.of());
+        model.addAttribute("recentBills", billingService.getRecentBillsForCustomer(id));
         model.addAttribute("noteDto", new AddNoteDto());
         model.addAttribute("isManager", manager);
         model.addAttribute("usernameMap", userService.getUsernameMap());
