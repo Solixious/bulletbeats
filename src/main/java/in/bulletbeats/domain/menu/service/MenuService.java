@@ -7,6 +7,8 @@ import in.bulletbeats.domain.menu.repository.*;
 import in.bulletbeats.domain.shared.exception.InvalidMenuItemException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,6 +42,7 @@ public class MenuService {
         return menuItemRepository.findAllByCategoryIdWithCategoryOrdered(categoryId);
     }
 
+    @Cacheable(value = "menuItems", key = "#id")
     public MenuItem getItemById(Long id) {
         return menuItemRepository.findByIdWithCategory(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
@@ -105,6 +108,7 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = "menuItems", key = "#id")
     public MenuItem updateItem(Long id, UpdateMenuItemDto dto, MultipartFile image, Long userId) {
         MenuItem item = getItemById(id);
         if ((dto.getDishId() == null) == (dto.getComboId() == null)) {
@@ -140,6 +144,7 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = "menuItems", key = "#id")
     public void updatePrice(Long id, BigDecimal newPrice, Long userId) {
         MenuItem item = getItemById(id);
         PriceHistory history = PriceHistory.builder()
@@ -154,6 +159,7 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = "menuItems", key = "#menuItemId")
     public void updateAvailabilityOverride(Long menuItemId, Boolean newOverride, String reason, Long userId) {
         MenuItem item = getItemById(menuItemId);
         MenuItemAvailabilityLog log = MenuItemAvailabilityLog.builder()
@@ -170,6 +176,7 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = "menuItems", key = "#menuItemId")
     public void recomputeAvailability(Long menuItemId) {
         MenuItem item = getItemById(menuItemId);
         if (item.getAvailabilityOverride() != null) {
@@ -181,9 +188,13 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = "menuItems", allEntries = true)
     public void recomputeAllAutoMode() {
-        menuItemRepository.findAutoModeItems()
-                .forEach(item -> recomputeAvailability(item.getId()));
+        List<MenuItem> items = menuItemRepository.findAutoModeItemsWithRecipes();
+        for (MenuItem item : items) {
+            item.setAvailable(computeIngredientAvailability(item));
+        }
+        menuItemRepository.saveAll(items);
     }
 
     @Transactional
@@ -196,6 +207,7 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = "menuItems", key = "#id")
     public void deactivate(Long id) {
         MenuItem item = getItemById(id);
         imageStorageService.delete(item.getImagePath());
@@ -205,6 +217,7 @@ public class MenuService {
     }
 
     @Transactional
+    @CacheEvict(value = "menuItems", key = "#id")
     public void reactivate(Long id) {
         MenuItem item = getItemById(id);
         item.setActive(true);
@@ -262,17 +275,14 @@ public class MenuService {
 
     private boolean computeIngredientAvailability(MenuItem item) {
         if (item.getDish() != null) {
-            Dish dish = dishRepository.findById(item.getDish().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Dish not found"));
-            return dish.getIngredients().stream()
+            return item.getDish().getIngredients().stream()
                     .allMatch(ing -> ing.getGroceryItem().getQuantityInStock()
                             .compareTo(ing.getQuantityRequired()) >= 0);
-        } else {
-            Combo combo = comboRepository.findById(item.getCombo().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Combo not found"));
-            return combo.getIngredients().stream()
+        } else if (item.getCombo() != null) {
+            return item.getCombo().getIngredients().stream()
                     .allMatch(ing -> ing.getGroceryItem().getQuantityInStock()
                             .compareTo(ing.getQuantityRequired()) >= 0);
         }
+        return true;
     }
 }

@@ -13,15 +13,12 @@ import in.bulletbeats.domain.billing.service.CafeTableService;
 import in.bulletbeats.domain.crm.entity.Customer;
 import in.bulletbeats.domain.crm.service.CustomerService;
 import in.bulletbeats.domain.inventory.entity.GroceryItem;
+import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
 import in.bulletbeats.domain.inventory.service.InventoryService;
 import in.bulletbeats.domain.menu.entity.Category;
-import in.bulletbeats.domain.menu.entity.Combo;
 import in.bulletbeats.domain.menu.entity.ComboIngredient;
-import in.bulletbeats.domain.menu.entity.Dish;
 import in.bulletbeats.domain.menu.entity.DishIngredient;
 import in.bulletbeats.domain.menu.entity.MenuItem;
-import in.bulletbeats.domain.menu.repository.ComboRepository;
-import in.bulletbeats.domain.menu.repository.DishRepository;
 import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.shared.enums.ActorType;
@@ -63,8 +60,7 @@ public class QrOrderService {
     private final MenuService menuService;
     private final CategoryService categoryService;
     private final InventoryService inventoryService;
-    private final DishRepository dishRepository;
-    private final ComboRepository comboRepository;
+    private final GroceryItemRepository groceryItemRepository;
     private final ActivityLogService activityLogService;
     private final AppConfigService appConfigService;
 
@@ -339,17 +335,13 @@ public class QrOrderService {
     private Map<Long, BigDecimal> aggregateIngredientsForItem(MenuItem menuItem, int qty) {
         Map<Long, BigDecimal> required = new HashMap<>();
         if (menuItem.getDish() != null) {
-            Dish dish = dishRepository.findById(menuItem.getDish().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Dish not found"));
-            for (DishIngredient ing : dish.getIngredients()) {
+            for (DishIngredient ing : menuItem.getDish().getIngredients()) {
                 required.merge(ing.getGroceryItem().getId(),
                         ing.getQuantityRequired().multiply(BigDecimal.valueOf(qty)),
                         BigDecimal::add);
             }
         } else if (menuItem.getCombo() != null) {
-            Combo combo = comboRepository.findById(menuItem.getCombo().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Combo not found"));
-            for (ComboIngredient ing : combo.getIngredients()) {
+            for (ComboIngredient ing : menuItem.getCombo().getIngredients()) {
                 required.merge(ing.getGroceryItem().getId(),
                         ing.getQuantityRequired().multiply(BigDecimal.valueOf(qty)),
                         BigDecimal::add);
@@ -374,9 +366,12 @@ public class QrOrderService {
     }
 
     private void validateStock(Map<Long, BigDecimal> required) {
+        if (required.isEmpty()) return;
+        Map<Long, GroceryItem> byId = groceryItemRepository.findAllById(required.keySet())
+                .stream().collect(Collectors.toMap(GroceryItem::getId, g -> g));
         List<String> shortages = new ArrayList<>();
         for (Map.Entry<Long, BigDecimal> e : required.entrySet()) {
-            GroceryItem item = inventoryService.getItemById(e.getKey());
+            GroceryItem item = byId.get(e.getKey());
             if (item.getQuantityInStock().compareTo(e.getValue()) < 0) {
                 shortages.add(item.getName() + ": need " + e.getValue()
                         + " " + item.getUnit() + ", have " + item.getQuantityInStock());

@@ -51,6 +51,12 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
     @Query("SELECT m FROM MenuItem m WHERE m.isActive = true AND m.availabilityOverride IS NULL")
     List<MenuItem> findAutoModeItems();
 
+    @Query("SELECT DISTINCT m FROM MenuItem m " +
+           "LEFT JOIN FETCH m.dish " +
+           "LEFT JOIN FETCH m.combo " +
+           "WHERE m.isActive = true AND m.availabilityOverride IS NULL")
+    List<MenuItem> findAutoModeItemsWithRecipes();
+
     @Query("SELECT m FROM MenuItem m WHERE m.promoted = true")
     List<MenuItem> findAllPromoted();
 

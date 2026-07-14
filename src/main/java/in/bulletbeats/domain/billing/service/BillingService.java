@@ -19,14 +19,11 @@ import in.bulletbeats.domain.crm.entity.Customer;
 import in.bulletbeats.domain.crm.service.CustomerService;
 import in.bulletbeats.domain.crm.service.LoyaltyService;
 import in.bulletbeats.domain.inventory.entity.GroceryItem;
+import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
 import in.bulletbeats.domain.inventory.service.InventoryService;
-import in.bulletbeats.domain.menu.entity.Combo;
 import in.bulletbeats.domain.menu.entity.ComboIngredient;
-import in.bulletbeats.domain.menu.entity.Dish;
 import in.bulletbeats.domain.menu.entity.DishIngredient;
 import in.bulletbeats.domain.menu.entity.MenuItem;
-import in.bulletbeats.domain.menu.repository.DishRepository;
-import in.bulletbeats.domain.menu.repository.ComboRepository;
 import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
@@ -83,8 +80,7 @@ public class BillingService {
     private final LoyaltyService loyaltyService;
     private final MenuService menuService;
     private final InventoryService inventoryService;
-    private final DishRepository dishRepository;
-    private final ComboRepository comboRepository;
+    private final GroceryItemRepository groceryItemRepository;
     private final AppConfigService appConfigService;
     private final ActivityLogService activityLogService;
     private final UserService userService;
@@ -716,17 +712,13 @@ public class BillingService {
         for (BillItem billItem : bill.getItems()) {
             MenuItem menuItem = billItem.getMenuItem();
             if (menuItem.getDish() != null) {
-                Dish dish = dishRepository.findById(menuItem.getDish().getId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Dish not found"));
-                for (DishIngredient ing : dish.getIngredients()) {
+                for (DishIngredient ing : menuItem.getDish().getIngredients()) {
                     BigDecimal qty = ing.getQuantityRequired()
                             .multiply(BigDecimal.valueOf(billItem.getQuantity()));
                     required.merge(ing.getGroceryItem().getId(), qty, BigDecimal::add);
                 }
             } else if (menuItem.getCombo() != null) {
-                Combo combo = comboRepository.findById(menuItem.getCombo().getId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Combo not found"));
-                for (ComboIngredient ing : combo.getIngredients()) {
+                for (ComboIngredient ing : menuItem.getCombo().getIngredients()) {
                     BigDecimal qty = ing.getQuantityRequired()
                             .multiply(BigDecimal.valueOf(billItem.getQuantity()));
                     required.merge(ing.getGroceryItem().getId(), qty, BigDecimal::add);
@@ -737,9 +729,12 @@ public class BillingService {
     }
 
     private void validateStock(Map<Long, BigDecimal> required) {
+        if (required.isEmpty()) return;
+        Map<Long, GroceryItem> byId = groceryItemRepository.findAllById(required.keySet())
+                .stream().collect(Collectors.toMap(GroceryItem::getId, g -> g));
         List<String> shortages = new ArrayList<>();
         for (Map.Entry<Long, BigDecimal> entry : required.entrySet()) {
-            GroceryItem item = inventoryService.getItemById(entry.getKey());
+            GroceryItem item = byId.get(entry.getKey());
             if (item.getQuantityInStock().compareTo(entry.getValue()) < 0) {
                 shortages.add(item.getName() + ": need " + entry.getValue()
                         + " " + item.getUnit() + ", have " + item.getQuantityInStock());

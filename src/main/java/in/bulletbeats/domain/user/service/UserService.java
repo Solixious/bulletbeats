@@ -7,6 +7,8 @@ import in.bulletbeats.domain.user.dto.CreateUserDto;
 import in.bulletbeats.domain.user.dto.UpdateUserDto;
 import in.bulletbeats.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -52,6 +54,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
+    @CacheEvict(value = "users", key = "#id")
     public User updateUser(Long id, UpdateUserDto dto) {
         User user = getUserById(id);
         user.setFullName(dto.getFullName());
@@ -61,6 +64,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
+    @CacheEvict(value = "users", key = "#id")
     public void changePassword(Long id, String newRawPassword) {
         User user = getUserById(id);
         user.setPasswordHash(passwordEncoder.encode(newRawPassword));
@@ -76,6 +80,7 @@ public class UserService implements UserDetailsService {
                 .collect(Collectors.toMap(User::getId, User::getUsername));
     }
 
+    @Cacheable(value = "users", key = "#id")
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
