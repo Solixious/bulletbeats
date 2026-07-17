@@ -7,6 +7,7 @@ import in.bulletbeats.domain.tiffin.TiffinMealType;
 import in.bulletbeats.domain.tiffin.TiffinStatus;
 import in.bulletbeats.domain.tiffin.dto.TiffinPauseDto;
 import in.bulletbeats.domain.tiffin.dto.TiffinPricingDto;
+import in.bulletbeats.domain.tiffin.dto.TiffinPricingOverrideDto;
 import in.bulletbeats.domain.tiffin.dto.TiffinSubscriptionDto;
 import in.bulletbeats.domain.tiffin.entity.TiffinPause;
 import in.bulletbeats.domain.tiffin.entity.TiffinPricing;
@@ -114,6 +115,14 @@ public class TiffinService {
         subscriptionRepository.save(sub);
     }
 
+    @Transactional
+    public void updatePricingOverride(Long id, TiffinPricingOverrideDto dto) {
+        TiffinSubscription sub = getById(id);
+        sub.setCustomMonthlyPrice(dto.getCustomMonthlyPrice());
+        sub.setDeliveryCharge(dto.getDeliveryCharge());
+        subscriptionRepository.save(sub);
+    }
+
     public List<TiffinPricing> getAllPricing() {
         return pricingRepository.findAll();
     }
@@ -145,11 +154,21 @@ public class TiffinService {
     }
 
     public BigDecimal calculateMonthlyPrice(TiffinSubscription sub) {
-        Map<TiffinMealType, BigDecimal> prices = getPricingByType();
+        return calculateMonthlyPrice(sub, getPricingByType());
+    }
+
+    private BigDecimal calculateMonthlyPrice(TiffinSubscription sub, Map<TiffinMealType, BigDecimal> standardPrices) {
+        return calculateMealPrice(sub, standardPrices).add(sub.getDeliveryCharge());
+    }
+
+    private BigDecimal calculateMealPrice(TiffinSubscription sub, Map<TiffinMealType, BigDecimal> standardPrices) {
+        if (sub.getCustomMonthlyPrice() != null) {
+            return sub.getCustomMonthlyPrice();
+        }
         BigDecimal total = BigDecimal.ZERO;
-        if (sub.isHasBreakfast()) total = total.add(prices.getOrDefault(TiffinMealType.BREAKFAST, BigDecimal.ZERO));
-        if (sub.isHasLunch())     total = total.add(prices.getOrDefault(TiffinMealType.LUNCH,     BigDecimal.ZERO));
-        if (sub.isHasDinner())    total = total.add(prices.getOrDefault(TiffinMealType.DINNER,    BigDecimal.ZERO));
+        if (sub.isHasBreakfast()) total = total.add(standardPrices.getOrDefault(TiffinMealType.BREAKFAST, BigDecimal.ZERO));
+        if (sub.isHasLunch())     total = total.add(standardPrices.getOrDefault(TiffinMealType.LUNCH,     BigDecimal.ZERO));
+        if (sub.isHasDinner())    total = total.add(standardPrices.getOrDefault(TiffinMealType.DINNER,    BigDecimal.ZERO));
         return total;
     }
 
@@ -166,13 +185,7 @@ public class TiffinService {
                 List.of(TiffinStatus.ACTIVE));
         Map<TiffinMealType, BigDecimal> prices = getPricingByType();
         return active.stream()
-                .map(sub -> {
-                    BigDecimal total = BigDecimal.ZERO;
-                    if (sub.isHasBreakfast()) total = total.add(prices.getOrDefault(TiffinMealType.BREAKFAST, BigDecimal.ZERO));
-                    if (sub.isHasLunch())     total = total.add(prices.getOrDefault(TiffinMealType.LUNCH,     BigDecimal.ZERO));
-                    if (sub.isHasDinner())    total = total.add(prices.getOrDefault(TiffinMealType.DINNER,    BigDecimal.ZERO));
-                    return total;
-                })
+                .map(sub -> calculateMonthlyPrice(sub, prices))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

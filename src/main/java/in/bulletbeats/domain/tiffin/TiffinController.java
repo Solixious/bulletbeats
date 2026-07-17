@@ -3,6 +3,7 @@ package in.bulletbeats.domain.tiffin;
 import in.bulletbeats.domain.crm.entity.Customer;
 import in.bulletbeats.domain.crm.service.CustomerService;
 import in.bulletbeats.domain.tiffin.dto.TiffinPauseDto;
+import in.bulletbeats.domain.tiffin.dto.TiffinPricingOverrideDto;
 import in.bulletbeats.domain.tiffin.dto.TiffinSubscriptionDto;
 import in.bulletbeats.domain.tiffin.entity.TiffinSubscription;
 import in.bulletbeats.domain.tiffin.service.TiffinService;
@@ -103,6 +104,12 @@ public class TiffinController {
         model.addAttribute("pauses", tiffinService.getPausesForSubscription(id));
         model.addAttribute("pauseDto", new TiffinPauseDto());
         model.addAttribute("monthlyPrice", tiffinService.calculateMonthlyPrice(sub));
+
+        TiffinPricingOverrideDto pricingDto = new TiffinPricingOverrideDto();
+        pricingDto.setCustomMonthlyPrice(sub.getCustomMonthlyPrice());
+        pricingDto.setDeliveryCharge(sub.getDeliveryCharge());
+        model.addAttribute("pricingDto", pricingDto);
+
         return "tiffin/detail";
     }
 
@@ -182,5 +189,24 @@ public class TiffinController {
         tiffinService.cancel(id);
         ra.addFlashAttribute("success", "Subscription cancelled");
         return "redirect:/tiffin";
+    }
+
+    @PostMapping("/{id}/pricing")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public String updatePricing(@PathVariable Long id,
+                                @Valid @ModelAttribute("pricingDto") TiffinPricingOverrideDto dto,
+                                BindingResult result,
+                                RedirectAttributes ra,
+                                Model model) {
+        if (result.hasErrors()) {
+            model.addAttribute("subscription", tiffinService.getById(id));
+            model.addAttribute("pauses", tiffinService.getPausesForSubscription(id));
+            model.addAttribute("pauseDto", new TiffinPauseDto());
+            model.addAttribute("monthlyPrice", tiffinService.calculateMonthlyPrice(tiffinService.getById(id)));
+            return "tiffin/detail";
+        }
+        tiffinService.updatePricingOverride(id, dto);
+        ra.addFlashAttribute("success", "Pricing updated");
+        return "redirect:/tiffin/" + id;
     }
 }

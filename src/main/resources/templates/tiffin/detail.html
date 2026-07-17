@@ -82,7 +82,13 @@
       <p class="text-ivory text-xl font-heading tracking-wide">
         ₹<span th:text="${#numbers.formatDecimal(monthlyPrice, 1, 'COMMA', 0, 'POINT')}"></span>
       </p>
-      <p class="text-sand text-xs mt-0.5">per month</p>
+      <p class="text-sand text-xs mt-0.5">
+        per month
+        <span th:if="${subscription.customMonthlyPrice != null}" class="text-accent">· custom price</span>
+        <span th:if="${subscription.deliveryCharge.signum() > 0}">
+          · ₹<span th:text="${#numbers.formatDecimal(subscription.deliveryCharge, 1, 'COMMA', 0, 'POINT')}"></span> delivery
+        </span>
+      </p>
     </div>
   </div>
 
@@ -128,6 +134,56 @@
                        font-heading tracking-widest text-xs hover:bg-emerald-500/20 transition-all">
           RESUME TIFFIN
         </button>
+      </form>
+    </div>
+
+    <!-- Custom pricing (manager/admin only) -->
+    <div sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+         class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-1">Custom Pricing</p>
+      <p class="text-sand text-sm mb-4">
+        For far-away customers: override the monthly meal price and/or add a delivery charge.
+        Leave price blank to use standard pricing.
+      </p>
+
+      <form th:action="@{/tiffin/{id}/pricing(id=${subscription.id})}"
+            th:object="${pricingDto}"
+            method="post"
+            class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+        <div>
+          <label class="text-sand text-xs uppercase tracking-widest mb-2 block">Custom Monthly Price (₹)</label>
+          <input type="number" step="0.01" min="0"
+                 th:field="*{customMonthlyPrice}"
+                 placeholder="Standard pricing"
+                 class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                        rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                        outline-none transition-all duration-200 focus:shadow-neon-sm"/>
+          <p th:if="${#fields.hasErrors('customMonthlyPrice')}"
+             th:errors="*{customMonthlyPrice}"
+             class="mt-2 text-red-400 text-xs"></p>
+        </div>
+
+        <div>
+          <label class="text-sand text-xs uppercase tracking-widest mb-2 block">Delivery Charge (₹)</label>
+          <input type="number" step="0.01" min="0"
+                 th:field="*{deliveryCharge}"
+                 class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                        rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                        outline-none transition-all duration-200 focus:shadow-neon-sm"/>
+          <p th:if="${#fields.hasErrors('deliveryCharge')}"
+             th:errors="*{deliveryCharge}"
+             class="mt-2 text-red-400 text-xs"></p>
+        </div>
+
+        <div class="sm:col-span-2">
+          <button type="submit"
+                  class="px-5 py-2 rounded-lg bg-accent/10 border border-accent/30 text-accent
+                         font-heading tracking-widest text-xs hover:bg-accent/20 transition-all">
+            SAVE PRICING
+          </button>
+        </div>
       </form>
     </div>
 

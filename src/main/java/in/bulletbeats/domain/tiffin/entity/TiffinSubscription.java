@@ -6,6 +6,7 @@ import in.bulletbeats.domain.tiffin.TiffinStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -47,4 +48,13 @@ public class TiffinSubscription extends BaseEntity {
 
     @Column(nullable = false)
     private LocalDate startDate;
+
+    // Overrides the standard meal-price sum for this customer (e.g. a negotiated rate for a far-away customer). Null means use standard pricing.
+    @Column(name = "custom_monthly_price", precision = 10, scale = 2)
+    private BigDecimal customMonthlyPrice;
+
+    // Flat extra charge added on top of the (standard or custom) meal price, e.g. for far-away delivery.
+    @Column(name = "delivery_charge", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal deliveryCharge = BigDecimal.ZERO;
 }
