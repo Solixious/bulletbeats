@@ -92,6 +92,19 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
             """)
     long getBillCountForRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    @Query(value = """
+            SELECT
+              DATE(b.created_at) AS billDate,
+              SUM(b.total_amount) AS revenue
+            FROM bills b
+            WHERE b.status = 'PAID'
+            AND b.created_at >= :from
+            AND b.created_at < :to
+            GROUP BY DATE(b.created_at)
+            ORDER BY billDate
+            """, nativeQuery = true)
+    List<Object[]> getDailyRevenueForRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
     @Query("""
             SELECT COUNT(b)
             FROM Bill b

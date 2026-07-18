@@ -5,6 +5,7 @@ import in.bulletbeats.domain.billing.entity.CafeTable;
 import in.bulletbeats.domain.billing.repository.BillItemRepository;
 import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.repository.CafeTableRepository;
+import in.bulletbeats.domain.dashboard.dto.DailyRevenueDto;
 import in.bulletbeats.domain.dashboard.dto.DashboardStatsDto;
 import in.bulletbeats.domain.dashboard.dto.TableStatusDto;
 import in.bulletbeats.domain.dashboard.dto.TopItemDto;
@@ -24,7 +25,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -147,13 +150,34 @@ public class DashboardService {
         BigDecimal tiffinMonthlyRevenue = tiffinService.calculateTotalMonthlyTiffinRevenue();
         long tiffinActiveCount = tiffinService.countActiveSubscriptions();
 
-        // Top items today
-        List<Object[]> rawTop = billItemRepository.findTopItemsForDate(today, 5);
+        // Top items this month
+        List<Object[]> rawTop = billItemRepository.findTopItemsForRange(monthStart, todayEnd, 5);
         List<TopItemDto> topItems = rawTop.stream()
                 .map(row -> new TopItemDto(
                         (String) row[0],
                         ((Number) row[1]).longValue(),
                         (BigDecimal) row[2]))
+                .toList();
+
+        // Daily revenue for the past up to 30 days
+        LocalDate rangeStart = today.minusDays(29);
+        List<Object[]> rawDaily = billRepository.getDailyRevenueForRange(rangeStart.atStartOfDay(), todayEnd);
+        Map<LocalDate, BigDecimal> revenueByDate = new LinkedHashMap<>();
+        rawDaily.forEach(row -> revenueByDate.put(((java.sql.Date) row[0]).toLocalDate(), (BigDecimal) row[1]));
+
+        BigDecimal dailyRevenueMax = revenueByDate.values().stream()
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+        List<DailyRevenueDto> dailyRevenue = rangeStart.datesUntil(today.plusDays(1))
+                .map(date -> {
+                    BigDecimal revenue = revenueByDate.getOrDefault(date, BigDecimal.ZERO);
+                    int barHeightPercent = dailyRevenueMax.signum() == 0
+                            ? 0
+                            : revenue.divide(dailyRevenueMax, 4, RoundingMode.HALF_UP)
+                                    .multiply(BigDecimal.valueOf(100)).intValue();
+                    return new DailyRevenueDto(date, revenue, barHeightPercent);
+                })
                 .toList();
 
         // Low stock + replenishment
@@ -201,7 +225,7 @@ public class DashboardService {
                 vsLastMonthAmount.signum() >= 0,
                 vsLastYearAmount, vsLastYearPercent,
                 vsLastYearAmount.signum() >= 0,
-                topItems,
+                topItems, dailyRevenue,
                 lowStockCount, pendingReplenishmentCount,
                 thisMonthBarWidth, lastMonthBarWidth,
                 thisYearBarWidth, lastYearBarWidth,

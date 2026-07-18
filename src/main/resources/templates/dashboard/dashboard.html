@@ -324,11 +324,44 @@
 
     </div><!-- /Row 2 -->
 
-    <!-- ── Row 3: Top 5 Items Today ──────────────────────────────── -->
+    <!-- ── Row 3: Daily Revenue (past 30 days) ───────────────────── -->
     <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
 
       <div class="flex items-center justify-between mb-5">
-        <h2 class="font-heading text-2xl text-ivory tracking-widest">Top Items Today</h2>
+        <h2 class="font-heading text-2xl text-ivory tracking-widest">Daily Revenue</h2>
+        <p class="text-sand text-xs">Last 30 days</p>
+      </div>
+
+      <!-- Empty state -->
+      <div th:if="${#lists.isEmpty(stats.dailyRevenue)}"
+           class="py-8 text-center text-sand/50 text-sm">
+        No revenue recorded yet.
+      </div>
+
+      <!-- Bar chart -->
+      <div th:unless="${#lists.isEmpty(stats.dailyRevenue)}"
+           class="flex items-end gap-1 h-40">
+        <div th:each="day : ${stats.dailyRevenue}"
+             class="flex-1 h-full flex items-end"
+             th:title="${#temporals.format(day.date, 'd MMM yyyy')} + ': ₹' + ${#numbers.formatDecimal(day.revenue, 1, 'COMMA', 2, 'POINT')}">
+          <div class="w-full rounded-t-sm bg-accent/70 hover:bg-accent transition-all min-h-[2px]"
+               th:style="'height:' + ${day.barHeightPercent} + '%'"></div>
+        </div>
+      </div>
+
+      <div th:unless="${#lists.isEmpty(stats.dailyRevenue)}"
+           class="flex justify-between text-xs text-sand/50 mt-2">
+        <span th:text="${#temporals.format(stats.dailyRevenue[0].date, 'd MMM')}"></span>
+        <span th:text="${#temporals.format(stats.dailyRevenue[stats.dailyRevenue.size() - 1].date, 'd MMM')}"></span>
+      </div>
+
+    </div><!-- /Row 3 -->
+
+    <!-- ── Row 4: Top 5 Items This Month ─────────────────────────── -->
+    <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
+
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-heading text-2xl text-ivory tracking-widest">Top Items This Month</h2>
         <a href="/reports"
            class="text-sand text-xs hover:text-ivory transition-colors">
           View Reports →
@@ -336,23 +369,23 @@
       </div>
 
       <!-- Empty state -->
-      <div th:if="${#lists.isEmpty(stats.topItemsToday)}"
+      <div th:if="${#lists.isEmpty(stats.topItemsThisMonth)}"
            class="py-8 text-center text-sand/50 text-sm">
-        No sales recorded today yet.
+        No sales recorded this month yet.
       </div>
 
       <!-- Top items table -->
-      <table th:unless="${#lists.isEmpty(stats.topItemsToday)}" class="w-full">
+      <table th:unless="${#lists.isEmpty(stats.topItemsThisMonth)}" class="w-full">
         <thead>
           <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
             <th class="pb-3 text-left w-12">Rank</th>
             <th class="pb-3 text-left">Item</th>
-            <th class="pb-3 text-right">Qty Today</th>
+            <th class="pb-3 text-right">Qty This Month</th>
             <th class="pb-3 text-right">Revenue</th>
           </tr>
         </thead>
         <tbody>
-          <tr th:each="item, iterStat : ${stats.topItemsToday}"
+          <tr th:each="item, iterStat : ${stats.topItemsThisMonth}"
               class="border-b border-elevated/30 last:border-0">
             <td class="py-3 pr-4">
               <span class="font-heading text-xl"
@@ -365,18 +398,18 @@
               <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
             </td>
             <td class="py-3 text-right">
-              <span class="font-heading text-2xl text-accent" th:text="${item.quantityToday}"></span>
+              <span class="font-heading text-2xl text-accent" th:text="${item.quantity}"></span>
             </td>
             <td class="py-3 text-right">
               <span class="text-ivory text-sm"
-                    th:text="'₹' + ${#numbers.formatDecimal(item.revenueToday, 1, 'COMMA', 2, 'POINT')}">
+                    th:text="'₹' + ${#numbers.formatDecimal(item.revenue, 1, 'COMMA', 2, 'POINT')}">
               </span>
             </td>
           </tr>
         </tbody>
       </table>
 
-    </div><!-- /Row 3 -->
+    </div><!-- /Row 4 -->
 
   </div><!-- /Section A -->
 
