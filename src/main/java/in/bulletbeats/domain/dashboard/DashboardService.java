@@ -163,7 +163,10 @@ public class DashboardService {
         LocalDate rangeStart = today.minusDays(29);
         List<Object[]> rawDaily = billRepository.getDailyRevenueForRange(rangeStart.atStartOfDay(), todayEnd);
         Map<LocalDate, BigDecimal> revenueByDate = new LinkedHashMap<>();
-        rawDaily.forEach(row -> revenueByDate.put(((java.sql.Date) row[0]).toLocalDate(), (BigDecimal) row[1]));
+        rawDaily.forEach(row -> {
+            LocalDate date = row[0] instanceof LocalDate d ? d : ((java.sql.Date) row[0]).toLocalDate();
+            revenueByDate.put(date, (BigDecimal) row[1]);
+        });
 
         BigDecimal dailyRevenueMax = revenueByDate.values().stream()
                 .max(BigDecimal::compareTo)
