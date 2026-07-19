@@ -9,11 +9,13 @@ import java.util.List;
 
 public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.isActive = true " +
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
+           "WHERE m.isActive = true " +
            "ORDER BY m.category.displayOrder ASC, m.displayOrder ASC, m.name ASC")
     List<MenuItem> findByIsActiveTrueOrderByCategoryDisplayOrderAscDisplayOrderAscNameAsc();
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.category.id = :categoryId AND m.isActive = true " +
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
+           "WHERE m.category.id = :categoryId AND m.isActive = true " +
            "ORDER BY m.displayOrder ASC, m.name ASC")
     List<MenuItem> findByCategoryIdAndIsActiveTrueOrderByDisplayOrderAscNameAsc(@Param("categoryId") Long categoryId);
 
@@ -32,7 +34,8 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
     @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.id = :id")
     java.util.Optional<MenuItem> findByIdWithCategory(@Param("id") Long id);
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.isActive = true AND m.isAvailable = true " +
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
+           "WHERE m.isActive = true AND m.isAvailable = true " +
            "ORDER BY m.category.displayOrder ASC, m.displayOrder ASC, m.name ASC")
     List<MenuItem> findAllAvailableOrdered();
 

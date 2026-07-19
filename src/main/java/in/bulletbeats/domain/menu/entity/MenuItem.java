@@ -66,4 +66,11 @@ public class MenuItem extends BaseEntity {
     public MenuItemType getType() {
         return dish != null ? MenuItemType.DISH : MenuItemType.COMBO;
     }
+
+    public String getDescription() {
+        if (dish != null) {
+            return dish.getDescription();
+        }
+        return combo != null ? combo.getDescription() : null;
+    }
 }
