@@ -4,7 +4,7 @@
       th:fragment="shell(title, content)">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <meta name="_csrf"        th:content="${_csrf.token}"/>
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
   <title th:replace="${title}">Bullet Beats Café</title>
@@ -71,7 +71,7 @@
   </script>
 </head>
 
-<body class="bg-base font-body text-ivory h-screen flex overflow-hidden">
+<body class="bg-base font-body text-ivory h-dvh flex overflow-hidden">
 
   <!-- ── Sidebar ────────────────────────────────────────────────── -->
   <aside id="sidebar"
@@ -271,7 +271,7 @@
     </header>
 
     <!-- Page content slot -->
-    <div class="flex-1 overflow-auto">
+    <div class="flex-1 overflow-auto" style="padding-bottom: max(24px, env(safe-area-inset-bottom));">
       <th:block th:replace="${content}"/>
     </div>
 
