@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="_csrf"        th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  <title th:text="${cafeName + ' — Delivery Order'}">Bullet Beats Café</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base:     '#1C1C1C',
+            surface:  '#2A2A2A',
+            elevated: '#333333',
+            accent:   '#00D4FF',
+            ivory:    '#F5F0E8',
+            sand:     '#9A9080',
+          },
+          fontFamily: {
+            heading: ['"Bebas Neue"', 'cursive'],
+            body:    ['Lato', 'sans-serif'],
+          },
+          boxShadow: {
+            neon:      '0 0 24px rgba(0,212,255,0.45), 0 0 48px rgba(0,212,255,0.15)',
+            'neon-sm': '0 0 8px rgba(0,212,255,0.4)',
+          },
+        }
+      }
+    };
+  </script>
+  <script src="/js/htmx.min.js"></script>
+  <script>
+    document.addEventListener('htmx:configRequest', function(e) {
+      var headerMeta = document.querySelector('meta[name="_csrf_header"]');
+      var tokenMeta  = document.querySelector('meta[name="_csrf"]');
+      if (headerMeta && tokenMeta && headerMeta.content && tokenMeta.content) {
+        e.detail.headers[headerMeta.content] = tokenMeta.content;
+      }
+    });
+    document.addEventListener('htmx:responseError', function(e) {
+      console.error('HTMX response error', e.detail.xhr.status, e.detail.xhr.responseURL);
+    });
+  </script>
+  <style>
+    #order-panel-wrap { transition: transform 0.3s ease; }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tabs { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-base font-body text-ivory min-h-screen" style="padding-bottom: 80px;">
+
+  <!-- ── Promoted item splash overlay (only while still browsing/DRAFT) ─── -->
+  <div th:if="${promotedItem != null}" id="promo-overlay"
+       class="fixed inset-0 z-[200] flex items-center justify-center p-5"
+       style="background: rgba(0,0,0,0.88); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);">
+    <div class="relative max-w-sm w-full bg-surface rounded-2xl overflow-hidden shadow-2xl border border-elevated/60">
+
+      <div class="relative w-full" style="height: 240px;">
+        <img th:if="${promotedItem.imagePath != null}"
+             th:src="${promotedItem.imagePath + '?v=' + promotedItem.imageVersion}"
+             alt=""
+             class="w-full h-full object-cover"/>
+        <div th:unless="${promotedItem.imagePath != null}"
+             class="w-full h-full bg-elevated flex items-center justify-center text-7xl">
+          ☕
+        </div>
+        <div class="absolute inset-0 flex flex-col justify-end"
+             style="background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 55%, transparent 100%);">
+          <p th:if="${promotedItem.promotionText != null and !#strings.isEmpty(promotedItem.promotionText)}"
+             class="font-heading text-4xl text-ivory tracking-wide leading-tight px-5 pb-4"
+             th:text="${promotedItem.promotionText}"></p>
+        </div>
+      </div>
+
+      <div class="px-5 py-4 flex items-center justify-between gap-4">
+        <div class="min-w-0">
+          <p class="text-ivory font-bold text-base leading-tight truncate"
+             th:text="${promotedItem.name}">Item</p>
+          <p class="text-accent font-heading text-xl mt-0.5"
+             th:text="'₹' + ${#numbers.formatDecimal(promotedItem.price, 1, 2)}">₹0</p>
+        </div>
+        <form th:attr="hx-post=@{/order/{id}/items(id=${billId})}"
+              hx-target="#order-panel"
+              hx-swap="innerHTML"
+              style="display:inline">
+          <input type="hidden" name="menuItemId"   th:value="${promotedItem.id}"/>
+          <input type="hidden" name="quantity"     value="1"/>
+          <input type="hidden" name="customerName" th:value="${customerName}"/>
+          <button type="submit" id="promo-add-btn"
+                  class="flex-shrink-0 px-5 py-2.5 rounded-xl bg-accent font-heading
+                         tracking-widest text-sm hover:shadow-neon hover:brightness-110
+                         transition-all duration-200 active:scale-95">
+            + Add
+          </button>
+        </form>
+      </div>
+      <button onclick="dismissPromo()"
+              class="absolute top-3 right-3 w-7 h-7 rounded-full bg-black/50 text-white/70
+                     hover:text-white flex items-center justify-center text-base leading-none">×</button>
+
+    </div>
+  </div>
+  <script th:if="${promotedItem != null}">
+    function dismissPromo() {
+      var el = document.getElementById('promo-overlay');
+      if (!el) return;
+      el.style.transition = 'opacity 0.25s ease';
+      el.style.opacity = '0';
+      setTimeout(function () { el.remove(); }, 260);
+    }
+    document.getElementById('promo-overlay').addEventListener('click', function (e) {
+      if (e.target === this) dismissPromo();
+    });
+    document.getElementById('promo-add-btn').addEventListener('click', function () {
+      setTimeout(dismissPromo, 200);
+    });
+  </script>
+
+  <!-- ── Fixed top bar ──────────────────────────────────────────────── -->
+  <header class="fixed top-0 left-0 right-0 z-50 h-14 bg-surface border-b border-elevated/60
+                 flex items-center px-4 gap-3">
+    <span class="font-heading text-accent text-xl tracking-widest leading-none flex-shrink-0">🛵</span>
+    <span class="font-heading text-accent text-lg tracking-widest leading-none flex-shrink-0"
+          th:text="${cafeName}">Bullet Beats</span>
+    <span class="flex-1 text-center text-ivory text-sm truncate"
+          th:text="${menuDto.deliveryAddress}">Delivery address</span>
+    <span th:if="${customerName != null and customerName != 'Guest'}"
+          class="flex-shrink-0 text-accent text-xs font-bold"
+          th:text="'👋 ' + ${customerName}">Guest</span>
+  </header>
+
+  <!-- ── Category tabs (sticky below topbar) — hidden once locked ─────── -->
+  <div th:unless="${locked}" class="fixed top-14 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
+    <div id="delivery-cat-scroll" class="cat-tabs overflow-x-auto flex items-center gap-1 px-3 py-2">
+      <button id="tab-all"
+              class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold
+                     bg-accent text-base transition-all"
+              th:attr="hx-get=@{/order/{id}/menu-items(id=${billId},customerName=${customerName})}"
+              hx-target="#menu-grid"
+              hx-swap="innerHTML"
+              onclick="setActiveTab(this)">
+        All
+      </button>
+      <button th:each="dto : ${menuDto.categories}"
+              th:id="'tab-' + ${dto.category.id}"
+              class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm border border-elevated/60
+                     text-sand hover:text-ivory hover:border-accent/40 transition-all"
+              th:attr="hx-get=@{/order/{id}/menu-items(id=${billId},categoryId=${dto.category.id},customerName=${customerName})}"
+              hx-target="#menu-grid"
+              hx-swap="innerHTML"
+              th:onclick="'setActiveTab(this)'"
+              th:text="${dto.category.name}">
+        Category
+      </button>
+    </div>
+    <div id="delivery-cat-hint"
+         class="pointer-events-none absolute right-0 top-0 bottom-0 flex items-center justify-end pr-2"
+         style="background: linear-gradient(to right, transparent, #1C1C1C 60%); padding-left: 2.5rem;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="#00D4FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+           style="opacity:0.8">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ── Menu grid ──────────────────────────────────────────────────── -->
+  <div id="menu-grid" th:class="${locked} ? 'px-4 pt-20 pb-4' : 'px-4 pt-32 pb-4'">
+    <th:block th:each="dto : ${menuDto.categories}">
+      <div th:unless="${#lists.isEmpty(dto.items)}" class="mb-6">
+        <h3 class="font-heading text-xl text-sand tracking-widest mb-3 uppercase"
+            th:text="${dto.category.name}">Category</h3>
+        <div class="space-y-3">
+          <th:block th:each="item : ${dto.items}">
+            <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked})}"/>
+          </th:block>
+        </div>
+      </div>
+    </th:block>
+  </div>
+
+  <!-- ── Order panel wrapper (fixed bottom, always present) ─────────── -->
+  <div class="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom" id="order-panel-wrap">
+    <div id="order-panel">
+      <th:block th:replace="~{delivery/fragments/order-panel :: order-panel}"/>
+    </div>
+  </div>
+
+  <!-- ── Image lightbox ─────────────────────────────────────────────── -->
+  <div id="lightbox"
+       class="fixed inset-0 z-[100] bg-black/90 items-center justify-center p-4"
+       style="display:none"
+       onclick="closeLightbox()">
+    <img id="lightbox-img" src="" alt="Menu item"
+         class="max-w-full max-h-full object-contain rounded-xl"/>
+    <button class="absolute top-4 right-4 text-white/60 hover:text-white text-3xl leading-none"
+            onclick="closeLightbox()">×</button>
+  </div>
+
+  <script>
+    function setActiveTab(el) {
+      document.querySelectorAll('.cat-tab').forEach(t => {
+        t.classList.remove('bg-accent', 'text-base', 'font-bold');
+        t.classList.add('border', 'border-elevated/60', 'text-sand');
+      });
+      el.classList.add('bg-accent', 'text-base', 'font-bold');
+      el.classList.remove('border', 'border-elevated/60', 'text-sand');
+    }
+
+    (function() {
+      var scroll = document.getElementById('delivery-cat-scroll');
+      var hint   = document.getElementById('delivery-cat-hint');
+      if (!scroll || !hint) return;
+      function updateHint() {
+        var atEnd = scroll.scrollLeft + scroll.clientWidth >= scroll.scrollWidth - 4;
+        hint.style.display = atEnd ? 'none' : 'flex';
+      }
+      scroll.addEventListener('scroll', updateHint, { passive: true });
+      updateHint();
+    })();
+
+    function openLightbox(src) {
+      document.getElementById('lightbox-img').src = src;
+      document.getElementById('lightbox').style.display = 'flex';
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').style.display = 'none';
+    }
+
+    // Preserve bottom-sheet open state across order-panel HTMX swaps.
+    var _panelWasOpen = false;
+    document.addEventListener('htmx:beforeRequest', function(e) {
+      if (e.detail.target && e.detail.target.id === 'order-panel') {
+        var body = document.getElementById('panel-body');
+        _panelWasOpen = body && !body.classList.contains('hidden');
+      }
+    });
+    document.addEventListener('htmx:afterSettle', function(e) {
+      if (e.detail.target && e.detail.target.id === 'order-panel' && _panelWasOpen) {
+        var body = document.getElementById('panel-body');
+        var chev = document.getElementById('panel-chevron');
+        if (body) body.classList.remove('hidden');
+        if (chev) chev.classList.add('rotate-180');
+        _panelWasOpen = false;
+      }
+    });
+  </script>
+
+</body>
+</html>

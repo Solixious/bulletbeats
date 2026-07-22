@@ -91,7 +91,7 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/login", "/setup", "/error",
                         "/css/**", "/js/**", "/images/**", "/webjars/**",
-                        "/qr/**", "/public/**", "/webhook/**"
+                        "/qr/**", "/public/**", "/order/**", "/webhook/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

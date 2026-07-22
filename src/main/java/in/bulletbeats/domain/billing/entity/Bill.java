@@ -43,6 +43,9 @@ public class Bill extends BaseEntity {
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
+    @Column(columnDefinition = "TEXT")
+    private String deliveryAddress;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default

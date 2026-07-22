@@ -52,6 +52,10 @@
         Direct Delivery
       </span>
     </div>
+    <p th:if="${bill.deliveryAddress != null and !#strings.isEmpty(bill.deliveryAddress)}"
+       class="text-sand text-xs mt-1" th:text="'📍 ' + ${bill.deliveryAddress}">
+      Delivery address
+    </p>
     <!-- Customer row — non-DRAFT (managers can edit retroactively) -->
     <div th:unless="${bill.status.name() == 'DRAFT'}" class="mt-1">
       <!-- Customer is set -->

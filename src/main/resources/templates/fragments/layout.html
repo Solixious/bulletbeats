@@ -200,6 +200,11 @@
              class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
             <span class="text-base">🪑</span> Tables
           </a>
+          <a href="/admin/delivery"
+             th:classappend="${uri.startsWith('/admin/delivery')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">🛵</span> Delivery QR
+          </a>
           <a href="/admin/settings"
              th:classappend="${uri.startsWith('/admin/settings')} ? ${activeClass} : ${inactiveClass}"
              class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
