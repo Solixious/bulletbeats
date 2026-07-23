@@ -460,6 +460,15 @@ public class BillingController {
         return "redirect:/bills?cancelled";
     }
 
+    // ── Delete (Admin only) ───────────────────────────────────────────────
+
+    @PostMapping("/{id}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String deleteBill(@PathVariable Long id, Authentication auth) {
+        billingService.deleteBill(id, currentUserId(auth));
+        return "redirect:/bills/history?deleted";
+    }
+
     // ── WhatsApp (HTMX) ───────────────────────────────────────────────────
 
     @PostMapping("/{id}/whatsapp-send")

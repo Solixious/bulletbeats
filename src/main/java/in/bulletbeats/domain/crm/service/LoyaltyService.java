@@ -56,6 +56,11 @@ public class LoyaltyService {
         return customerService.getById(customerId).getLoyaltyPoints();
     }
 
+    @Transactional
+    public void clearBillReference(Long billId) {
+        jdbcTemplate.update("UPDATE loyalty_transactions SET bill_id = NULL WHERE bill_id = ?", billId);
+    }
+
     private BigDecimal readEarnRate() {
         try {
             String value = jdbcTemplate.queryForObject(

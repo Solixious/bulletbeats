@@ -500,6 +500,22 @@ public class BillingService {
     }
 
     @Transactional
+    public void deleteBill(Long billId, Long userId) {
+        Bill bill = getBillById(billId);
+        if (!TERMINAL.contains(bill.getStatus())) {
+            throw new BillNotEditableException(
+                    "Only paid or cancelled bills can be deleted — cancel this bill first");
+        }
+
+        String staffName = userService.getUserById(userId).getUsername();
+        log.info("Bill {} (id={}) deleted by {}", bill.getBillNumber(), billId, staffName);
+
+        loyaltyService.clearBillReference(billId);
+        paymentRepository.findByBillId(billId).ifPresent(paymentRepository::delete);
+        billRepository.delete(bill);
+    }
+
+    @Transactional
     public Bill applyStudentDiscount(Long billId, Long appliedByUserId) {
         Bill bill = getBillById(billId);
         if (bill.getStatus() != BillStatus.DRAFT) {
