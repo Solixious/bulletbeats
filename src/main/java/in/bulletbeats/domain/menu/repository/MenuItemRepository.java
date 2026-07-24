@@ -23,15 +23,17 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
     List<MenuItem> findByComboId(Long comboId);
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category " +
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
            "ORDER BY m.category.displayOrder ASC, m.displayOrder ASC, m.name ASC")
     List<MenuItem> findAllWithCategoryOrdered();
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.category.id = :categoryId " +
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
+           "WHERE m.category.id = :categoryId " +
            "ORDER BY m.displayOrder ASC, m.name ASC")
     List<MenuItem> findAllByCategoryIdWithCategoryOrdered(@Param("categoryId") Long categoryId);
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.id = :id")
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
+           "WHERE m.id = :id")
     java.util.Optional<MenuItem> findByIdWithCategory(@Param("id") Long id);
 
     @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
