@@ -105,7 +105,7 @@ public class SecurityConfig {
             )
             .rememberMe(remember -> remember
                 .tokenRepository(persistentTokenRepository())
-                .tokenValiditySeconds(604800)
+                .tokenValiditySeconds(Integer.MAX_VALUE)
                 .rememberMeParameter("remember-me")
                 .userDetailsService(userService)
             )
