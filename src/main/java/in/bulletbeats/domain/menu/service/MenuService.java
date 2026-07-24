@@ -90,6 +90,8 @@ public class MenuService {
             imageVersion = System.currentTimeMillis();
         }
 
+        applyDescription(dish, combo, dto.getDescription());
+
         MenuItem item = MenuItem.builder()
                 .name(dto.getName())
                 .category(category)
@@ -134,6 +136,8 @@ public class MenuService {
             item.setImageVersion(System.currentTimeMillis());
         }
 
+        applyDescription(dish, combo, dto.getDescription());
+
         item.setName(dto.getName());
         item.setCategory(category);
         item.setDish(dish);
@@ -141,6 +145,19 @@ public class MenuService {
         item.setPrice(dto.getPrice());
         item.setDisplayOrder(dto.getDisplayOrder());
         return menuItemRepository.save(item);
+    }
+
+    private void applyDescription(Dish dish, Combo combo, String description) {
+        if (description == null || description.isBlank()) {
+            return;
+        }
+        if (dish != null) {
+            dish.setDescription(description);
+            dishRepository.save(dish);
+        } else if (combo != null) {
+            combo.setDescription(description);
+            comboRepository.save(combo);
+        }
     }
 
     @Transactional

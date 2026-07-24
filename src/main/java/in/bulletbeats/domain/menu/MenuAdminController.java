@@ -144,6 +144,7 @@ public class MenuAdminController {
         dto.setCategoryId(item.getCategory().getId());
         dto.setDishId(item.getDish() != null ? item.getDish().getId() : null);
         dto.setComboId(item.getCombo() != null ? item.getCombo().getId() : null);
+        dto.setDescription(item.getDescription());
         dto.setPrice(item.getPrice());
         dto.setDisplayOrder(item.getDisplayOrder());
         model.addAttribute("dto", dto);

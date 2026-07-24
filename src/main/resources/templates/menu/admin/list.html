@@ -136,6 +136,9 @@
                       class="px-1.5 py-0.5 text-xs border rounded-full font-bold uppercase
                              text-accent border-accent/40 bg-accent/10 flex-shrink-0">★ Promo</span>
               </div>
+              <p th:if="${item.description != null and !#strings.isEmpty(item.description)}"
+                 class="text-sand text-xs italic mt-0.5 truncate max-w-xs"
+                 th:text="${item.description}">Description</p>
             </td>
 
             <td class="px-4 py-3">

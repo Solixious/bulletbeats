@@ -19,6 +19,8 @@ public class CreateMenuItemDto {
     @NotNull
     private Long categoryId;
 
+    private String description;
+
     private Long dishId;
 
     private Long comboId;

@@ -44,6 +44,19 @@
            class="mt-1.5 text-red-400 text-xs"></p>
       </div>
 
+      <!-- Description -->
+      <div>
+        <label for="description" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Description <span class="text-sand/40 normal-case">(optional)</span>
+        </label>
+        <textarea id="description" th:field="*{description}" rows="2"
+                  class="w-full bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                         outline-none transition-all duration-200 focus:shadow-neon-sm resize-none"
+                  placeholder="Shown to customers on the menu"></textarea>
+        <p class="mt-1 text-sand/50 text-xs">Shared with the underlying dish/combo record.</p>
+      </div>
+
       <!-- Category -->
       <div>
         <label for="categoryId" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Category</label>

@@ -27,6 +27,8 @@
       <div>
         <h1 class="font-heading text-3xl text-ivory tracking-wide" th:text="${item.name}">Item</h1>
         <p class="text-sand text-sm mt-0.5" th:text="${item.category.name}"></p>
+        <p th:if="${item.description != null and !#strings.isEmpty(item.description)}"
+           class="text-sand text-sm italic mt-1 max-w-md" th:text="${item.description}">Description</p>
       </div>
       <!-- Type badge -->
       <span th:if="${item.type.name() == 'DISH'}"
