@@ -27,7 +27,7 @@
                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                  th:alt="${item.name}"/>
           </div>
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-2">
             <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
             <p class="text-ivory text-xs font-medium leading-tight" th:text="${item.name}"></p>
           </div>
@@ -46,7 +46,7 @@
                class="w-full h-full object-cover grayscale"
                th:alt="${item.name}"/>
         </div>
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-2">
           <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
           <p class="text-sand text-xs font-medium leading-tight" th:text="${item.name}"></p>
         </div>

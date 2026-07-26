@@ -98,7 +98,7 @@
                 <div th:each="item : ${catItems}"
                      th:classappend="${!item.available} ? 'opacity-50' : ''"
                      class="bg-surface rounded-xl border border-elevated/60 px-5 py-4
-                            flex items-center gap-4">
+                            flex items-start gap-4">
                   <img th:if="${item.imagePath != null}"
                        th:src="${(item.thumbnailPath != null ? item.thumbnailPath : item.imagePath) + '?v=' + item.imageVersion}"
                        th:attr="data-full=${item.imagePath + '?v=' + item.imageVersion}"
@@ -109,7 +109,7 @@
                        class="w-14 h-14 rounded-lg bg-elevated border border-elevated/60
                               flex items-center justify-center text-2xl flex-shrink-0">☕</div>
                   <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-2">
                       <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
                       <p class="text-ivory font-medium text-sm leading-tight" th:text="${item.name}">Item</p>
                       <span th:if="${item.quantityLabel != null and !#strings.isEmpty(item.quantityLabel)}"
@@ -135,7 +135,7 @@
           <div th:each="item : ${items}"
                th:classappend="${!item.available} ? 'opacity-50' : ''"
                class="bg-surface rounded-xl border border-elevated/60 px-5 py-4
-                      flex items-center gap-4">
+                      flex items-start gap-4">
             <img th:if="${item.imagePath != null}"
                  th:src="${(item.thumbnailPath != null ? item.thumbnailPath : item.imagePath) + '?v=' + item.imageVersion}"
                  th:attr="data-full=${item.imagePath + '?v=' + item.imageVersion}"
@@ -146,7 +146,7 @@
                  class="w-14 h-14 rounded-lg bg-elevated border border-elevated/60
                         flex items-center justify-center text-2xl flex-shrink-0">☕</div>
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-1.5">
+              <div class="flex items-center gap-2">
                 <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
                 <p class="text-ivory font-medium text-sm leading-tight" th:text="${item.name}">Item</p>
                 <span th:if="${item.quantityLabel != null and !#strings.isEmpty(item.quantityLabel)}"

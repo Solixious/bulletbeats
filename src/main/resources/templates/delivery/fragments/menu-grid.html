@@ -43,21 +43,23 @@
     <!-- Info -->
     <div class="flex-1 flex flex-col justify-between min-w-0">
       <div>
-        <div class="flex items-center gap-1.5 min-w-0">
-          <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
-          <p class="font-bold text-ivory text-sm leading-tight truncate" th:text="${item.name}">Item</p>
-          <span th:if="${item.quantityLabel != null and !#strings.isEmpty(item.quantityLabel)}"
-                class="px-1.5 py-0.5 text-[10px] rounded-full border border-sand/30
-                       text-sand bg-sand/10 flex-shrink-0" th:text="${item.quantityLabel}"></span>
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
+            <p class="font-bold text-ivory text-sm leading-tight truncate" th:text="${item.name}">Item</p>
+            <span th:if="${item.quantityLabel != null and !#strings.isEmpty(item.quantityLabel)}"
+                  class="px-1.5 py-0.5 text-[10px] rounded-full border border-sand/30
+                         text-sand bg-sand/10 flex-shrink-0" th:text="${item.quantityLabel}"></span>
+          </div>
+          <span class="font-heading text-accent text-xl tracking-wide flex-shrink-0"
+                th:text="'₹' + ${item.price}">₹0</span>
         </div>
         <p th:if="${item.description != null and !#strings.isEmpty(item.description)}"
            class="text-sand text-xs leading-snug mt-0.5 line-clamp-2" th:text="${item.description}">Description</p>
         <p th:unless="${item.available}"
            class="text-xs text-amber-400/80 mt-0.5">Currently Unavailable</p>
       </div>
-      <div class="flex items-end justify-between mt-1">
-        <span class="font-heading text-accent text-xl tracking-wide"
-              th:text="'₹' + ${item.price}">₹0</span>
+      <div class="flex items-center justify-end gap-2 mt-1">
 
         <!-- Locked: static quantity badge only -->
         <span th:if="${locked and cartQty != null and cartQty > 0}"
