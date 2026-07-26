@@ -232,6 +232,22 @@
       document.getElementById('lightbox').style.display = 'none';
     }
 
+    // Expandable descriptions ("Show more" / "Show less")
+    function toggleDesc(btn) {
+      var p = btn.previousElementSibling;
+      var stillClamped = p.classList.toggle('line-clamp-2');
+      btn.textContent = stillClamped ? 'Show more' : 'Show less';
+    }
+    function initDescToggles() {
+      document.querySelectorAll('.desc-toggle').forEach(function (btn) {
+        var p = btn.previousElementSibling;
+        if (!p) return;
+        btn.classList.toggle('hidden', p.scrollHeight <= p.clientHeight + 1);
+      });
+    }
+    document.addEventListener('DOMContentLoaded', initDescToggles);
+    document.addEventListener('htmx:afterSettle', initDescToggles);
+
     // Preserve bottom-sheet open state across order-panel HTMX swaps.
     var _panelWasOpen = false;
     document.addEventListener('htmx:beforeRequest', function(e) {
