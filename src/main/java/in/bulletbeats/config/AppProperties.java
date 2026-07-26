@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class AppProperties {
 
     private String baseUrl = "http://localhost:8080";
-    private int maxImageSizeMb = 2;
+    private int maxImageSizeMb = 12;
     private RateLimit rateLimit = new RateLimit();
 
     @Getter

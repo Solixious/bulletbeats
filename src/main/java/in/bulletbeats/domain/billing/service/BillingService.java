@@ -581,9 +581,6 @@ public class BillingService {
         Bill bill = getBillById(billId);
 
         String customerName = bill.getCustomer() != null ? bill.getCustomer().getName() : "there";
-        String location = bill.getCafeTable() != null
-                ? bill.getCafeTable().getName()
-                : bill.getOrderType().getDisplayName();
         String date = bill.getCreatedAt() != null
                 ? bill.getCreatedAt().format(DISPLAY_FMT)
                 : "";
@@ -599,12 +596,11 @@ public class BillingService {
 
         StringBuilder sb = new StringBuilder();
         sb.append("Hi ").append(customerName)
-          .append(", thank you for dining with us. Here is the summary of your bill from Bullet Beats Cafe.\n\n");
+          .append(". Here is the summary of your bill from Bullet Beats Cafe.\n\n");
 
         sb.append("*Invoice Details*\n");
         sb.append("• Bill Number: #").append(bill.getBillNumber()).append("\n");
-        sb.append("• Date of Issue: ").append(date).append("\n");
-        sb.append("• Table Assignment: ").append(location).append("\n\n");
+        sb.append("• Date of Issue: ").append(date).append("\n\n");
 
         sb.append("*Order Summary*\n");
         sb.append("Your ordered items include: ").append(itemsSummary).append("\n\n");
@@ -614,7 +610,7 @@ public class BillingService {
           .append(bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP)).append("\n");
         sb.append("• Payment Method: ").append(paidVia).append("\n\n");
 
-        sb.append("If you have any questions about this receipt, please reply directly to this message.");
+        sb.append("Have a wonderful day!");
         return sb.toString();
     }
 
@@ -630,10 +626,6 @@ public class BillingService {
         NotificationChannel channel = bill.getCustomer().getNotificationPreference() != null
                 ? bill.getCustomer().getNotificationPreference()
                 : NotificationChannel.WHATSAPP;
-
-        String location = bill.getCafeTable() != null
-                ? bill.getCafeTable().getName()
-                : bill.getOrderType().getDisplayName();
 
         String date = bill.getCreatedAt() != null
                 ? bill.getCreatedAt().format(DISPLAY_FMT)
@@ -656,7 +648,6 @@ public class BillingService {
                 bill.getCustomer().getName(),
                 bill.getBillNumber(),
                 date,
-                location,
                 itemsSummary,
                 total,
                 paidVia,
