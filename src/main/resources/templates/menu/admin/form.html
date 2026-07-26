@@ -164,7 +164,7 @@
       <!-- Image upload -->
       <div>
         <label for="image" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
-          Image <span class="text-sand/40 normal-case">(jpg / png / webp, max 2 MB)</span>
+          Image <span class="text-sand/40 normal-case">(jpg / png / webp, max 12 MB)</span>
         </label>
         <div th:if="${mode == 'edit' and item.imagePath != null}"
              class="mb-2 flex items-center gap-3">
@@ -180,7 +180,7 @@
                       hover:file:border-ivory/40 hover:file:text-ivory transition-colors"
                onchange="checkImageSize(this)"/>
         <p id="image-size-error" class="mt-1.5 text-red-400 text-xs hidden">
-          Image must be 2 MB or smaller.
+          Image must be 12 MB or smaller.
         </p>
         <p th:if="${imageError}" th:text="${imageError}"
            class="mt-1.5 text-red-400 text-xs"></p>
@@ -210,7 +210,7 @@
     }
     function checkImageSize(input) {
       var err = document.getElementById('image-size-error');
-      var tooBig = input.files.length > 0 && input.files[0].size > 2 * 1024 * 1024;
+      var tooBig = input.files.length > 0 && input.files[0].size > 12 * 1024 * 1024;
       err.classList.toggle('hidden', !tooBig);
       input.closest('form').querySelector('[type="submit"]').disabled = tooBig;
     }

@@ -56,8 +56,8 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 5MB
-      max-request-size: 10MB
+      max-file-size: 12MB
+      max-request-size: 15MB
 
 # ── Server ───────────────────────────────────────────────────
 server:
@@ -83,7 +83,7 @@ supabase:
 # ── App custom config ────────────────────────────────────────
 app:
   base-url: ${APP_BASE_URL:http://localhost:8080}
-  max-image-size-mb: 2
+  max-image-size-mb: 12
   rate-limit:
     login-max-attempts: 5
     login-lockout-minutes: 15
