@@ -27,7 +27,7 @@ public class NotificationService {
     void initTwilio() {
         if (isConfigured()) {
             Twilio.init(properties.getAccountSid(), properties.getAuthToken());
-            log.info("Twilio initialized (template={})", hasTemplate() ? properties.getContentSid() : "none");
+            log.info("Twilio initialized (templates configured={})", properties.getTemplates().keySet());
         }
     }
 
@@ -39,14 +39,14 @@ public class NotificationService {
         return hasText(properties.getAccountSid()) && hasText(properties.getAuthToken());
     }
 
-    public boolean hasTemplate() {
-        return hasText(properties.getContentSid());
+    public boolean hasTemplate(WhatsappTemplate template) {
+        return hasText(properties.getTemplateSid(template));
     }
 
     /**
-     * Auto-send on payment — silent, checks the notification.enabled flag.
+     * Auto-send on trigger (e.g. payment) — silent, checks the notification.enabled flag.
      */
-    public void sendBillNotification(BillNotificationData data) {
+    public void send(WhatsappTemplate template, TemplateNotification data) {
         if (!isEnabled()) {
             log.debug("Notification skipped — notification.enabled is false");
             return;
@@ -56,10 +56,10 @@ public class NotificationService {
             return;
         }
         try {
-            dispatchBill(data);
+            dispatch(template, data);
         } catch (Exception e) {
-            log.error("Failed to send {} bill notification to {}: {}",
-                    data.channel(), data.toPhone(), e.getMessage());
+            log.error("Failed to send {} {} notification to {}: {}",
+                    data.channel(), template, data.toPhone(), e.getMessage());
         }
     }
 
@@ -67,18 +67,18 @@ public class NotificationService {
      * Explicit manual send (staff-triggered button) — throws on any error,
      * bypasses the notification.enabled flag, still requires configuration.
      */
-    public void sendBillNotificationNow(BillNotificationData data) {
+    public void sendNow(WhatsappTemplate template, TemplateNotification data) {
         if (!isConfigured()) {
             throw new IllegalStateException(
                     "Twilio not configured — set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, "
                     + "TWILIO_WHATSAPP_FROM, and TWILIO_CONTENT_SID");
         }
-        dispatchBill(data);
+        dispatch(template, data);
     }
 
-    private void dispatchBill(BillNotificationData data) {
-        if (hasTemplate()) {
-            doSendTemplate(data);
+    private void dispatch(WhatsappTemplate template, TemplateNotification data) {
+        if (hasTemplate(template)) {
+            doSendTemplate(template, data);
         } else {
             doSend(data.toPhone(), data.formattedText(), data.channel());
         }
@@ -98,15 +98,17 @@ public class NotificationService {
         log.info("Test notification sent via {} to {}", channel, toPhone);
     }
 
-    private void doSendTemplate(BillNotificationData data) {
+    private void doSendTemplate(WhatsappTemplate template, TemplateNotification data) {
+        String contentSid = properties.getTemplateSid(template);
         String from = whatsappFrom();
         String to = "whatsapp:" + normalizePhone(data.toPhone());
 
-        String vars = buildTemplateVars(data);
-        log.info("Sending template {} — from={} to={} vars={}", properties.getContentSid(), from, to, vars);
+        String vars = serializeVars(data.templateVariables());
+        log.info("Sending template {} ({}) — from={} to={} vars={}",
+                template, contentSid, from, to, vars);
 
         Message msg = Message.creator(new PhoneNumber(to), new PhoneNumber(from), "")
-                .setContentSid(properties.getContentSid())
+                .setContentSid(contentSid)
                 .setContentVariables(vars)
                 .create();
 
@@ -145,48 +147,12 @@ public class NotificationService {
         return digits;
     }
 
-    /**
-     * Variables match the approved template placeholders:
-     *   {{1}} = customer name
-     *   {{2}} = bill number (e.g. BB-20260706-0001)
-     *   {{3}} = date (e.g. 06 Jul 2026, 08:10)
-     *   {{4}} = items summary — single line (e.g. Tea x1 ₹25.00 | Coffee x2 ₹50.00)
-     *   {{5}} = total (e.g. ₹25.00)
-     *   {{6}} = payment method (e.g. Cash)
-     *
-     * Template body:
-     *   Hi {{1}}. Here is the summary of your bill from Bullet Beats Cafe.
-     *
-     *   *Invoice Details*
-     *   • Bill Number: #{{2}}
-     *   • Date of Issue: {{3}}
-     *
-     *   *Order Summary*
-     *   Your ordered items include: {{4}}
-     *
-     *   *Payment Details*
-     *   • Total Amount Due: {{5}}
-     *   • Payment Method: {{6}}
-     *
-     *   Have a wonderful day!
-     */
-    private String buildTemplateVars(BillNotificationData data) {
+    private String serializeVars(Map<String, String> vars) {
         try {
-            return OBJECT_MAPPER.writeValueAsString(Map.of(
-                    "1", orEmpty(data.customerName()),
-                    "2", orEmpty(data.billNumber()),
-                    "3", orEmpty(data.date()),
-                    "4", orEmpty(data.itemsSummary()),
-                    "5", orEmpty(data.total()),
-                    "6", orEmpty(data.paidVia())
-            ));
+            return OBJECT_MAPPER.writeValueAsString(vars);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize template variables", e);
         }
-    }
-
-    private static String orEmpty(String s) {
-        return s != null ? s : "";
     }
 
     private static boolean hasText(String s) {

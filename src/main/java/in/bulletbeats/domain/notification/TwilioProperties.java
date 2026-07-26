@@ -5,6 +5,9 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @ConfigurationProperties(prefix = "twilio")
 @Component
 @Getter
@@ -23,6 +26,13 @@ public class TwilioProperties {
     /** WhatsApp sender (E.164, e.g. +14155238886) — set via TWILIO_WHATSAPP_FROM */
     private String whatsappFrom = "";
 
-    /** Content Template SID (HX...) for bill receipts — set via TWILIO_CONTENT_SID */
-    private String contentSid = "";
+    /**
+     * Content Template SIDs (HX...), keyed by {@link WhatsappTemplate#getConfigKey()}
+     * — set via TWILIO_TEMPLATES_&lt;KEY&gt; env vars, e.g. TWILIO_TEMPLATES_BILL_RECEIPT.
+     */
+    private Map<String, String> templates = new HashMap<>();
+
+    public String getTemplateSid(WhatsappTemplate template) {
+        return templates.get(template.getConfigKey());
+    }
 }
