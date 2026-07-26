@@ -54,8 +54,11 @@
           <span class="font-heading text-accent text-xl tracking-wide flex-shrink-0"
                 th:text="'₹' + ${item.price}">₹0</span>
         </div>
-        <p th:if="${item.description != null and !#strings.isEmpty(item.description)}"
-           class="text-sand text-xs leading-snug mt-0.5 line-clamp-2" th:text="${item.description}">Description</p>
+        <div th:if="${item.description != null and !#strings.isEmpty(item.description)}" class="mt-0.5">
+          <p class="text-sand text-xs leading-snug line-clamp-2" th:text="${item.description}">Description</p>
+          <button type="button" class="desc-toggle hidden text-accent text-[10px] font-semibold mt-0.5"
+                  onclick="toggleDesc(this)">Show more</button>
+        </div>
         <p th:unless="${item.available}"
            class="text-xs text-amber-400/80 mt-0.5">Currently Unavailable</p>
       </div>
