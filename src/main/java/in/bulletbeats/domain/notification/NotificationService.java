@@ -150,27 +150,25 @@ public class NotificationService {
      *   {{1}} = customer name
      *   {{2}} = bill number (e.g. BB-20260706-0001)
      *   {{3}} = date (e.g. 06 Jul 2026, 08:10)
-     *   {{4}} = table / location (e.g. Table 1)
-     *   {{5}} = items summary — single line (e.g. Tea x1 ₹25.00 | Coffee x2 ₹50.00)
-     *   {{6}} = total (e.g. ₹25.00)
-     *   {{7}} = payment method (e.g. Cash)
+     *   {{4}} = items summary — single line (e.g. Tea x1 ₹25.00 | Coffee x2 ₹50.00)
+     *   {{5}} = total (e.g. ₹25.00)
+     *   {{6}} = payment method (e.g. Cash)
      *
      * Template body:
-     *   Hi {{1}}, thank you for dining with us. Here is the summary of your bill from Bullet Beats Cafe.
+     *   Hi {{1}}. Here is the summary of your bill from Bullet Beats Cafe.
      *
      *   *Invoice Details*
      *   • Bill Number: #{{2}}
      *   • Date of Issue: {{3}}
-     *   • Table Assignment: {{4}}
      *
      *   *Order Summary*
-     *   Your ordered items include: {{5}}
+     *   Your ordered items include: {{4}}
      *
      *   *Payment Details*
-     *   • Total Amount Due: {{6}}
-     *   • Payment Method: {{7}}
+     *   • Total Amount Due: {{5}}
+     *   • Payment Method: {{6}}
      *
-     *   If you have any questions about this receipt, please reply directly to this message.
+     *   Have a wonderful day!
      */
     private String buildTemplateVars(BillNotificationData data) {
         try {
@@ -178,10 +176,9 @@ public class NotificationService {
                     "1", orEmpty(data.customerName()),
                     "2", orEmpty(data.billNumber()),
                     "3", orEmpty(data.date()),
-                    "4", orEmpty(data.location()),
-                    "5", orEmpty(data.itemsSummary()),
-                    "6", orEmpty(data.total()),
-                    "7", orEmpty(data.paidVia())
+                    "4", orEmpty(data.itemsSummary()),
+                    "5", orEmpty(data.total()),
+                    "6", orEmpty(data.paidVia())
             ));
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize template variables", e);
