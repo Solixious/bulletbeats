@@ -197,7 +197,7 @@
        style="display:none"
        onclick="closeLightbox()">
     <img id="lightbox-img" src="" alt="Menu item"
-         class="max-w-full max-h-full object-contain rounded-xl"/>
+         class="max-w-full max-h-full object-contain rounded-xl transition-all duration-300"/>
     <button class="absolute top-4 right-4 text-white/60 hover:text-white text-3xl leading-none"
             onclick="closeLightbox()">×</button>
   </div>
@@ -224,12 +224,29 @@
       updateHint();
     })();
 
-    function openLightbox(src) {
-      document.getElementById('lightbox-img').src = src;
+    function openLightbox(thumbSrc, fullSrc) {
+      var img = document.getElementById('lightbox-img');
+      img.src = thumbSrc;
+      img.classList.add('blur-md', 'scale-105');
       document.getElementById('lightbox').style.display = 'flex';
+      if (fullSrc && fullSrc !== thumbSrc) {
+        img.dataset.loading = fullSrc;
+        var loader = new Image();
+        loader.onload = function () {
+          if (img.dataset.loading !== fullSrc) return; // a newer image was opened meanwhile
+          img.src = fullSrc;
+          img.classList.remove('blur-md', 'scale-105');
+        };
+        loader.src = fullSrc;
+      } else {
+        img.classList.remove('blur-md', 'scale-105');
+      }
     }
     function closeLightbox() {
       document.getElementById('lightbox').style.display = 'none';
+      var img = document.getElementById('lightbox-img');
+      img.src = '';
+      img.classList.remove('blur-md', 'scale-105');
     }
 
     // Expandable descriptions ("Show more" / "Show less")

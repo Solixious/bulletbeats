@@ -104,7 +104,7 @@
                        th:attr="data-full=${item.imagePath + '?v=' + item.imageVersion}"
                        alt=""
                        class="w-14 h-14 rounded-lg object-cover border border-elevated/60 flex-shrink-0 cursor-pointer"
-                       onclick="pubOpenImage(this.dataset.full)"/>
+                       onclick="pubOpenImage(this.src, this.dataset.full)"/>
                   <div th:unless="${item.imagePath != null}"
                        class="w-14 h-14 rounded-lg bg-elevated border border-elevated/60
                               flex items-center justify-center text-2xl flex-shrink-0">☕</div>
@@ -144,7 +144,7 @@
                  th:attr="data-full=${item.imagePath + '?v=' + item.imageVersion}"
                  alt=""
                  class="w-14 h-14 rounded-lg object-cover border border-elevated/60 flex-shrink-0 cursor-pointer"
-                 onclick="pubOpenImage(this.dataset.full)"/>
+                 onclick="pubOpenImage(this.src, this.dataset.full)"/>
             <div th:unless="${item.imagePath != null}"
                  class="w-14 h-14 rounded-lg bg-elevated border border-elevated/60
                         flex items-center justify-center text-2xl flex-shrink-0">☕</div>
@@ -199,13 +199,29 @@
       scroll.addEventListener('scroll', updateHint, { passive: true });
       updateHint();
     })();
-    function pubOpenImage(src) {
-      document.getElementById('pub-lightbox-img').src = src;
+    function pubOpenImage(thumbSrc, fullSrc) {
+      var img = document.getElementById('pub-lightbox-img');
+      img.src = thumbSrc;
+      img.classList.add('blur-md', 'scale-105');
       document.getElementById('pub-lightbox').classList.remove('hidden');
+      if (fullSrc && fullSrc !== thumbSrc) {
+        img.dataset.loading = fullSrc;
+        var loader = new Image();
+        loader.onload = function () {
+          if (img.dataset.loading !== fullSrc) return; // a newer image was opened meanwhile
+          img.src = fullSrc;
+          img.classList.remove('blur-md', 'scale-105');
+        };
+        loader.src = fullSrc;
+      } else {
+        img.classList.remove('blur-md', 'scale-105');
+      }
     }
     function pubCloseImage() {
       document.getElementById('pub-lightbox').classList.add('hidden');
-      document.getElementById('pub-lightbox-img').src = '';
+      var img = document.getElementById('pub-lightbox-img');
+      img.src = '';
+      img.classList.remove('blur-md', 'scale-105');
     }
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') pubCloseImage();
@@ -233,7 +249,7 @@
        class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90"
        onclick="pubCloseImage()">
     <img id="pub-lightbox-img" src="" alt=""
-         class="max-w-full max-h-full object-contain rounded-xl"/>
+         class="max-w-full max-h-full object-contain rounded-xl transition-all duration-300"/>
     <button class="absolute top-4 right-4 text-white/60 hover:text-white text-3xl leading-none"
             onclick="event.stopPropagation(); pubCloseImage()">×</button>
   </div>

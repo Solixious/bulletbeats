@@ -32,7 +32,7 @@
            th:alt="${item.name}"
            th:attr="data-src=${item.imagePath + '?v=' + item.imageVersion}"
            class="w-20 h-20 object-cover rounded-lg cursor-pointer"
-           onclick="openLightbox(this.dataset.src)"/>
+           onclick="openLightbox(this.src, this.dataset.src)"/>
       <div th:unless="${item.imagePath != null}"
            class="w-20 h-20 rounded-lg flex items-center justify-center bg-elevated/60"
            style="background: repeating-linear-gradient(45deg,#2A2A2A 0,#2A2A2A 4px,#333 4px,#333 8px)">

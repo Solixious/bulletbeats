@@ -32,7 +32,7 @@
            th:alt="${item.name}"
            th:attr="data-src=${item.imagePath + '?v=' + item.imageVersion}"
            class="w-20 h-20 object-cover rounded-lg cursor-pointer"
-           onclick="openLightbox(this.dataset.src)"/>
+           onclick="openLightbox(this.src, this.dataset.src)"/>
       <!-- Tyre-tread placeholder -->
       <div th:unless="${item.imagePath != null}"
            class="w-20 h-20 rounded-lg flex items-center justify-center bg-elevated/60"
