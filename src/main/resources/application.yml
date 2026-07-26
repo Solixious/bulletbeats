@@ -28,8 +28,13 @@ spring:
         format_sql: false
         jdbc:
           batch_size: 20
+          time_zone: Asia/Kolkata
         order_inserts: true
         order_updates: true
+
+  # ── Jackson ──────────────────────────────────────────────
+  jackson:
+    time-zone: Asia/Kolkata
 
   # ── Flyway ───────────────────────────────────────────────
   flyway:

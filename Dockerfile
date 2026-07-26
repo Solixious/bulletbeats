@@ -27,9 +27,11 @@ EXPOSE 8080
 # -XX:MaxRAMPercentage=75     — use 75% of container memory for heap
 # -Djava.security.egd         — faster startup for Tomcat
 # -Djava.net.preferIPv4Stack  — Docker bridge has no IPv6; Supabase host resolves to IPv6 first
+# -Duser.timezone             — café operates in India; all timestamps must be IST
 ENTRYPOINT ["java", \
   "-XX:+UseContainerSupport", \
   "-XX:MaxRAMPercentage=75.0", \
   "-Djava.security.egd=file:/dev/./urandom", \
   "-Djava.net.preferIPv4Stack=true", \
+  "-Duser.timezone=Asia/Kolkata", \
   "-jar", "app.jar"]
