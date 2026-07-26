@@ -35,6 +35,9 @@ public class MenuItem extends BaseEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(length = 40)
+    private String quantityLabel;
+
     @Column(nullable = false)
     private boolean isAvailable;
 

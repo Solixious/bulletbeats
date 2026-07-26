@@ -148,6 +148,21 @@
            class="mt-1.5 text-red-400 text-xs"></p>
       </div>
 
+      <!-- Quantity Label -->
+      <div>
+        <label for="quantityLabel" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Quantity <span class="text-sand/40 normal-case">(optional)</span>
+        </label>
+        <input id="quantityLabel" type="text" th:field="*{quantityLabel}" maxlength="40"
+               class="w-full bg-elevated border border-elevated focus:border-accent
+                      rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200 focus:shadow-neon-sm"
+               placeholder="e.g. 6 pcs, 250g, 500ml"/>
+        <p th:if="*{#fields.hasErrors('quantityLabel')}" th:errors="*{quantityLabel}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+        <p class="mt-1 text-sand/50 text-xs">Shown to customers next to the item on the menu.</p>
+      </div>
+
       <!-- Display Order -->
       <div>
         <label for="displayOrder" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">

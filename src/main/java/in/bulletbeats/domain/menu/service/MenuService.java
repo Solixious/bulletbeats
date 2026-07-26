@@ -98,6 +98,7 @@ public class MenuService {
                 .dish(dish)
                 .combo(combo)
                 .price(dto.getPrice())
+                .quantityLabel(dto.getQuantityLabel())
                 .isAvailable(true)
                 .displayOrder(dto.getDisplayOrder())
                 .imagePath(imagePath)
@@ -143,6 +144,7 @@ public class MenuService {
         item.setDish(dish);
         item.setCombo(combo);
         item.setPrice(dto.getPrice());
+        item.setQuantityLabel(dto.getQuantityLabel());
         item.setDisplayOrder(dto.getDisplayOrder());
         return menuItemRepository.save(item);
     }

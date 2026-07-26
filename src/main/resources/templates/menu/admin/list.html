@@ -132,6 +132,8 @@
                 <a th:href="@{/admin/menu/{id}(id=${item.id})}"
                    class="text-ivory text-sm font-medium hover:text-accent transition-colors"
                    th:text="${item.name}">Name</a>
+                <span th:if="${item.quantityLabel != null and !#strings.isEmpty(item.quantityLabel)}"
+                      class="text-sand text-xs" th:text="'(' + ${item.quantityLabel} + ')'"></span>
                 <span th:if="${item.promoted}"
                       class="px-1.5 py-0.5 text-xs border rounded-full font-bold uppercase
                              text-accent border-accent/40 bg-accent/10 flex-shrink-0">★ Promo</span>

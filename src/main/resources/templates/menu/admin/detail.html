@@ -87,6 +87,10 @@
               <p class="text-accent font-heading text-2xl mt-0.5"
                  th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}"></p>
             </div>
+            <div th:if="${item.quantityLabel != null and !#strings.isEmpty(item.quantityLabel)}">
+              <span class="text-sand text-xs uppercase tracking-[0.15em]">Quantity</span>
+              <p class="text-ivory text-sm mt-0.5" th:text="${item.quantityLabel}"></p>
+            </div>
             <div>
               <span class="text-sand text-xs uppercase tracking-[0.15em]">Display Order</span>
               <p class="text-ivory text-sm mt-0.5" th:text="${item.displayOrder}"></p>

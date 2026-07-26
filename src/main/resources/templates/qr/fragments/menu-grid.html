@@ -47,6 +47,9 @@
         <div class="flex items-center gap-1.5 min-w-0">
           <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
           <p class="font-bold text-ivory text-sm leading-tight truncate" th:text="${item.name}">Item</p>
+          <span th:if="${item.quantityLabel != null and !#strings.isEmpty(item.quantityLabel)}"
+                class="px-1.5 py-0.5 text-[10px] rounded-full border border-sand/30
+                       text-sand bg-sand/10 flex-shrink-0" th:text="${item.quantityLabel}"></span>
         </div>
         <p th:if="${item.description != null and !#strings.isEmpty(item.description)}"
            class="text-sand text-xs leading-snug mt-0.5 line-clamp-2" th:text="${item.description}">Description</p>

@@ -29,6 +29,9 @@ public class UpdateMenuItemDto {
     @DecimalMin("0.01")
     private BigDecimal price;
 
+    @Size(max = 40)
+    private String quantityLabel;
+
     private int displayOrder;
 
     @AssertTrue(message = "Exactly one of dish or combo must be selected")
