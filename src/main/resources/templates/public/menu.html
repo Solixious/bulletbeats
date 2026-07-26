@@ -109,7 +109,10 @@
                        class="w-14 h-14 rounded-lg bg-elevated border border-elevated/60
                               flex items-center justify-center text-2xl flex-shrink-0">☕</div>
                   <div class="flex-1 min-w-0">
-                    <p class="text-ivory font-medium text-sm leading-tight" th:text="${item.name}">Item</p>
+                    <div class="flex items-center gap-1.5">
+                      <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
+                      <p class="text-ivory font-medium text-sm leading-tight" th:text="${item.name}">Item</p>
+                    </div>
                     <p th:if="${item.description != null and !#strings.isEmpty(item.description)}"
                        class="text-sand text-xs leading-snug mt-0.5 line-clamp-2" th:text="${item.description}">Description</p>
                     <span th:unless="${item.available}"
@@ -140,7 +143,10 @@
                  class="w-14 h-14 rounded-lg bg-elevated border border-elevated/60
                         flex items-center justify-center text-2xl flex-shrink-0">☕</div>
             <div class="flex-1 min-w-0">
-              <p class="text-ivory font-medium text-sm leading-tight" th:text="${item.name}">Item</p>
+              <div class="flex items-center gap-1.5">
+                <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
+                <p class="text-ivory font-medium text-sm leading-tight" th:text="${item.name}">Item</p>
+              </div>
               <p th:if="${item.description != null and !#strings.isEmpty(item.description)}"
                  class="text-sand text-xs leading-snug mt-0.5 line-clamp-2" th:text="${item.description}">Description</p>
               <span th:unless="${item.available}"

@@ -87,8 +87,10 @@
 
           <td class="px-4 py-3">
             <a th:href="@{/admin/dishes/{id}(id=${dish.id})}"
-               class="text-ivory text-sm font-medium hover:text-accent transition-colors"
-               th:text="${dish.name}">Dish Name</a>
+               class="inline-flex items-center gap-1.5 text-ivory text-sm font-medium hover:text-accent transition-colors">
+              <span th:replace="~{fragments/dish-type-mark :: mark(${dish.dishType})}"></span>
+              <span th:text="${dish.name}">Dish Name</span>
+            </a>
           </td>
 
           <td class="px-4 py-3 text-sand text-sm"

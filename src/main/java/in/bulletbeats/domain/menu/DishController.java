@@ -71,6 +71,7 @@ public class DishController {
         dto.setDescription(dish.getDescription());
         dto.setRecipeNotes(dish.getRecipeNotes());
         dto.setPrepTimeMinutes(dish.getPrepTimeMinutes());
+        dto.setDishType(dish.getDishType());
         dto.setIngredients(dish.getIngredients().stream()
                 .map(ing -> {
                     DishIngredientDto d = new DishIngredientDto();

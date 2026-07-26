@@ -1,6 +1,7 @@
 package in.bulletbeats.domain.menu.entity;
 
 import in.bulletbeats.domain.shared.BaseEntity;
+import in.bulletbeats.domain.shared.enums.DishType;
 import in.bulletbeats.domain.shared.enums.MenuItemType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -72,5 +73,9 @@ public class MenuItem extends BaseEntity {
             return dish.getDescription();
         }
         return combo != null ? combo.getDescription() : null;
+    }
+
+    public DishType getDishType() {
+        return dish != null ? dish.getDishType() : null;
     }
 }

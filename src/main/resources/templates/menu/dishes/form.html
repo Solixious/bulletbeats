@@ -56,6 +56,21 @@
                   placeholder="Brief description"></textarea>
       </div>
 
+      <!-- Dish Type -->
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Type</label>
+        <div class="flex items-center gap-5">
+          <label th:each="type : ${T(in.bulletbeats.domain.shared.enums.DishType).values()}"
+                 class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" th:field="*{dishType}" th:value="${type}" class="accent-accent cursor-pointer"/>
+            <span th:replace="~{fragments/dish-type-mark :: mark(${type})}"></span>
+            <span class="text-ivory text-sm" th:text="${type.displayName}">Veg</span>
+          </label>
+        </div>
+        <p th:if="*{#fields.hasErrors('dishType')}" th:errors="*{dishType}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
       <!-- Prep Time -->
       <div>
         <label for="prepTimeMinutes" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">

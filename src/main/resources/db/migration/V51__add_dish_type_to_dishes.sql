@@ -1,0 +1,2 @@
+ALTER TABLE dishes
+    ADD COLUMN dish_type VARCHAR(20) NOT NULL DEFAULT 'VEG';

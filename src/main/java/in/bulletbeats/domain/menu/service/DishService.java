@@ -55,6 +55,7 @@ public class DishService {
                 .description(dto.getDescription())
                 .recipeNotes(dto.getRecipeNotes())
                 .prepTimeMinutes(dto.getPrepTimeMinutes())
+                .dishType(dto.getDishType())
                 .isActive(true)
                 .tenantId(1L)
                 .build();
@@ -75,6 +76,7 @@ public class DishService {
         dish.setDescription(dto.getDescription());
         dish.setRecipeNotes(dto.getRecipeNotes());
         dish.setPrepTimeMinutes(dto.getPrepTimeMinutes());
+        dish.setDishType(dto.getDishType());
         dish.getIngredients().clear();
         entityManager.flush(); // send DELETEs to DB before INSERTs to avoid unique constraint violation
         if (dto.getIngredients() != null) {

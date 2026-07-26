@@ -44,7 +44,10 @@
     <!-- Info -->
     <div class="flex-1 flex flex-col justify-between min-w-0">
       <div>
-        <p class="font-bold text-ivory text-sm leading-tight truncate" th:text="${item.name}">Item</p>
+        <div class="flex items-center gap-1.5 min-w-0">
+          <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
+          <p class="font-bold text-ivory text-sm leading-tight truncate" th:text="${item.name}">Item</p>
+        </div>
         <p th:if="${item.description != null and !#strings.isEmpty(item.description)}"
            class="text-sand text-xs leading-snug mt-0.5 line-clamp-2" th:text="${item.description}">Description</p>
         <p th:unless="${item.available}"

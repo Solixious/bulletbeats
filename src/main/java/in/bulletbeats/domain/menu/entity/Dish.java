@@ -1,6 +1,7 @@
 package in.bulletbeats.domain.menu.entity;
 
 import in.bulletbeats.domain.shared.BaseEntity;
+import in.bulletbeats.domain.shared.enums.DishType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,6 +27,11 @@ public class Dish extends BaseEntity {
     private String recipeNotes;
 
     private Integer prepTimeMinutes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private DishType dishType = DishType.VEG;
 
     @Column(nullable = false)
     private boolean isActive;

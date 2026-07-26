@@ -24,7 +24,10 @@
     <div class="lg:col-span-2 bg-surface rounded-xl border border-elevated/60 p-6">
       <div class="flex items-start justify-between mb-5">
         <div>
-          <h1 class="font-heading text-3xl text-ivory tracking-wide" th:text="${dish.name}">Name</h1>
+          <div class="flex items-center gap-2">
+            <span th:replace="~{fragments/dish-type-mark :: mark(${dish.dishType})}"></span>
+            <h1 class="font-heading text-3xl text-ivory tracking-wide" th:text="${dish.name}">Name</h1>
+          </div>
           <p class="text-sand text-sm mt-0.5" th:text="${dish.description} ?: ''"></p>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">

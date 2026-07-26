@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Traditional Indian veg/non-veg/egg mark: square outline with a filled dot. -->
+<th:block th:fragment="mark(dishType)">
+  <span th:if="${dishType != null}"
+        th:title="${dishType.displayName}"
+        th:classappend="${dishType.name() == 'VEG'} ? 'border-emerald-500'
+                        : (${dishType.name() == 'NON_VEG'} ? 'border-red-800' : 'border-amber-500')"
+        class="inline-flex items-center justify-center w-3.5 h-3.5 border-2 rounded-sm flex-shrink-0">
+    <span th:classappend="${dishType.name() == 'VEG'} ? 'bg-emerald-500'
+                          : (${dishType.name() == 'NON_VEG'} ? 'bg-red-800' : 'bg-amber-500')"
+          class="w-1.5 h-1.5 rounded-full"></span>
+  </span>
+</th:block>
+
+</body>
+</html>
