@@ -5,6 +5,7 @@ import in.bulletbeats.domain.billing.ActivityLogService;
 import in.bulletbeats.domain.notification.BillNotificationData;
 import in.bulletbeats.domain.notification.NotificationChannel;
 import in.bulletbeats.domain.notification.NotificationService;
+import in.bulletbeats.domain.notification.WhatsappTemplate;
 import in.bulletbeats.domain.billing.dto.AddBillItemDto;
 import in.bulletbeats.domain.billing.dto.ApplyDiscountDto;
 import in.bulletbeats.domain.billing.dto.CreateBillDto;
@@ -407,7 +408,7 @@ public class BillingService {
         }
 
         if (bill.getCustomer() != null && bill.getCustomer().getPhone() != null) {
-            notificationService.sendBillNotification(buildNotificationData(bill));
+            notificationService.send(WhatsappTemplate.BILL_RECEIPT, buildNotificationData(bill));
         }
 
         return bill;
@@ -622,7 +623,7 @@ public class BillingService {
         if (bill.getCustomer() == null || bill.getCustomer().getPhone() == null) {
             throw new IllegalStateException("Bill has no customer or phone number linked");
         }
-        notificationService.sendBillNotificationNow(buildNotificationData(bill));
+        notificationService.sendNow(WhatsappTemplate.BILL_RECEIPT, buildNotificationData(bill));
     }
 
     private BillNotificationData buildNotificationData(Bill bill) {

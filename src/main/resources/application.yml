@@ -94,7 +94,10 @@ twilio:
   auth-token: ${TWILIO_AUTH_TOKEN:}
   from-number: ${TWILIO_FROM_NUMBER:}
   whatsapp-from: ${TWILIO_WHATSAPP_FROM:}
-  content-sid: ${TWILIO_CONTENT_SID:}
+  templates:
+    # Content Template SID per WhatsappTemplate#getConfigKey(). Add one entry
+    # per new template as it's wired up (e.g. TWILIO_TEMPLATES_ORDER_RECEIVED).
+    bill-receipt: ${TWILIO_CONTENT_SID:}
 
 # ── Logging (console only — Docker captures stdout) ──────────
 logging:
