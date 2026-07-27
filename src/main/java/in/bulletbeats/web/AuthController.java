@@ -15,6 +15,16 @@ public class AuthController {
 
     private final LoginAttemptService loginAttemptService;
 
+    @GetMapping("/")
+    public String home(Authentication authentication) {
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken)) {
+            return "redirect:/dashboard";
+        }
+        return "redirect:/public/menu";
+    }
+
     @GetMapping("/login")
     public String login(Authentication authentication, HttpServletRequest request, Model model) {
         if (authentication != null
