@@ -103,6 +103,8 @@ twilio:
     # Content Template SID per WhatsappTemplate#getConfigKey(). Add one entry
     # per new template as it's wired up (e.g. TWILIO_TEMPLATES_ORDER_RECEIVED).
     bill-receipt: ${TWILIO_CONTENT_SID:}
+    order-received-dine-in: ${TWILIO_TEMPLATES_ORDER_RECEIVED_DINE_IN:}
+    order-received-delivery: ${TWILIO_TEMPLATES_ORDER_RECEIVED_DELIVERY:}
 
 # ── Logging (console only — Docker captures stdout) ──────────
 logging:

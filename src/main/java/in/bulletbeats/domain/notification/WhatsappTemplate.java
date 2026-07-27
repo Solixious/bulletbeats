@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
  * Each entry's {@code configKey} maps to a content SID configured under
  * {@code twilio.templates.<configKey>} (see TwilioProperties).
  * <p>
- * Only BILL_RECEIPT is currently wired to a send path — the rest are
- * declared here so future notifications have a fixed place to register
- * without re-plumbing the notification service.
+ * BILL_RECEIPT, ORDER_RECEIVED_DINE_IN and ORDER_RECEIVED_DELIVERY are wired
+ * to send paths — the rest are declared here so future notifications have a
+ * fixed place to register without re-plumbing the notification service.
  */
 @Getter
 @RequiredArgsConstructor
@@ -18,7 +18,8 @@ public enum WhatsappTemplate {
 
     BILL_RECEIPT("bill-receipt", TemplateAudience.CUSTOMER, "Bill Receipt"),
     MARKETING_PROMOTION("marketing-promotion", TemplateAudience.CUSTOMER, "Marketing / Promotion"),
-    ORDER_RECEIVED("order-received", TemplateAudience.STAFF, "Order Received"),
+    ORDER_RECEIVED_DINE_IN("order-received-dine-in", TemplateAudience.STAFF, "Order Received — Dine-In (QR)"),
+    ORDER_RECEIVED_DELIVERY("order-received-delivery", TemplateAudience.STAFF, "Order Received — Direct Delivery"),
     BILL_PAID_ADMIN_COPY("bill-paid-admin-copy", TemplateAudience.STAFF, "Bill Paid — Admin Copy");
 
     /** Key used to look up the content SID under {@code twilio.templates.<configKey>}. */

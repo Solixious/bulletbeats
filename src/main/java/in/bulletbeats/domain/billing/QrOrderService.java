@@ -21,6 +21,10 @@ import in.bulletbeats.domain.menu.entity.DishIngredient;
 import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
+import in.bulletbeats.domain.notification.DineInOrderNotificationData;
+import in.bulletbeats.domain.notification.NotificationChannel;
+import in.bulletbeats.domain.notification.NotificationService;
+import in.bulletbeats.domain.notification.WhatsappTemplate;
 import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.MovementType;
@@ -28,6 +32,7 @@ import in.bulletbeats.domain.shared.exception.BillNotEditableException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import in.bulletbeats.domain.shared.exception.TableNotActiveException;
+import in.bulletbeats.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -63,6 +68,8 @@ public class QrOrderService {
     private final GroceryItemRepository groceryItemRepository;
     private final ActivityLogService activityLogService;
     private final AppConfigService appConfigService;
+    private final NotificationService notificationService;
+    private final UserService userService;
 
     @Transactional
     public QrSessionResult handleQrScan(String qrCode, String phone, String name) {
@@ -239,6 +246,7 @@ public class QrOrderService {
             bill.setStatus(BillStatus.CONFIRMED);
             bill.setConfirmedAt(java.time.LocalDateTime.now());
             menuService.recomputeAllAutoMode();
+            notifyStaffOfOrder(bill);
         }
 
         String actor = customerName != null ? customerName : "QR customer";
@@ -247,6 +255,31 @@ public class QrOrderService {
                 "[" + t + "] Order confirmed via QR by " + actor);
 
         return billRepository.save(bill);
+    }
+
+    private void notifyStaffOfOrder(Bill bill) {
+        List<String> staffPhones = userService.getActiveStaffPhones();
+        if (staffPhones.isEmpty()) {
+            return;
+        }
+
+        String customerName = bill.getCustomer() != null ? bill.getCustomer().getName() : "Guest";
+        String customerPhone = bill.getCustomer() != null ? bill.getCustomer().getPhone() : "N/A";
+        String tableNumber = bill.getCafeTable() != null ? bill.getCafeTable().getName() : "N/A";
+        String itemsSummary = bill.getItems().stream()
+                .map(i -> i.getQuantity() + "x " + i.getItemName())
+                .collect(Collectors.joining(", "));
+        String total = "₹" + bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
+
+        String formattedText = "New dine-in order via QR — Bill #" + bill.getBillNumber()
+                + ", Table " + tableNumber + ", Customer " + customerName + " (" + customerPhone + ")"
+                + ", Items: " + itemsSummary + ", Total: " + total;
+
+        for (String staffPhone : staffPhones) {
+            notificationService.send(WhatsappTemplate.ORDER_RECEIVED_DINE_IN, new DineInOrderNotificationData(
+                    staffPhone, NotificationChannel.WHATSAPP, bill.getBillNumber(),
+                    customerName, customerPhone, tableNumber, itemsSummary, total, formattedText));
+        }
     }
 
     @Transactional(readOnly = true)

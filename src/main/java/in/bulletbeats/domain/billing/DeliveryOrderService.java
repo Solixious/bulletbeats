@@ -19,12 +19,17 @@ import in.bulletbeats.domain.menu.entity.DishIngredient;
 import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
+import in.bulletbeats.domain.notification.DeliveryOrderNotificationData;
+import in.bulletbeats.domain.notification.NotificationChannel;
+import in.bulletbeats.domain.notification.NotificationService;
+import in.bulletbeats.domain.notification.WhatsappTemplate;
 import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.OrderType;
 import in.bulletbeats.domain.shared.exception.BillNotEditableException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
+import in.bulletbeats.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,6 +63,8 @@ public class DeliveryOrderService {
     private final GroceryItemRepository groceryItemRepository;
     private final ActivityLogService activityLogService;
     private final AppConfigService appConfigService;
+    private final NotificationService notificationService;
+    private final UserService userService;
 
     @Transactional
     public DeliveryStartResult startOrder(String phone, String name, String address) {
@@ -249,6 +256,7 @@ public class DeliveryOrderService {
         bill.setStatus(BillStatus.CONFIRMED);
         bill.setConfirmedAt(java.time.LocalDateTime.now());
         menuService.recomputeAllAutoMode();
+        notifyStaffOfOrder(bill);
 
         String actor = customerName != null ? customerName : "Delivery customer";
         String t = LocalTime.now().format(TIME_FMT);
@@ -256,6 +264,33 @@ public class DeliveryOrderService {
                 "[" + t + "] Order placed via direct delivery by " + actor);
 
         return billRepository.save(bill);
+    }
+
+    private void notifyStaffOfOrder(Bill bill) {
+        List<String> staffPhones = userService.getActiveStaffPhones();
+        if (staffPhones.isEmpty()) {
+            return;
+        }
+
+        String customerName = bill.getCustomer() != null ? bill.getCustomer().getName() : "N/A";
+        String customerPhone = bill.getCustomer() != null ? bill.getCustomer().getPhone() : "N/A";
+        String address = bill.getDeliveryAddress() != null
+                ? bill.getDeliveryAddress().replaceAll("\\s*\\r?\\n\\s*", ", ").trim()
+                : "N/A";
+        String itemsSummary = bill.getItems().stream()
+                .map(i -> i.getQuantity() + "x " + i.getItemName())
+                .collect(Collectors.joining(", "));
+        String total = "₹" + bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
+
+        String formattedText = "New direct delivery order — Bill #" + bill.getBillNumber()
+                + ", Customer " + customerName + " (" + customerPhone + ")"
+                + ", Address: " + address + ", Items: " + itemsSummary + ", Total: " + total;
+
+        for (String staffPhone : staffPhones) {
+            notificationService.send(WhatsappTemplate.ORDER_RECEIVED_DELIVERY, new DeliveryOrderNotificationData(
+                    staffPhone, NotificationChannel.WHATSAPP, bill.getBillNumber(),
+                    customerName, customerPhone, address, itemsSummary, total, formattedText));
+        }
     }
 
     @Transactional(readOnly = true)

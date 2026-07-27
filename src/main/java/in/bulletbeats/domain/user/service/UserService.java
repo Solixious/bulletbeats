@@ -77,6 +77,13 @@ public class UserService implements UserDetailsService {
         return userRepository.findAllByOrderByFullNameAsc();
     }
 
+    public List<String> getActiveStaffPhones() {
+        return userRepository.findAllByIsActiveTrue().stream()
+                .map(User::getPhone)
+                .filter(phone -> phone != null && !phone.isBlank())
+                .collect(Collectors.toList());
+    }
+
     public Map<Long, String> getUsernameMap() {
         return userRepository.findAllByOrderByFullNameAsc().stream()
                 .collect(Collectors.toMap(User::getId, User::getUsername));
