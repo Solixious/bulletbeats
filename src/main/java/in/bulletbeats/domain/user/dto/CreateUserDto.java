@@ -16,6 +16,9 @@ public class CreateUserDto {
     @NotBlank
     private String fullName;
 
+    @Size(max = 20)
+    private String phone;
+
     @NotBlank
     @Size(min = 6)
     private String password;

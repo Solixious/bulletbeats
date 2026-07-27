@@ -61,6 +61,7 @@ public class UserController {
         User user = userService.getUserById(id);
         UpdateUserDto dto = new UpdateUserDto();
         dto.setFullName(user.getFullName());
+        dto.setPhone(user.getPhone());
         dto.setRole(user.getRole());
         dto.setActive(user.isActive());
         model.addAttribute("user", user);
@@ -112,6 +113,7 @@ public class UserController {
         User user = userService.getUserById(id);
         UpdateUserDto dto = new UpdateUserDto();
         dto.setFullName(user.getFullName());
+        dto.setPhone(user.getPhone());
         dto.setRole(user.getRole());
         dto.setActive(!user.isActive());
         userService.updateUser(id, dto);

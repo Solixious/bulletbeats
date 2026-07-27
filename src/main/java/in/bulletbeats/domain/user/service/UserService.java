@@ -46,6 +46,7 @@ public class UserService implements UserDetailsService {
                 .username(dto.getUsername())
                 .passwordHash(passwordEncoder.encode(dto.getPassword()))
                 .fullName(dto.getFullName())
+                .phone(dto.getPhone())
                 .role(dto.getRole())
                 .isActive(true)
                 .tenantId(1L)
@@ -58,6 +59,7 @@ public class UserService implements UserDetailsService {
     public User updateUser(Long id, UpdateUserDto dto) {
         User user = getUserById(id);
         user.setFullName(dto.getFullName());
+        user.setPhone(dto.getPhone());
         user.setRole(dto.getRole());
         user.setActive(dto.isActive());
         return userRepository.save(user);

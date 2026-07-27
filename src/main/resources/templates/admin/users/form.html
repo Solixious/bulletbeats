@@ -61,6 +61,24 @@
            class="mt-1.5 text-red-400 text-xs"></p>
       </div>
 
+      <!-- Phone -->
+      <div>
+        <label for="phone"
+               class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Phone Number
+        </label>
+        <input id="phone" type="tel" th:field="*{phone}"
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('phone')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="9876543210"/>
+        <p th:if="*{#fields.hasErrors('phone')}"
+           th:errors="*{phone}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
       <!-- Username: bound in create, display-only in edit -->
       <div th:if="${mode == 'create'}">
         <label for="username"
