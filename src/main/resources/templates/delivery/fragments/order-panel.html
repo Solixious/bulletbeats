@@ -112,6 +112,10 @@
           <span th:text="'GST (' + ${bill.gstRate.stripTrailingZeros().toPlainString()} + '%)'">GST</span>
           <span th:text="'₹' + ${bill.gstAmount}">₹0</span>
         </div>
+        <div class="flex justify-between text-sand" th:if="${bill.deliveryFee.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+          <span>Delivery Fee</span>
+          <span th:text="'₹' + ${bill.deliveryFee}">₹0</span>
+        </div>
         <div class="flex justify-between text-ivory font-bold text-sm pt-1.5 border-t border-elevated/40">
           <span>Total</span>
           <span class="text-accent font-heading text-lg" th:text="'₹' + ${bill.totalAmount}">₹0</span>

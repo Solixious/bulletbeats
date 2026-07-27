@@ -16,6 +16,10 @@
 
     <!-- Order summary -->
     <div class="px-5 pb-3 space-y-1 text-sm border-t border-elevated/40 pt-3">
+      <div class="flex justify-between text-sand/70 text-xs" th:if="${bill.deliveryFee.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+        <span>Delivery Fee</span>
+        <span th:text="'₹' + ${bill.deliveryFee}">₹0</span>
+      </div>
       <div class="flex justify-between text-sand">
         <span>Total</span>
         <span class="text-accent font-heading text-lg" th:text="'₹' + ${bill.totalAmount}">₹0</span>

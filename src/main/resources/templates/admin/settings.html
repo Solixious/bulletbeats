@@ -321,6 +321,36 @@
     </div>
   </div>
 
+  <!-- ── Delivery (inline-save, outside main form) ──────────────────── -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-5 mt-6">
+    <h2 class="font-heading text-lg text-ivory tracking-wide mb-1">Delivery</h2>
+    <p class="text-sand text-xs mb-4">Flat delivery &amp; handling charge applied to direct-delivery orders — saved instantly</p>
+
+    <div>
+      <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">
+        Delivery Fee (₹)
+      </label>
+      <form th:attr="hx-post=@{/admin/settings/key}"
+            hx-target="#delivery-fee-save-status"
+            hx-swap="innerHTML"
+            class="flex items-center gap-3">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <input type="hidden" name="key" value="delivery.fee"/>
+        <input type="number" name="value"
+               th:value="${deliveryFee}" required min="0" step="0.01"
+               class="w-32 bg-elevated rounded-lg px-3 py-2 text-ivory text-sm font-mono
+                      border border-elevated/60 focus:border-accent outline-none transition-colors"/>
+        <button type="submit"
+                class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                       hover:border-ivory/40 hover:text-ivory transition-colors">
+          Save
+        </button>
+        <span id="delivery-fee-save-status"></span>
+      </form>
+      <p class="text-sand text-xs mt-1">Set to 0 to disable. Shown to customers ordering via the delivery QR code.</p>
+    </div>
+  </div>
+
 </main>
 </body>
 </html>

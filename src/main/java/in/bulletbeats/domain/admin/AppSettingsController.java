@@ -35,6 +35,7 @@ public class AppSettingsController {
         model.addAttribute("notificationEnabled",
                 appConfigService.getBoolean("notification.enabled", false));
         model.addAttribute("notificationConfigured", notificationService.isConfigured());
+        model.addAttribute("deliveryFee", appConfigService.get("delivery.fee", "0.00"));
         return "admin/settings";
     }
 
@@ -60,7 +61,8 @@ public class AppSettingsController {
             "app.base-url",
             "student.discount.percentage",
             "student.discount.min_bill_amount",
-            "notification.enabled"
+            "notification.enabled",
+            "delivery.fee"
     );
 
     @PostMapping("/key")

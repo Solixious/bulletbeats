@@ -216,6 +216,12 @@
       <span class="text-ivory"
             th:text="'₹' + ${#numbers.formatDecimal(bill.gstAmount, 1, 2)}"></span>
     </div>
+    <div th:if="${bill.deliveryFee != null and bill.deliveryFee.signum() > 0}"
+         class="flex justify-between text-sm">
+      <span class="text-sand">Delivery Fee</span>
+      <span class="text-ivory"
+            th:text="'₹' + ${#numbers.formatDecimal(bill.deliveryFee, 1, 2)}"></span>
+    </div>
     <div th:if="${showGstOnBill and gstin != null and !#strings.isEmpty(gstin)}"
          class="flex justify-between text-xs">
       <span class="text-sand/60">GSTIN</span>

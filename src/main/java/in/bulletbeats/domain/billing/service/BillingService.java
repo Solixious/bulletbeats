@@ -687,6 +687,9 @@ public class BillingService {
 
         BigDecimal gstRate = appConfigService.getDecimal("gst.rate", new BigDecimal("18.00"));
         boolean gstInclusive = appConfigService.getBoolean("gst.inclusive", false);
+        BigDecimal deliveryFee = bill.getOrderType() == OrderType.DIRECT_DELIVERY
+                ? appConfigService.getDecimal("delivery.fee", BigDecimal.ZERO)
+                : BigDecimal.ZERO;
 
         BigDecimal taxableAmount;
         BigDecimal gstAmount;
@@ -697,12 +700,12 @@ public class BillingService {
             gstAmount = grossAfterDiscount.multiply(gstRate)
                     .divide(BigDecimal.valueOf(100).add(gstRate), 2, RoundingMode.HALF_UP);
             taxableAmount = grossAfterDiscount.subtract(gstAmount);
-            totalAmount   = grossAfterDiscount;
+            totalAmount   = grossAfterDiscount.add(deliveryFee);
         } else {
             taxableAmount = subtotal.subtract(totalDiscountAmount);
             gstAmount     = taxableAmount.multiply(gstRate)
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            totalAmount   = taxableAmount.add(gstAmount);
+            totalAmount   = taxableAmount.add(gstAmount).add(deliveryFee);
         }
 
         bill.setSubtotal(subtotal);
@@ -712,6 +715,7 @@ public class BillingService {
         bill.setGstRate(gstRate);
         bill.setGstInclusive(gstInclusive);
         bill.setGstAmount(gstAmount);
+        bill.setDeliveryFee(deliveryFee);
         bill.setTotalAmount(totalAmount);
     }
 
