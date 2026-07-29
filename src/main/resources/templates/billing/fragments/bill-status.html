@@ -25,7 +25,7 @@
       Order confirmed — awaiting payment
     </div>
 
-    <form sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+    <form sec:authorize="hasAnyRole('STAFF','MANAGER','ADMIN')"
           th:action="@{/bills/{id}/reopen(id=${bill.id})}" method="post">
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
       <button type="submit"

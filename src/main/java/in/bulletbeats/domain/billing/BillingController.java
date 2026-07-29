@@ -442,10 +442,10 @@ public class BillingController {
         return "billing/fragments/pay-success :: pay-success";
     }
 
-    // ── Reopen (Manager+) ─────────────────────────────────────────────────
+    // ── Reopen (Staff+) ──────────────────────────────────────────────────
 
     @PostMapping("/{id}/reopen")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    @PreAuthorize("hasAnyRole('STAFF','MANAGER','ADMIN')")
     public String reopenBill(@PathVariable Long id, Authentication auth) {
         billingService.reopenBill(id, currentUserId(auth));
         return "redirect:/bills/" + id;
