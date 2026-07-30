@@ -5,8 +5,7 @@ import in.bulletbeats.domain.menu.entity.MenuItem;
 
 import java.util.List;
 
-public record CategoryWithItemsDto(
-        Category category,
-        List<MenuItem> items,
-        List<SubcategoryWithItemsDto> subcategories
+public record SubcategoryWithItemsDto(
+        Category subcategory,
+        List<MenuItem> items
 ) {}

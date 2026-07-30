@@ -4,7 +4,7 @@
 
 <!-- ── Full grid (returned by category filter endpoint) ─────────────── -->
 <th:block th:fragment="qr-menu-grid">
-  <div th:if="${#lists.isEmpty(items)}"
+  <div th:if="${#lists.isEmpty(items) and #lists.isEmpty(subcategoryGroups)}"
        class="py-16 text-center text-sand text-sm">
     No items available in this category.
   </div>
@@ -13,6 +13,15 @@
       <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked})}"/>
     </th:block>
   </div>
+  <th:block th:each="sub : ${subcategoryGroups}">
+    <h4 class="font-heading text-base text-sand/80 tracking-widest mt-4 mb-2 uppercase pl-2 border-l-2 border-accent/40"
+        th:text="${sub.subcategory.name}">Subcategory</h4>
+    <div class="space-y-3">
+      <th:block th:each="item : ${sub.items}">
+        <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked})}"/>
+      </th:block>
+    </div>
+  </th:block>
 </th:block>
 
 <!-- ── Single item card (reused from menu.html too) ─────────────────── -->

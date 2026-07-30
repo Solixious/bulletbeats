@@ -66,9 +66,13 @@
                        transition-all duration-200 focus:shadow-neon-sm cursor-pointer"
                 th:classappend="*{#fields.hasErrors('categoryId')} ? 'border-red-500/70' : ''">
           <option value="">Select category…</option>
-          <option th:each="cat : ${categories}"
-                  th:value="${cat.id}"
-                  th:text="${cat.name}">Category</option>
+          <th:block th:each="node : ${categoryTree}">
+            <option th:value="${node.category.id}"
+                    th:text="${node.category.name}">Category</option>
+            <option th:each="sub : ${node.subcategories}"
+                    th:value="${sub.id}"
+                    th:text="'— ' + ${sub.name}">Subcategory</option>
+          </th:block>
         </select>
         <p th:if="*{#fields.hasErrors('categoryId')}" th:errors="*{categoryId}"
            class="mt-1.5 text-red-400 text-xs"></p>

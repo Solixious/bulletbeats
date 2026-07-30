@@ -87,13 +87,13 @@
       <th:block th:unless="${#lists.isEmpty(items)}">
 
         <!-- Grouped view with section headers (shown when all items are displayed) -->
-        <th:block th:if="${categories != null}">
-          <th:block th:each="cat : ${categories}"
-                    th:with="catItems=${items.?[category.id == __${cat.id}__]}">
+        <th:block th:if="${categoryTree != null}">
+          <th:block th:each="node : ${categoryTree}">
+            <th:block th:with="catItems=${items.?[category.id == __${node.category.id}__]}">
             <div th:unless="${#lists.isEmpty(catItems)}" class="mb-7">
               <h2 class="font-heading text-lg text-sand tracking-widest uppercase mb-3
                          border-b border-elevated/40 pb-1"
-                  th:text="${cat.name}">Category</h2>
+                  th:text="${node.category.name}">Category</h2>
               <div class="space-y-2">
                 <div th:each="item : ${catItems}"
                      th:classappend="${!item.available} ? 'opacity-50' : ''"
@@ -130,11 +130,54 @@
                 </div>
               </div>
             </div>
+            </th:block>
+            <th:block th:each="sub : ${node.subcategories}"
+                      th:with="subItems=${items.?[category.id == __${sub.id}__]}">
+              <div th:unless="${#lists.isEmpty(subItems)}" class="mb-7 pl-3 border-l-2 border-accent/30">
+                <h3 class="font-heading text-base text-sand/80 tracking-widest uppercase mb-3"
+                    th:text="${sub.name}">Subcategory</h3>
+                <div class="space-y-2">
+                  <div th:each="item : ${subItems}"
+                       th:classappend="${!item.available} ? 'opacity-50' : ''"
+                       class="bg-surface rounded-xl border border-elevated/60 px-5 py-4
+                              flex items-start gap-4">
+                    <img th:if="${item.imagePath != null}"
+                         th:src="${(item.thumbnailPath != null ? item.thumbnailPath : item.imagePath) + '?v=' + item.imageVersion}"
+                         th:attr="data-full=${item.imagePath + '?v=' + item.imageVersion}"
+                         alt=""
+                         class="w-14 h-14 rounded-lg object-cover border border-elevated/60 flex-shrink-0 cursor-pointer"
+                         onclick="pubOpenImage(this.src, this.dataset.full)"/>
+                    <div th:unless="${item.imagePath != null}"
+                         class="w-14 h-14 rounded-lg bg-elevated border border-elevated/60
+                                flex items-center justify-center text-2xl flex-shrink-0">☕</div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span th:replace="~{fragments/dish-type-mark :: mark(${item.dishType})}"></span>
+                        <p class="text-ivory font-medium text-sm leading-tight" th:text="${item.name}">Item</p>
+                        <span th:if="${item.quantityLabel != null and !#strings.isEmpty(item.quantityLabel)}"
+                              class="px-1.5 py-0.5 text-[10px] rounded-full border border-sand/30
+                                     text-sand bg-sand/10 flex-shrink-0" th:text="${item.quantityLabel}"></span>
+                      </div>
+                      <div th:if="${item.description != null and !#strings.isEmpty(item.description)}" class="mt-0.5">
+                        <p class="text-sand text-xs leading-snug line-clamp-2" th:text="${item.description}">Description</p>
+                        <button type="button" class="desc-toggle hidden text-accent text-[10px] font-semibold mt-0.5"
+                                onclick="toggleDesc(this)">Show more</button>
+                      </div>
+                      <span th:unless="${item.available}"
+                            class="inline-block mt-1 px-2 py-0.5 text-xs border rounded-full
+                                   text-red-400 border-red-400/40 bg-red-400/10">Unavailable</span>
+                    </div>
+                    <span class="font-heading text-xl text-accent flex-shrink-0"
+                          th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 2)}">₹0</span>
+                  </div>
+                </div>
+              </div>
+            </th:block>
           </th:block>
         </th:block>
 
-        <!-- Flat view (single category filter active) -->
-        <div th:unless="${categories != null}" class="space-y-2">
+        <!-- Flat view (single leaf category filter active) -->
+        <div th:unless="${categoryTree != null}" class="space-y-2">
           <div th:each="item : ${items}"
                th:classappend="${!item.available} ? 'opacity-50' : ''"
                class="bg-surface rounded-xl border border-elevated/60 px-5 py-4

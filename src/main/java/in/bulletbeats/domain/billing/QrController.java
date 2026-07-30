@@ -7,8 +7,11 @@ import in.bulletbeats.domain.billing.dto.QrSessionResult;
 import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.BillActivityLog;
 import in.bulletbeats.domain.billing.entity.CafeTable;
+import in.bulletbeats.domain.billing.dto.SubcategoryWithItemsDto;
 import in.bulletbeats.domain.billing.service.CafeTableService;
+import in.bulletbeats.domain.menu.entity.Category;
 import in.bulletbeats.domain.menu.entity.MenuItem;
+import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.exception.BillNotEditableException;
@@ -32,6 +35,7 @@ public class QrController {
     private final QrOrderService qrOrderService;
     private final CafeTableService cafeTableService;
     private final MenuService menuService;
+    private final CategoryService categoryService;
     private final ActivityLogService activityLogService;
     private final AppConfigService appConfigService;
 
@@ -203,11 +207,23 @@ public class QrController {
                             @RequestParam(required = false) String customerName,
                             @RequestParam(required = false) Long customerId,
                             Model model) {
-        List<MenuItem> items = categoryId != null
-                ? menuService.getItemsByCategory(categoryId)
-                : menuService.getAllAvailableItems();
+        List<MenuItem> items;
+        List<SubcategoryWithItemsDto> subcategoryGroups = List.of();
+        if (categoryId == null) {
+            items = menuService.getAllAvailableItems();
+        } else {
+            items = menuService.getItemsByCategory(categoryId);
+            Category selected = categoryService.getById(categoryId);
+            if (selected.getParent() == null) {
+                subcategoryGroups = categoryService.getActiveSubcategories(categoryId).stream()
+                        .map(sub -> new SubcategoryWithItemsDto(sub, menuService.getItemsByCategory(sub.getId())))
+                        .filter(g -> !g.items().isEmpty())
+                        .toList();
+            }
+        }
         Bill bill = qrOrderService.getBillForQr(billId);
         model.addAttribute("items", items);
+        model.addAttribute("subcategoryGroups", subcategoryGroups);
         model.addAttribute("bill", bill);
         model.addAttribute("billId", billId);
         model.addAttribute("qrCode", qrCode);

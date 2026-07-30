@@ -3,6 +3,7 @@ package in.bulletbeats.domain.menu;
 import in.bulletbeats.domain.menu.dto.AvailabilityOverrideDto;
 import in.bulletbeats.domain.menu.dto.CreateMenuItemDto;
 import in.bulletbeats.domain.menu.dto.UpdateMenuItemDto;
+import in.bulletbeats.domain.menu.entity.Category;
 import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.ComboService;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -46,12 +48,39 @@ public class MenuAdminController {
     @GetMapping
     public String list(@RequestParam(required = false) Long categoryId,
                        Model model, HttpServletRequest request) {
-        List<MenuItem> items = categoryId != null
-                ? menuService.getItemsByCategoryForAdmin(categoryId)
-                : menuService.getAllItemsForAdmin();
+        List<MenuItem> items;
+        boolean isLeafScope;
+        List<Category> subTabs = List.of();
+        Category topCategory = null;
+
+        if (categoryId == null) {
+            items = menuService.getAllItemsForAdmin();
+            isLeafScope = false;
+        } else {
+            Category selected = categoryService.getById(categoryId);
+            boolean selectedIsSubcategory = selected.getParent() != null;
+            topCategory = selectedIsSubcategory ? selected.getParent() : selected;
+            subTabs = categoryService.getActiveSubcategories(topCategory.getId());
+
+            if (selectedIsSubcategory || subTabs.isEmpty()) {
+                items = menuService.getItemsByCategoryForAdmin(categoryId);
+                isLeafScope = true;
+            } else {
+                List<MenuItem> combined = new ArrayList<>(menuService.getItemsByCategoryForAdmin(categoryId));
+                for (Category sub : subTabs) {
+                    combined.addAll(menuService.getItemsByCategoryForAdmin(sub.getId()));
+                }
+                items = combined;
+                isLeafScope = false;
+            }
+        }
+
         model.addAttribute("items", items);
         model.addAttribute("categories", categoryService.getAllActive());
         model.addAttribute("selectedCategoryId", categoryId);
+        model.addAttribute("subTabs", subTabs);
+        model.addAttribute("topCategory", topCategory);
+        model.addAttribute("isLeafScope", isLeafScope);
 
         if ("true".equals(request.getHeader("HX-Request"))) {
             return "menu/admin/list :: menu-table";
@@ -76,7 +105,7 @@ public class MenuAdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public String newForm(Model model) {
         model.addAttribute("dto", new CreateMenuItemDto());
-        model.addAttribute("categories", categoryService.getAllActive());
+        model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
         model.addAttribute("dishes", dishService.getAll());
         model.addAttribute("combos", comboService.getAll());
         model.addAttribute("mode", "create");
@@ -90,7 +119,7 @@ public class MenuAdminController {
                              @RequestParam(value = "image", required = false) MultipartFile image,
                              Authentication auth, Model model) {
         if (result.hasErrors()) {
-            model.addAttribute("categories", categoryService.getAllActive());
+            model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
             model.addAttribute("dishes", dishService.getAll());
             model.addAttribute("combos", comboService.getAll());
             model.addAttribute("mode", "create");
@@ -100,7 +129,7 @@ public class MenuAdminController {
             menuService.createItem(dto, image, currentUserId(auth));
         } catch (ImageStorageException e) {
             model.addAttribute("imageError", e.getMessage());
-            model.addAttribute("categories", categoryService.getAllActive());
+            model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
             model.addAttribute("dishes", dishService.getAll());
             model.addAttribute("combos", comboService.getAll());
             model.addAttribute("mode", "create");
@@ -150,7 +179,7 @@ public class MenuAdminController {
         dto.setDisplayOrder(item.getDisplayOrder());
         model.addAttribute("dto", dto);
         model.addAttribute("item", item);
-        model.addAttribute("categories", categoryService.getAllActive());
+        model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
         model.addAttribute("dishes", dishService.getAll());
         model.addAttribute("combos", comboService.getAll());
         model.addAttribute("mode", "edit");
@@ -166,7 +195,7 @@ public class MenuAdminController {
                              Authentication auth, Model model) {
         if (result.hasErrors()) {
             model.addAttribute("item", menuService.getItemById(id));
-            model.addAttribute("categories", categoryService.getAllActive());
+            model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
             model.addAttribute("dishes", dishService.getAll());
             model.addAttribute("combos", comboService.getAll());
             model.addAttribute("mode", "edit");
@@ -177,7 +206,7 @@ public class MenuAdminController {
         } catch (ImageStorageException e) {
             model.addAttribute("imageError", e.getMessage());
             model.addAttribute("item", menuService.getItemById(id));
-            model.addAttribute("categories", categoryService.getAllActive());
+            model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
             model.addAttribute("dishes", dishService.getAll());
             model.addAttribute("combos", comboService.getAll());
             model.addAttribute("mode", "edit");

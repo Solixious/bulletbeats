@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -26,9 +27,24 @@ public class MenuViewController {
     public String list(@RequestParam(required = false) Long categoryId,
                        Model model, HttpServletRequest request) {
         List<Category> categories = categoryService.getAllActive();
-        List<MenuItem> items = categoryId != null
-                ? menuService.getItemsByCategory(categoryId)
-                : menuService.getAllItems();
+        List<MenuItem> items;
+
+        if (categoryId == null) {
+            items = menuService.getAllItems();
+        } else {
+            Category selected = categoryService.getById(categoryId);
+            List<Category> subs = selected.getParent() == null
+                    ? categoryService.getActiveSubcategories(categoryId)
+                    : List.of();
+            if (subs.isEmpty()) {
+                items = menuService.getItemsByCategory(categoryId);
+            } else {
+                items = new ArrayList<>(menuService.getItemsByCategory(categoryId));
+                for (Category sub : subs) {
+                    items.addAll(menuService.getItemsByCategory(sub.getId()));
+                }
+            }
+        }
 
         model.addAttribute("categories", categories);
         model.addAttribute("items", items);

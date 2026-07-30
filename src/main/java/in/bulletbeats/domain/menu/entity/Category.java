@@ -27,4 +27,8 @@ public class Category extends BaseEntity {
 
     @Column(nullable = false)
     private Long tenantId;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "parent_id")
+    private Category parent;
 }

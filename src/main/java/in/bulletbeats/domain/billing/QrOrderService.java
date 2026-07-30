@@ -4,6 +4,7 @@ import in.bulletbeats.domain.admin.AppConfigService;
 import in.bulletbeats.domain.billing.dto.CategoryWithItemsDto;
 import in.bulletbeats.domain.billing.dto.QrMenuDto;
 import in.bulletbeats.domain.billing.dto.QrSessionResult;
+import in.bulletbeats.domain.billing.dto.SubcategoryWithItemsDto;
 import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.BillItem;
 import in.bulletbeats.domain.billing.entity.CafeTable;
@@ -15,9 +16,9 @@ import in.bulletbeats.domain.crm.service.CustomerService;
 import in.bulletbeats.domain.inventory.entity.GroceryItem;
 import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
 import in.bulletbeats.domain.inventory.service.InventoryService;
-import in.bulletbeats.domain.menu.entity.Category;
 import in.bulletbeats.domain.menu.entity.ComboIngredient;
 import in.bulletbeats.domain.menu.entity.DishIngredient;
+import in.bulletbeats.domain.menu.dto.CategoryNode;
 import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
@@ -120,16 +121,24 @@ public class QrOrderService {
         Bill bill = billRepository.findByIdWithItems(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
-        List<Category> categories = categoryService.getAllActive();
+        List<CategoryNode> tree = categoryService.getActiveCategoryTree();
         List<MenuItem> allAvailable = menuService.getAllAvailableItems();
 
         Map<Long, List<MenuItem>> byCategory = allAvailable.stream()
                 .filter(item -> item.getCategory() != null)
                 .collect(Collectors.groupingBy(item -> item.getCategory().getId()));
 
-        List<CategoryWithItemsDto> grouped = categories.stream()
-                .map(cat -> new CategoryWithItemsDto(cat, byCategory.getOrDefault(cat.getId(), List.of())))
-                .filter(dto -> !dto.items().isEmpty())
+        List<CategoryWithItemsDto> grouped = tree.stream()
+                .map(node -> {
+                    List<MenuItem> direct = byCategory.getOrDefault(node.category().getId(), List.of());
+                    List<SubcategoryWithItemsDto> subs = node.subcategories().stream()
+                            .map(sub -> new SubcategoryWithItemsDto(
+                                    sub, byCategory.getOrDefault(sub.getId(), List.of())))
+                            .filter(s -> !s.items().isEmpty())
+                            .toList();
+                    return new CategoryWithItemsDto(node.category(), direct, subs);
+                })
+                .filter(dto -> !dto.items().isEmpty() || !dto.subcategories().isEmpty())
                 .collect(Collectors.toList());
 
         String customerName = bill.getCustomer() != null ? bill.getCustomer().getName() : null;

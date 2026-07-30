@@ -28,6 +28,14 @@
        class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
     Category updated.
   </div>
+  <div th:if="${param.deleted}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Subcategory deleted.
+  </div>
+  <div th:if="${deleteError}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-red-500/40 text-red-400 text-sm"
+       th:text="${deleteError}">
+  </div>
   <div th:if="${param.deactivated}"
        id="flash-deactivated"
        style="transition: opacity 0.4s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
@@ -55,62 +63,120 @@
     if (_fr) setTimeout(() => { _fr.style.opacity = '0'; setTimeout(() => _fr.style.display = 'none', 400); }, 3000);
   </script>
 
-  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+  <div th:if="${#lists.isEmpty(categories)}"
+       class="py-16 text-center text-sand text-sm bg-surface rounded-xl border border-elevated/60">
+    No categories yet. <a href="/admin/categories/new" class="text-accent hover:underline ml-1">Add one?</a>
+  </div>
 
-    <div th:if="${#lists.isEmpty(categories)}"
-         class="py-16 text-center text-sand text-sm">
-      No active categories. <a href="/admin/categories/new" class="text-accent hover:underline ml-1">Add one?</a>
+  <div id="sortable-categories" th:unless="${#lists.isEmpty(categories)}" class="space-y-4">
+    <div th:each="cat : ${categories}"
+         th:data-id="${cat.id}"
+         class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+
+      <div th:classappend="${!cat.active} ? 'opacity-60' : ''"
+           class="grid grid-cols-[2.5rem_4rem_1fr_1fr_5rem_auto] items-center gap-2 px-4 py-3
+                  border-b border-elevated/60 last:border-0 hover:bg-elevated/20 transition-colors duration-100">
+
+        <span class="text-sand drag-handle cursor-grab active:cursor-grabbing select-none">⠿</span>
+        <span class="text-sand text-sm font-mono" th:text="${cat.displayOrder}"></span>
+        <span>
+          <span class="text-ivory text-sm font-medium" th:text="${cat.name}">Name</span>
+          <span th:unless="${cat.active}"
+                class="ml-2 px-1.5 py-0.5 text-[10px] rounded-full border border-sand/30 text-sand uppercase">Inactive</span>
+        </span>
+        <span class="text-sand text-sm" th:text="${cat.description} ?: '—'"></span>
+        <span class="text-ivory text-sm font-mono text-right" th:text="${itemCounts[cat.id]} ?: 0"></span>
+        <span class="flex items-center gap-2 justify-end">
+          <a th:href="@{/admin/categories/new(parentId=${cat.id})}"
+             class="text-xs px-2.5 py-1 rounded border border-accent/30 text-accent
+                    hover:border-accent/60 hover:bg-accent/10 transition-colors whitespace-nowrap">
+            + Subcategory
+          </a>
+          <a th:href="@{/admin/categories/{id}/edit(id=${cat.id})}"
+             class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                    hover:border-ivory/40 hover:text-ivory transition-colors">
+            Edit
+          </a>
+          <form th:if="${cat.active}"
+                th:action="@{/admin/categories/{id}/deactivate(id=${cat.id})}"
+                method="post" class="inline"
+                onsubmit="return bbConfirm(this, 'Deactivate this category?')">
+            <button type="submit"
+                    class="text-xs px-2.5 py-1 rounded border border-red-500/30 text-red-400
+                           hover:border-red-500/60 hover:bg-red-500/10 transition-colors">
+              Deactivate
+            </button>
+          </form>
+          <form th:unless="${cat.active}"
+                th:action="@{/admin/categories/{id}/reactivate(id=${cat.id})}"
+                method="post" class="inline">
+            <button type="submit"
+                    class="text-xs px-2.5 py-1 rounded border border-emerald-500/40 text-emerald-400
+                           hover:border-emerald-500/70 hover:bg-emerald-500/10 transition-colors">
+              Reactivate
+            </button>
+          </form>
+        </span>
+      </div>
+
+      <!-- Subcategories nested beneath this category -->
+      <div th:unless="${#lists.isEmpty(subcategoriesByParent.get(cat.id))}"
+           th:id="'sortable-subcategories-' + ${cat.id}"
+           class="bg-base/40">
+        <div th:each="sub : ${subcategoriesByParent.get(cat.id)}"
+             th:data-id="${sub.id}"
+             th:classappend="${!sub.active} ? 'opacity-60' : ''"
+             class="grid grid-cols-[2.5rem_4rem_1fr_1fr_5rem_auto] items-center gap-2 px-4 py-2.5
+                    border-t border-elevated/30 hover:bg-elevated/10 transition-colors duration-100">
+
+          <span class="text-sand drag-handle cursor-grab active:cursor-grabbing select-none">⠿</span>
+          <span class="text-sand text-sm font-mono" th:text="${sub.displayOrder}"></span>
+          <span>
+            <span class="text-sand text-xs">↳</span>
+            <span class="text-ivory text-sm" th:text="${sub.name}">Subcategory</span>
+            <span th:unless="${sub.active}"
+                  class="ml-2 px-1.5 py-0.5 text-[10px] rounded-full border border-sand/30 text-sand uppercase">Inactive</span>
+          </span>
+          <span class="text-sand text-sm" th:text="${sub.description} ?: '—'"></span>
+          <span class="text-ivory text-sm font-mono text-right" th:text="${itemCounts[sub.id]} ?: 0"></span>
+          <span class="flex items-center gap-2 justify-end">
+            <a th:href="@{/admin/categories/{id}/edit(id=${sub.id})}"
+               class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                      hover:border-ivory/40 hover:text-ivory transition-colors">
+              Edit
+            </a>
+            <form th:if="${sub.active}"
+                  th:action="@{/admin/categories/{id}/deactivate(id=${sub.id})}"
+                  method="post" class="inline"
+                  onsubmit="return bbConfirm(this, 'Deactivate this subcategory?')">
+              <button type="submit"
+                      class="text-xs px-2.5 py-1 rounded border border-red-500/30 text-red-400
+                             hover:border-red-500/60 hover:bg-red-500/10 transition-colors">
+                Deactivate
+              </button>
+            </form>
+            <form th:unless="${sub.active}"
+                  th:action="@{/admin/categories/{id}/reactivate(id=${sub.id})}"
+                  method="post" class="inline">
+              <button type="submit"
+                      class="text-xs px-2.5 py-1 rounded border border-emerald-500/40 text-emerald-400
+                             hover:border-emerald-500/70 hover:bg-emerald-500/10 transition-colors">
+                Reactivate
+              </button>
+            </form>
+            <form th:action="@{/admin/categories/{id}/delete(id=${sub.id})}"
+                  method="post" class="inline"
+                  onsubmit="return bbConfirm(this, 'Delete this subcategory? This cannot be undone.')">
+              <button type="submit"
+                      class="text-xs px-2.5 py-1 rounded border border-red-500/50 text-red-400
+                             hover:border-red-500/80 hover:bg-red-500/10 transition-colors">
+                Delete
+              </button>
+            </form>
+          </span>
+        </div>
+      </div>
     </div>
-
-    <table th:unless="${#lists.isEmpty(categories)}" class="w-full text-left">
-      <thead>
-        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
-          <th class="px-4 py-3 font-medium w-10"></th>
-          <th class="px-4 py-3 font-medium w-16">Order</th>
-          <th class="px-4 py-3 font-medium">Name</th>
-          <th class="px-4 py-3 font-medium">Description</th>
-          <th class="px-4 py-3 font-medium text-right">Items</th>
-          <th class="px-4 py-3 font-medium">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="sortable-categories">
-        <tr th:each="cat : ${categories}"
-            th:data-id="${cat.id}"
-            class="border-b border-elevated/40 hover:bg-elevated/20 transition-colors duration-100">
-
-          <td class="px-4 py-3 text-sand drag-handle cursor-grab active:cursor-grabbing select-none">
-            ⠿
-          </td>
-          <td class="px-4 py-3 text-sand text-sm font-mono" th:text="${cat.displayOrder}"></td>
-          <td class="px-4 py-3">
-            <span class="text-ivory text-sm font-medium" th:text="${cat.name}">Name</span>
-          </td>
-          <td class="px-4 py-3 text-sand text-sm" th:text="${cat.description} ?: '—'"></td>
-          <td class="px-4 py-3 text-right">
-            <span class="text-ivory text-sm font-mono"
-                  th:text="${itemCounts[cat.id]} ?: 0"></span>
-          </td>
-          <td class="px-4 py-3">
-            <div class="flex items-center gap-2">
-              <a th:href="@{/admin/categories/{id}/edit(id=${cat.id})}"
-                 class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
-                        hover:border-ivory/40 hover:text-ivory transition-colors">
-                Edit
-              </a>
-              <form th:action="@{/admin/categories/{id}/deactivate(id=${cat.id})}"
-                    method="post" class="inline"
-                    onsubmit="return bbConfirm(this, 'Deactivate this category?')">
-                <button type="submit"
-                        class="text-xs px-2.5 py-1 rounded border border-red-500/30 text-red-400
-                               hover:border-red-500/60 hover:bg-red-500/10 transition-colors">
-                  Deactivate
-                </button>
-              </form>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 
   <p th:unless="${#lists.isEmpty(categories)}"
@@ -118,70 +184,45 @@
      th:text="${#lists.size(categories)} + ' categor' + (${#lists.size(categories)} == 1 ? 'y' : 'ies')">
   </p>
 
-  <!-- Inactive categories -->
-  <div th:unless="${#lists.isEmpty(inactiveCategories)}" class="mt-8">
-    <h2 class="font-heading text-lg text-sand tracking-wide mb-3">Inactive Categories</h2>
-    <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
-      <table class="w-full text-left">
-        <thead>
-          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
-            <th class="px-4 py-3 font-medium">Name</th>
-            <th class="px-4 py-3 font-medium">Description</th>
-            <th class="px-4 py-3 font-medium text-right">Active Items</th>
-            <th class="px-4 py-3 font-medium">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr th:each="cat : ${inactiveCategories}"
-              class="border-b border-elevated/40 last:border-0 opacity-60 hover:opacity-80 transition-opacity">
-            <td class="px-4 py-3">
-              <span class="text-ivory text-sm font-medium" th:text="${cat.name}"></span>
-            </td>
-            <td class="px-4 py-3 text-sand text-sm" th:text="${cat.description} ?: '—'"></td>
-            <td class="px-4 py-3 text-right">
-              <span class="text-ivory text-sm font-mono" th:text="${itemCounts[cat.id]} ?: 0"></span>
-            </td>
-            <td class="px-4 py-3">
-              <form th:action="@{/admin/categories/{id}/reactivate(id=${cat.id})}"
-                    method="post" class="inline">
-                <button type="submit"
-                        class="text-xs px-2.5 py-1 rounded border border-emerald-500/30 text-emerald-400
-                               hover:border-emerald-500/60 hover:bg-emerald-500/10 transition-colors">
-                  Reactivate
-                </button>
-              </form>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
   <!-- SortableJS — categories page only -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script>
-    var sortable = document.getElementById('sortable-categories');
-    if (sortable) {
+    function postCategoryReorder(ids) {
+      var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+      var csrfToken  = document.querySelector('meta[name="_csrf"]').content;
+      fetch('/admin/categories/reorder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'HX-Request': 'true',
+          [csrfHeader]: csrfToken
+        },
+        body: ids.map(function(id) { return 'ids=' + encodeURIComponent(id); }).join('&')
+      });
+    }
+
+    var topSortable = document.getElementById('sortable-categories');
+    if (topSortable) {
+      Sortable.create(topSortable, {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: function () {
+          var rows = topSortable.querySelectorAll(':scope > [data-id]');
+          postCategoryReorder(Array.from(rows).map(function(r) { return r.dataset.id; }));
+        }
+      });
+    }
+
+    document.querySelectorAll('[id^="sortable-subcategories-"]').forEach(function (sortable) {
       Sortable.create(sortable, {
         handle: '.drag-handle',
         animation: 150,
         onEnd: function () {
-          var rows = sortable.querySelectorAll('tr[data-id]');
-          var ids = Array.from(rows).map(function(r) { return r.dataset.id; });
-          var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
-          var csrfToken  = document.querySelector('meta[name="_csrf"]').content;
-          fetch('/admin/categories/reorder', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'HX-Request': 'true',
-              [csrfHeader]: csrfToken
-            },
-            body: ids.map(function(id) { return 'ids=' + encodeURIComponent(id); }).join('&')
-          });
+          var rows = sortable.querySelectorAll('[data-id]');
+          postCategoryReorder(Array.from(rows).map(function(r) { return r.dataset.id; }));
         }
       });
-    }
+    });
   </script>
 
 </main>

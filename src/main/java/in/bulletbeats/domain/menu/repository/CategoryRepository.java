@@ -6,7 +6,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-    List<Category> findByIsActiveTrueOrderByDisplayOrderAscNameAsc();
-    List<Category> findByIsActiveFalseOrderByNameAsc();
-    boolean existsByNameIgnoreCase(String name);
+    List<Category> findByParentIsNullAndIsActiveTrueOrderByDisplayOrderAscNameAsc();
+    List<Category> findByParentIsNullAndIsActiveFalseOrderByNameAsc();
+    List<Category> findByParentIsNullOrderByDisplayOrderAscNameAsc();
+    List<Category> findByParentIdAndIsActiveTrueOrderByDisplayOrderAscNameAsc(Long parentId);
+    List<Category> findByParentIdOrderByDisplayOrderAscNameAsc(Long parentId);
+    boolean existsByParentId(Long parentId);
+    boolean existsByNameIgnoreCaseAndParentIsNull(String name);
+    boolean existsByNameIgnoreCaseAndParentId(String name, Long parentId);
 }

@@ -192,6 +192,15 @@
             <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked})}"/>
           </th:block>
         </div>
+        <th:block th:each="sub : ${dto.subcategories}">
+          <h4 class="font-heading text-base text-sand/80 tracking-widest mt-4 mb-2 uppercase pl-2 border-l-2 border-accent/40"
+              th:text="${sub.subcategory.name}">Subcategory</h4>
+          <div class="space-y-3">
+            <th:block th:each="item : ${sub.items}">
+              <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked})}"/>
+            </th:block>
+          </div>
+        </th:block>
       </div>
     </th:block>
   </div>

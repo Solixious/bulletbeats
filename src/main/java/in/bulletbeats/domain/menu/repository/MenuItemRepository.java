@@ -9,12 +9,14 @@ import java.util.List;
 
 public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category c LEFT JOIN FETCH c.parent " +
+           "LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
            "WHERE m.isActive = true " +
            "ORDER BY m.category.displayOrder ASC, m.displayOrder ASC, m.name ASC")
     List<MenuItem> findByIsActiveTrueOrderByCategoryDisplayOrderAscDisplayOrderAscNameAsc();
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category c LEFT JOIN FETCH c.parent " +
+           "LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
            "WHERE m.category.id = :categoryId AND m.isActive = true " +
            "ORDER BY m.displayOrder ASC, m.name ASC")
     List<MenuItem> findByCategoryIdAndIsActiveTrueOrderByDisplayOrderAscNameAsc(@Param("categoryId") Long categoryId);
@@ -23,11 +25,15 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
     List<MenuItem> findByComboId(Long comboId);
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
+    boolean existsByCategoryId(Long categoryId);
+
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category c LEFT JOIN FETCH c.parent " +
+           "LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
            "ORDER BY m.category.displayOrder ASC, m.displayOrder ASC, m.name ASC")
     List<MenuItem> findAllWithCategoryOrdered();
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category c LEFT JOIN FETCH c.parent " +
+           "LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
            "WHERE m.category.id = :categoryId " +
            "ORDER BY m.displayOrder ASC, m.name ASC")
     List<MenuItem> findAllByCategoryIdWithCategoryOrdered(@Param("categoryId") Long categoryId);

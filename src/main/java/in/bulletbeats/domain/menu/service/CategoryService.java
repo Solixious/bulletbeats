@@ -1,8 +1,11 @@
 package in.bulletbeats.domain.menu.service;
 
 import in.bulletbeats.domain.menu.dto.CategoryDto;
+import in.bulletbeats.domain.menu.dto.CategoryNode;
 import in.bulletbeats.domain.menu.entity.Category;
 import in.bulletbeats.domain.menu.repository.CategoryRepository;
+import in.bulletbeats.domain.menu.repository.MenuItemRepository;
+import in.bulletbeats.domain.shared.exception.CategoryInUseException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,13 +19,32 @@ import java.util.List;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final MenuItemRepository menuItemRepository;
 
     public List<Category> getAllActive() {
-        return categoryRepository.findByIsActiveTrueOrderByDisplayOrderAscNameAsc();
+        return categoryRepository.findByParentIsNullAndIsActiveTrueOrderByDisplayOrderAscNameAsc();
     }
 
     public List<Category> getAllInactive() {
-        return categoryRepository.findByIsActiveFalseOrderByNameAsc();
+        return categoryRepository.findByParentIsNullAndIsActiveFalseOrderByNameAsc();
+    }
+
+    public List<Category> getTopLevelCategories() {
+        return categoryRepository.findByParentIsNullOrderByDisplayOrderAscNameAsc();
+    }
+
+    public List<Category> getActiveSubcategories(Long parentId) {
+        return categoryRepository.findByParentIdAndIsActiveTrueOrderByDisplayOrderAscNameAsc(parentId);
+    }
+
+    public List<Category> getAllSubcategories(Long parentId) {
+        return categoryRepository.findByParentIdOrderByDisplayOrderAscNameAsc(parentId);
+    }
+
+    public List<CategoryNode> getActiveCategoryTree() {
+        return getAllActive().stream()
+                .map(cat -> new CategoryNode(cat, getActiveSubcategories(cat.getId())))
+                .toList();
     }
 
     public Category getById(Long id) {
@@ -32,7 +54,8 @@ public class CategoryService {
 
     @Transactional
     public Category create(CategoryDto dto) {
-        if (categoryRepository.existsByNameIgnoreCase(dto.getName())) {
+        Category parent = resolveParent(dto.getParentId(), null);
+        if (isNameTaken(dto.getName(), parent)) {
             throw new IllegalArgumentException("Category already exists: " + dto.getName());
         }
         Category category = Category.builder()
@@ -41,6 +64,7 @@ public class CategoryService {
                 .displayOrder(dto.getDisplayOrder())
                 .isActive(true)
                 .tenantId(1L)
+                .parent(parent)
                 .build();
         return categoryRepository.save(category);
     }
@@ -48,14 +72,41 @@ public class CategoryService {
     @Transactional
     public Category update(Long id, CategoryDto dto) {
         Category category = getById(id);
-        if (!category.getName().equalsIgnoreCase(dto.getName())
-                && categoryRepository.existsByNameIgnoreCase(dto.getName())) {
+        Category parent = resolveParent(dto.getParentId(), id);
+        if (parent != null && categoryRepository.existsByParentId(id)) {
+            throw new IllegalArgumentException("This category has its own subcategories and cannot become a subcategory itself");
+        }
+        boolean parentUnchanged = (parent == null && category.getParent() == null)
+                || (parent != null && category.getParent() != null && parent.getId().equals(category.getParent().getId()));
+        boolean nameUnchanged = category.getName().equalsIgnoreCase(dto.getName());
+        if (!(parentUnchanged && nameUnchanged) && isNameTaken(dto.getName(), parent)) {
             throw new IllegalArgumentException("Category already exists: " + dto.getName());
         }
         category.setName(dto.getName());
         category.setDescription(dto.getDescription());
         category.setDisplayOrder(dto.getDisplayOrder());
+        category.setParent(parent);
         return categoryRepository.save(category);
+    }
+
+    private Category resolveParent(Long parentId, Long selfId) {
+        if (parentId == null) {
+            return null;
+        }
+        if (parentId.equals(selfId)) {
+            throw new IllegalArgumentException("A category cannot be its own parent");
+        }
+        Category parent = getById(parentId);
+        if (parent.getParent() != null) {
+            throw new IllegalArgumentException("Cannot create a subcategory under another subcategory");
+        }
+        return parent;
+    }
+
+    private boolean isNameTaken(String name, Category parent) {
+        return parent == null
+                ? categoryRepository.existsByNameIgnoreCaseAndParentIsNull(name)
+                : categoryRepository.existsByNameIgnoreCaseAndParentId(name, parent.getId());
     }
 
     @Transactional
@@ -79,5 +130,17 @@ public class CategoryService {
         Category category = getById(id);
         category.setActive(true);
         categoryRepository.save(category);
+    }
+
+    @Transactional
+    public void deleteSubcategory(Long id) {
+        Category category = getById(id);
+        if (category.getParent() == null) {
+            throw new IllegalArgumentException("Only subcategories can be deleted; deactivate top-level categories instead");
+        }
+        if (menuItemRepository.existsByCategoryId(id)) {
+            throw new CategoryInUseException(id);
+        }
+        categoryRepository.delete(category);
     }
 }

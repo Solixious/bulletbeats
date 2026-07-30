@@ -74,7 +74,7 @@
             hx-target="#menu-table"
             hx-swap="innerHTML"
             onclick="setActiveTab(this)"
-            th:classappend="${selectedCategoryId == cat.id}
+            th:classappend="${topCategory != null and topCategory.id == cat.id}
                             ? 'bg-accent/20 text-accent border-accent/50'
                             : 'text-sand border-elevated/60 hover:text-ivory hover:border-sand/50'"
             class="category-tab px-3 py-1.5 text-xs rounded-full border transition-colors"
@@ -95,6 +95,28 @@
   <!-- Table (HTMX target) -->
   <div id="menu-table" th:fragment="menu-table">
 
+    <!-- Subcategory sub-tabs, shown only when the selected top-level category has subcategories -->
+    <div th:if="${!#lists.isEmpty(subTabs)}" class="flex items-center gap-2 mb-4 flex-wrap pl-2">
+      <span class="text-sand/50 text-xs">↳</span>
+      <button th:attr="hx-get='/admin/menu?categoryId=' + ${topCategory.id}"
+              hx-target="#menu-table"
+              hx-swap="innerHTML"
+              th:classappend="${selectedCategoryId == topCategory.id}
+                              ? 'bg-accent/20 text-accent border-accent/50'
+                              : 'text-sand border-elevated/60 hover:text-ivory hover:border-sand/50'"
+              class="px-3 py-1 text-xs rounded-full border transition-colors"
+              th:text="'All in ' + ${topCategory.name}">All</button>
+      <button th:each="sub : ${subTabs}"
+              th:attr="hx-get='/admin/menu?categoryId=' + ${sub.id}"
+              hx-target="#menu-table"
+              hx-swap="innerHTML"
+              th:classappend="${selectedCategoryId == sub.id}
+                              ? 'bg-accent/20 text-accent border-accent/50'
+                              : 'text-sand border-elevated/60 hover:text-ivory hover:border-sand/50'"
+              class="px-3 py-1 text-xs rounded-full border transition-colors"
+              th:text="${sub.name}">Subcategory</button>
+    </div>
+
     <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
 
       <div th:if="${#lists.isEmpty(items)}"
@@ -108,7 +130,7 @@
       <table th:unless="${#lists.isEmpty(items)}" class="w-full text-left">
         <thead>
           <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
-            <th th:if="${selectedCategoryId != null}" class="px-4 py-3 font-medium w-10"></th>
+            <th th:if="${isLeafScope}" class="px-4 py-3 font-medium w-10"></th>
             <th class="px-4 py-3 font-medium">Name</th>
             <th class="px-4 py-3 font-medium">Type</th>
             <th class="px-4 py-3 font-medium">Category</th>
@@ -124,7 +146,7 @@
               th:classappend="${!item.isActive()} ? 'opacity-50' : ''"
               class="border-b border-elevated/40 hover:bg-elevated/10 transition-colors duration-100">
 
-            <td th:if="${selectedCategoryId != null}"
+            <td th:if="${isLeafScope}"
                 class="px-4 py-3 text-sand drag-handle cursor-grab active:cursor-grabbing select-none">⠿</td>
 
             <td class="px-4 py-3">
@@ -152,7 +174,11 @@
                            text-amber-400 border-amber-400/40 bg-amber-400/10">Combo</span>
             </td>
 
-            <td class="px-4 py-3 text-sand text-sm" th:text="${item.category.name}"></td>
+            <td class="px-4 py-3 text-sand text-sm">
+              <span th:if="${item.category.parent != null}"
+                    th:text="${item.category.parent.name} + ' › ' + ${item.category.name}"></span>
+              <span th:if="${item.category.parent == null}" th:text="${item.category.name}"></span>
+            </td>
 
             <td class="px-4 py-3">
               <span th:if="${item.isActive()}"
@@ -220,14 +246,16 @@
        th:text="${#lists.size(items)} + ' item' + (${#lists.size(items)} == 1 ? '' : 's')">
     </p>
 
-    <p th:if="${selectedCategoryId != null and !#lists.isEmpty(items)}"
+    <p th:if="${isLeafScope and !#lists.isEmpty(items)}"
        class="mt-1 text-sand/50 text-xs text-right">Drag rows to reorder — changes save automatically</p>
-    <p th:if="${selectedCategoryId == null and !#lists.isEmpty(items)}"
+    <p th:if="${!isLeafScope and !#lists.isEmpty(items) and selectedCategoryId == null}"
        class="mt-1 text-sand/50 text-xs text-right">Select a category tab to drag-reorder items</p>
+    <p th:if="${!isLeafScope and !#lists.isEmpty(items) and selectedCategoryId != null}"
+       class="mt-1 text-sand/50 text-xs text-right">Select a specific subcategory tab to drag-reorder items</p>
 
-    <script th:if="${selectedCategoryId != null}"
+    <script th:if="${isLeafScope}"
             src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-    <script th:if="${selectedCategoryId != null}">
+    <script th:if="${isLeafScope}">
       (function () {
         var tbody = document.getElementById('sortable-items');
         if (!tbody || typeof Sortable === 'undefined') return;

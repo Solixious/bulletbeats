@@ -4,9 +4,12 @@ import in.bulletbeats.domain.admin.AppConfigService;
 import in.bulletbeats.domain.billing.dto.DeliveryStartResult;
 import in.bulletbeats.domain.billing.dto.QrAddItemDto;
 import in.bulletbeats.domain.billing.dto.QrConfirmDto;
+import in.bulletbeats.domain.billing.dto.SubcategoryWithItemsDto;
 import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.BillActivityLog;
+import in.bulletbeats.domain.menu.entity.Category;
 import in.bulletbeats.domain.menu.entity.MenuItem;
+import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.exception.BillNotEditableException;
@@ -28,6 +31,7 @@ public class DeliveryController {
 
     private final DeliveryOrderService deliveryOrderService;
     private final MenuService menuService;
+    private final CategoryService categoryService;
     private final ActivityLogService activityLogService;
     private final AppConfigService appConfigService;
 
@@ -174,11 +178,23 @@ public class DeliveryController {
                             @RequestParam(required = false) Long categoryId,
                             @RequestParam(required = false) String customerName,
                             Model model) {
-        List<MenuItem> items = categoryId != null
-                ? menuService.getItemsByCategory(categoryId)
-                : menuService.getAllAvailableItems();
+        List<MenuItem> items;
+        List<SubcategoryWithItemsDto> subcategoryGroups = List.of();
+        if (categoryId == null) {
+            items = menuService.getAllAvailableItems();
+        } else {
+            items = menuService.getItemsByCategory(categoryId);
+            Category selected = categoryService.getById(categoryId);
+            if (selected.getParent() == null) {
+                subcategoryGroups = categoryService.getActiveSubcategories(categoryId).stream()
+                        .map(sub -> new SubcategoryWithItemsDto(sub, menuService.getItemsByCategory(sub.getId())))
+                        .filter(g -> !g.items().isEmpty())
+                        .toList();
+            }
+        }
         Bill bill = deliveryOrderService.getOrder(billId);
         model.addAttribute("items", items);
+        model.addAttribute("subcategoryGroups", subcategoryGroups);
         model.addAttribute("bill", bill);
         model.addAttribute("billId", billId);
         model.addAttribute("customerName", customerName);
