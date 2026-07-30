@@ -10,13 +10,13 @@
   </div>
   <div th:unless="${#lists.isEmpty(items)}" class="space-y-3">
     <th:block th:each="item : ${items}">
-      <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId})}"/>
+      <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked})}"/>
     </th:block>
   </div>
 </th:block>
 
 <!-- ── Single item card (reused from menu.html too) ─────────────────── -->
-<th:block th:fragment="qr-menu-item(item, bill, billId, qrCode, customerName, customerId)">
+<th:block th:fragment="qr-menu-item(item, bill, billId, qrCode, customerName, customerId, locked)">
 
   <!-- Find how many of this item are already in the cart -->
   <th:block th:with="matchedItems=${bill.items.?[menuItem.id == __${item.id}__]},
@@ -63,10 +63,14 @@
         <p th:unless="${item.available}"
            class="text-xs text-amber-400/80 mt-0.5">Currently Unavailable</p>
       </div>
-      <div class="flex items-center justify-end mt-1">
+      <div class="flex items-center justify-end gap-2 mt-1">
 
-        <!-- Add / Qty stepper -->
-        <div th:if="${item.available}">
+        <!-- Locked: static quantity badge only -->
+        <span th:if="${locked and cartQty != null and cartQty > 0}"
+              class="text-ivory text-sm font-bold" th:text="'x' + ${cartQty}">x1</span>
+
+        <!-- Add / Qty stepper (only while still editable) -->
+        <div th:if="${item.available and !locked}">
 
           <!-- Item not in cart: show Add button -->
           <form th:unless="${cartQty != null and cartQty > 0}"

@@ -11,6 +11,7 @@ import in.bulletbeats.domain.billing.service.CafeTableService;
 import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.shared.enums.BillStatus;
+import in.bulletbeats.domain.shared.exception.BillNotEditableException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
@@ -94,7 +95,9 @@ public class QrController {
         model.addAttribute("customerName", customerName != null ? customerName : "Guest");
         model.addAttribute("returning", returning);
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
-        model.addAttribute("promotedItem", menuService.getPromotedItem().orElse(null));
+        model.addAttribute("locked", bill.getStatus() != BillStatus.DRAFT);
+        model.addAttribute("promotedItem", bill.getStatus() == BillStatus.DRAFT
+                ? menuService.getPromotedItem().orElse(null) : null);
         return "qr/menu";
     }
 
@@ -210,6 +213,7 @@ public class QrController {
         model.addAttribute("qrCode", qrCode);
         model.addAttribute("customerName", customerName);
         model.addAttribute("customerId", customerId);
+        model.addAttribute("locked", bill.getStatus() != BillStatus.DRAFT);
         return "qr/fragments/menu-grid :: qr-menu-grid";
     }
 
@@ -217,6 +221,12 @@ public class QrController {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public String handleNotFound(ResourceNotFoundException e, Model model) {
+        model.addAttribute("error", e.getMessage());
+        return "qr/error";
+    }
+
+    @ExceptionHandler(BillNotEditableException.class)
+    public String handleNotEditable(BillNotEditableException e, Model model) {
         model.addAttribute("error", e.getMessage());
         return "qr/error";
     }

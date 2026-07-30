@@ -82,8 +82,8 @@
             <p class="text-sand text-xs" th:text="'₹' + ${item.lineTotal}">₹0</p>
           </div>
 
-          <!-- Qty stepper -->
-          <div class="flex items-center gap-1.5 flex-shrink-0">
+          <!-- Qty stepper (DRAFT only) -->
+          <div th:if="${bill.status.name() == 'DRAFT'}" class="flex items-center gap-1.5 flex-shrink-0">
             <button th:attr="hx-patch=@{/qr/{c}/items/{i}/quantity(c=${qrCode},i=${item.id},billId=${bill.id},quantity=${item.quantity - 1},customerName=${customerName})}"
                     hx-target="#order-panel"
                     hx-swap="innerHTML"
@@ -99,9 +99,13 @@
                            hover:bg-accent/20 transition-colors
                            flex items-center justify-center leading-none">+</button>
           </div>
+          <!-- Static quantity (locked) -->
+          <span th:unless="${bill.status.name() == 'DRAFT'}"
+                class="text-ivory text-sm font-bold flex-shrink-0" th:text="'x' + ${item.quantity}">x1</span>
 
-          <!-- Remove -->
-          <button th:attr="hx-delete=@{/qr/{c}/items/{i}(c=${qrCode},i=${item.id},billId=${bill.id},customerName=${customerName})}"
+          <!-- Remove (DRAFT only) -->
+          <button th:if="${bill.status.name() == 'DRAFT'}"
+                  th:attr="hx-delete=@{/qr/{c}/items/{i}(c=${qrCode},i=${item.id},billId=${bill.id},customerName=${customerName})}"
                   hx-target="#order-panel"
                   hx-swap="innerHTML"
                   class="w-7 h-7 flex-shrink-0 text-sand/50 hover:text-red-400 transition-colors
@@ -127,7 +131,7 @@
           <span>Total</span>
           <span class="text-accent font-heading text-lg" th:text="'₹' + ${bill.totalAmount}">₹0</span>
         </div>
-        <p class="text-sand/50 text-xs">Discounts applied by staff if applicable</p>
+        <p th:if="${bill.status.name() == 'DRAFT'}" class="text-sand/50 text-xs">Discounts applied by staff if applicable</p>
       </div>
 
       <!-- CTA: DRAFT → send to kitchen -->
@@ -144,13 +148,14 @@
             SEND TO KITCHEN 🍽
           </button>
         </form>
+        <p class="text-center text-sand/40 text-xs mt-2">Once sent, only staff can make changes to this order.</p>
       </div>
 
-      <!-- CTA: CONFIRMED -->
-      <div th:if="${bill.status.name() == 'CONFIRMED'}">
+      <!-- CTA: locked (CONFIRMED / PAID) -->
+      <div th:unless="${bill.status.name() == 'DRAFT'}">
         <div class="w-full py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10
                     text-emerald-400 text-center text-sm font-bold">
-          ✓ Order Sent — You Can Still Add Items
+          ✓ Order Sent — Ask a Staff Member for Changes
         </div>
       </div>
 

@@ -27,7 +27,6 @@ import in.bulletbeats.domain.notification.NotificationService;
 import in.bulletbeats.domain.notification.WhatsappTemplate;
 import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
-import in.bulletbeats.domain.shared.enums.MovementType;
 import in.bulletbeats.domain.shared.exception.BillNotEditableException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
@@ -145,8 +144,8 @@ public class QrOrderService {
         Bill bill = billRepository.findByIdWithItems(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
-        if (!ACTIVE_STATUSES.contains(bill.getStatus())) {
-            throw new BillNotEditableException("Bill " + bill.getBillNumber() + " is not open for ordering");
+        if (!bill.isEditable()) {
+            throw new BillNotEditableException("Bill " + bill.getBillNumber() + " can no longer be edited here — please ask a staff member");
         }
 
         MenuItem menuItem = menuService.getItemById(menuItemId);
@@ -162,11 +161,7 @@ public class QrOrderService {
         int newTotalQty = currentQty + quantity;
 
         if (!isForceAvailable(menuItem)) {
-            if (bill.getStatus() == BillStatus.DRAFT) {
-                validateStock(aggregateIngredientsForItem(menuItem, newTotalQty));
-            } else {
-                deductStockForMenuItem(menuItem, quantity, billId);
-            }
+            validateStock(aggregateIngredientsForItem(menuItem, newTotalQty));
         }
 
         if (existing.isPresent()) {
@@ -201,8 +196,8 @@ public class QrOrderService {
         Bill bill = billRepository.findByIdWithItems(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
-        if (!ACTIVE_STATUSES.contains(bill.getStatus())) {
-            throw new BillNotEditableException("Bill " + bill.getBillNumber() + " is not open for ordering");
+        if (!bill.isEditable()) {
+            throw new BillNotEditableException("Bill " + bill.getBillNumber() + " can no longer be edited here — please ask a staff member");
         }
 
         BillItem billItem = bill.getItems().stream()
@@ -212,10 +207,6 @@ public class QrOrderService {
 
         String itemName = billItem.getItemName();
         int qty = billItem.getQuantity();
-
-        if (bill.getStatus() == BillStatus.CONFIRMED && !isForceAvailable(billItem.getMenuItem())) {
-            reverseStockForBillItem(billItem, billId);
-        }
 
         bill.getItems().remove(billItem);
         recalculateTotals(bill);
@@ -299,8 +290,8 @@ public class QrOrderService {
         Bill bill = billRepository.findByIdWithItems(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
-        if (!ACTIVE_STATUSES.contains(bill.getStatus())) {
-            throw new BillNotEditableException("Bill " + bill.getBillNumber() + " is not open for ordering");
+        if (!bill.isEditable()) {
+            throw new BillNotEditableException("Bill " + bill.getBillNumber() + " can no longer be edited here — please ask a staff member");
         }
 
         if (newQty <= 0) {
@@ -312,23 +303,8 @@ public class QrOrderService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found in bill"));
 
-        if (!isForceAvailable(item.getMenuItem())) {
-            if (bill.getStatus() == BillStatus.DRAFT && newQty > item.getQuantity()) {
-                validateStock(aggregateIngredientsForItem(item.getMenuItem(), newQty));
-            }
-            if (bill.getStatus() == BillStatus.CONFIRMED) {
-                int delta = newQty - item.getQuantity();
-                if (delta > 0) {
-                    deductStockForMenuItem(item.getMenuItem(), delta, billId);
-                } else if (delta < 0) {
-                    Map<Long, BigDecimal> toReverse = aggregateIngredientsForItem(item.getMenuItem(), -delta);
-                    for (Map.Entry<Long, BigDecimal> e : toReverse.entrySet()) {
-                        GroceryItem groceryItem = inventoryService.getItemById(e.getKey());
-                        inventoryService.recordMovement(groceryItem, MovementType.INBOUND, e.getValue(),
-                                "QR_QTY_ADJUST", billId, "QR quantity adjustment", SYSTEM_USER_ID);
-                    }
-                }
-            }
+        if (!isForceAvailable(item.getMenuItem()) && newQty > item.getQuantity()) {
+            validateStock(aggregateIngredientsForItem(item.getMenuItem(), newQty));
         }
 
         String itemName = item.getItemName();
@@ -346,24 +322,6 @@ public class QrOrderService {
     }
 
     // ── Private helpers ───────────────────────────────────────────────────
-
-    private void deductStockForMenuItem(MenuItem menuItem, int qty, Long billId) {
-        Map<Long, BigDecimal> required = aggregateIngredientsForItem(menuItem, qty);
-        validateStock(required);
-        for (Map.Entry<Long, BigDecimal> e : required.entrySet()) {
-            inventoryService.deductStock(e.getKey(), e.getValue(), billId, SYSTEM_USER_ID);
-        }
-    }
-
-    private void reverseStockForBillItem(BillItem billItem, Long billId) {
-        MenuItem menuItem = billItem.getMenuItem();
-        Map<Long, BigDecimal> required = aggregateIngredientsForItem(menuItem, billItem.getQuantity());
-        for (Map.Entry<Long, BigDecimal> e : required.entrySet()) {
-            GroceryItem groceryItem = inventoryService.getItemById(e.getKey());
-            inventoryService.recordMovement(groceryItem, MovementType.INBOUND, e.getValue(),
-                    "QR_REMOVE", billId, "QR removal reversal", SYSTEM_USER_ID);
-        }
-    }
 
     private Map<Long, BigDecimal> aggregateIngredientsForItem(MenuItem menuItem, int qty) {
         Map<Long, BigDecimal> required = new HashMap<>();
