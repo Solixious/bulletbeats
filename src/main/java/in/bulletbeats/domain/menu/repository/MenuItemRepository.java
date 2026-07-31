@@ -47,13 +47,15 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
            "ORDER BY m.category.displayOrder ASC, m.displayOrder ASC, m.name ASC")
     List<MenuItem> findAllAvailableOrdered();
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category " +
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category c LEFT JOIN FETCH c.parent " +
+           "LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
            "WHERE m.isActive = true AND m.isAvailable = true " +
            "AND LOWER(m.name) LIKE LOWER(CONCAT('%', :q, '%')) " +
            "ORDER BY m.category.displayOrder ASC, m.displayOrder ASC, m.name ASC")
     List<MenuItem> searchAvailableItems(@Param("q") String q);
 
-    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category " +
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.category c LEFT JOIN FETCH c.parent " +
+           "LEFT JOIN FETCH m.dish LEFT JOIN FETCH m.combo " +
            "WHERE m.isActive = true " +
            "AND LOWER(m.name) LIKE LOWER(CONCAT('%', :q, '%')) " +
            "ORDER BY m.category.displayOrder ASC, m.displayOrder ASC, m.name ASC")
