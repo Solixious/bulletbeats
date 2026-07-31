@@ -15,6 +15,8 @@ import in.bulletbeats.domain.shared.enums.OnlineOrderPlatform;
 import in.bulletbeats.domain.shared.enums.OrderType;
 import in.bulletbeats.domain.billing.service.CafeTableService;
 import in.bulletbeats.domain.crm.service.CustomerService;
+import in.bulletbeats.domain.menu.entity.Category;
+import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
@@ -35,6 +37,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -223,9 +226,19 @@ public class BillingController {
     public String menuItems(@PathVariable Long id,
                             @RequestParam(required = false) Long categoryId,
                             Model model) {
-        model.addAttribute("menuItems", categoryId != null
-                ? menuService.getItemsByCategory(categoryId)
-                : menuService.getAllItems());
+        List<MenuItem> items;
+        if (categoryId == null) {
+            items = menuService.getAllItems();
+        } else {
+            items = new ArrayList<>(menuService.getItemsByCategory(categoryId));
+            Category selected = categoryService.getById(categoryId);
+            if (selected.getParent() == null) {
+                for (Category sub : categoryService.getActiveSubcategories(categoryId)) {
+                    items.addAll(menuService.getItemsByCategory(sub.getId()));
+                }
+            }
+        }
+        model.addAttribute("menuItems", items);
         model.addAttribute("billId", id);
         return "billing/fragments/menu-grid :: menu-grid";
     }
