@@ -5,6 +5,13 @@
 <th:block th:fragment="confirm-result">
   <div class="bg-surface border-t border-elevated/60 rounded-t-2xl shadow-2xl">
 
+    <!-- HTMX polling — transitions back to the live (add-only) order panel shortly after placing -->
+    <div th:attr="hx-get=@{/order/{id}/poll(id=${bill.id},customerName=${customerName})}"
+         hx-trigger="every 5s"
+         hx-target="#order-panel"
+         hx-swap="innerHTML">
+    </div>
+
     <!-- Success card -->
     <div class="px-5 pt-6 pb-4">
       <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-5 text-center">
@@ -45,7 +52,7 @@
     </div>
 
     <p class="px-5 pb-6 pt-2 text-center text-sand/40 text-xs">
-      This order is confirmed and can no longer be changed here — please call the café if you need to make changes.
+      You can still add more items from the menu above — please call the café if you need to remove anything.
     </p>
 
   </div>

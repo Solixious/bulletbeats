@@ -100,7 +100,9 @@
           <div th:if="${cartQty > 0}"
                class="flex items-center gap-2">
             <th:block th:with="billItemId=${matchedItems[0].id}">
-            <button th:attr="hx-patch=@{/order/{id}/items/{i}/quantity(id=${billId},i=${billItemId},quantity=${cartQty - 1},customerName=${customerName})}"
+            <!-- Decrease (DRAFT only — items can't be reduced/removed once placed) -->
+            <button th:if="${bill.status.name() == 'DRAFT'}"
+                    th:attr="hx-patch=@{/order/{id}/items/{i}/quantity(id=${billId},i=${billItemId},quantity=${cartQty - 1},customerName=${customerName})}"
                     hx-target="#order-panel"
                     hx-swap="innerHTML"
                     class="w-8 h-8 rounded-lg border border-elevated/60 text-ivory text-lg

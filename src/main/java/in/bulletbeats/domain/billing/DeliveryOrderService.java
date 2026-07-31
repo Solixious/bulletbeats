@@ -133,9 +133,10 @@ public class DeliveryOrderService {
         Bill bill = billRepository.findByIdWithItems(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
-        if (bill.getStatus() != BillStatus.DRAFT) {
+        if (bill.getStatus().isTerminal()) {
             throw new BillNotEditableException("Order " + bill.getBillNumber() + " has already been placed and can't be changed");
         }
+        boolean wasConfirmed = bill.getStatus() == BillStatus.CONFIRMED;
 
         MenuItem menuItem = menuService.getItemById(menuItemId);
         if (!menuItem.isAvailable()) {
@@ -150,7 +151,13 @@ public class DeliveryOrderService {
         int newTotalQty = currentQty + quantity;
 
         if (!isForceAvailable(menuItem)) {
-            validateStock(aggregateIngredientsForItem(menuItem, newTotalQty));
+            if (wasConfirmed) {
+                // Stock for pre-existing quantity was already deducted at confirmation time —
+                // only the newly added quantity needs to be deducted now.
+                deductStockForMenuItem(menuItem, quantity, billId);
+            } else {
+                validateStock(aggregateIngredientsForItem(menuItem, newTotalQty));
+            }
         }
 
         if (existing.isPresent()) {
@@ -176,6 +183,10 @@ public class DeliveryOrderService {
         String t = LocalTime.now().format(TIME_FMT);
         activityLogService.log(billId, ActorType.CUSTOMER, actor,
                 "[" + t + "] " + menuItem.getName() + " x" + quantity + " added via delivery order by " + actor);
+
+        if (wasConfirmed) {
+            notifyStaffOfOrder(saved);
+        }
 
         return saved;
     }
@@ -214,21 +225,33 @@ public class DeliveryOrderService {
         Bill bill = billRepository.findByIdWithItems(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
-        if (bill.getStatus() != BillStatus.DRAFT) {
+        if (bill.getStatus().isTerminal()) {
             throw new BillNotEditableException("Order " + bill.getBillNumber() + " has already been placed and can't be changed");
         }
-
-        if (newQty <= 0) {
-            return removeItem(billId, billItemId, customerName);
-        }
+        boolean wasConfirmed = bill.getStatus() == BillStatus.CONFIRMED;
 
         BillItem item = bill.getItems().stream()
                 .filter(bi -> bi.getId().equals(billItemId))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found in bill"));
 
-        if (!isForceAvailable(item.getMenuItem()) && newQty > item.getQuantity()) {
-            validateStock(aggregateIngredientsForItem(item.getMenuItem(), newQty));
+        if (wasConfirmed && newQty <= item.getQuantity()) {
+            throw new BillNotEditableException("Order " + bill.getBillNumber()
+                    + " has already been placed — items can only be added, not reduced or removed.");
+        }
+
+        if (newQty <= 0) {
+            return removeItem(billId, billItemId, customerName);
+        }
+
+        int delta = newQty - item.getQuantity();
+
+        if (!isForceAvailable(item.getMenuItem())) {
+            if (wasConfirmed) {
+                deductStockForMenuItem(item.getMenuItem(), delta, billId);
+            } else if (newQty > item.getQuantity()) {
+                validateStock(aggregateIngredientsForItem(item.getMenuItem(), newQty));
+            }
         }
 
         String itemName = item.getItemName();
@@ -241,6 +264,10 @@ public class DeliveryOrderService {
         String t = LocalTime.now().format(TIME_FMT);
         activityLogService.log(billId, ActorType.CUSTOMER, actor,
                 "[" + t + "] " + itemName + " qty updated to " + newQty + " via delivery order by " + actor);
+
+        if (wasConfirmed) {
+            notifyStaffOfOrder(saved);
+        }
 
         return saved;
     }
@@ -309,6 +336,14 @@ public class DeliveryOrderService {
     }
 
     // ── Private helpers ───────────────────────────────────────────────────
+
+    private void deductStockForMenuItem(MenuItem menuItem, int qty, Long billId) {
+        Map<Long, BigDecimal> required = aggregateIngredientsForItem(menuItem, qty);
+        validateStock(required);
+        for (Map.Entry<Long, BigDecimal> e : required.entrySet()) {
+            inventoryService.deductStock(e.getKey(), e.getValue(), billId, SYSTEM_USER_ID);
+        }
+    }
 
     private Map<Long, BigDecimal> aggregateIngredientsForItem(MenuItem menuItem, int qty) {
         Map<Long, BigDecimal> required = new HashMap<>();

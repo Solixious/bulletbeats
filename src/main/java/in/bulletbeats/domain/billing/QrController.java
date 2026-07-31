@@ -99,7 +99,7 @@ public class QrController {
         model.addAttribute("customerName", customerName != null ? customerName : "Guest");
         model.addAttribute("returning", returning);
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
-        model.addAttribute("locked", bill.getStatus() != BillStatus.DRAFT);
+        model.addAttribute("locked", bill.getStatus().isTerminal());
         model.addAttribute("promotedItem", bill.getStatus() == BillStatus.DRAFT
                 ? menuService.getPromotedItem().orElse(null) : null);
         return "qr/menu";
@@ -229,7 +229,7 @@ public class QrController {
         model.addAttribute("qrCode", qrCode);
         model.addAttribute("customerName", customerName);
         model.addAttribute("customerId", customerId);
-        model.addAttribute("locked", bill.getStatus() != BillStatus.DRAFT);
+        model.addAttribute("locked", bill.getStatus().isTerminal());
         return "qr/fragments/menu-grid :: qr-menu-grid";
     }
 

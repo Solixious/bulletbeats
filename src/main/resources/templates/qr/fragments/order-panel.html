@@ -82,7 +82,7 @@
             <p class="text-sand text-xs" th:text="'₹' + ${item.lineTotal}">₹0</p>
           </div>
 
-          <!-- Qty stepper (DRAFT only) -->
+          <!-- Qty stepper (DRAFT: full +/-) -->
           <div th:if="${bill.status.name() == 'DRAFT'}" class="flex items-center gap-1.5 flex-shrink-0">
             <button th:attr="hx-patch=@{/qr/{c}/items/{i}/quantity(c=${qrCode},i=${item.id},billId=${bill.id},quantity=${item.quantity - 1},customerName=${customerName})}"
                     hx-target="#order-panel"
@@ -99,8 +99,21 @@
                            hover:bg-accent/20 transition-colors
                            flex items-center justify-center leading-none">+</button>
           </div>
-          <!-- Static quantity (locked) -->
-          <span th:unless="${bill.status.name() == 'DRAFT'}"
+
+          <!-- Qty stepper (CONFIRMED: add-only, no decrease) -->
+          <div th:if="${bill.status.name() == 'CONFIRMED'}" class="flex items-center gap-1.5 flex-shrink-0">
+            <span class="text-ivory text-sm font-bold w-5 text-center"
+                  th:text="${item.quantity}">1</span>
+            <button th:attr="hx-patch=@{/qr/{c}/items/{i}/quantity(c=${qrCode},i=${item.id},billId=${bill.id},quantity=${item.quantity + 1},customerName=${customerName})}"
+                    hx-target="#order-panel"
+                    hx-swap="innerHTML"
+                    class="w-7 h-7 rounded-lg bg-elevated text-ivory text-base
+                           hover:bg-accent/20 transition-colors
+                           flex items-center justify-center leading-none">+</button>
+          </div>
+
+          <!-- Static quantity (fully locked: PAID / CANCELLED) -->
+          <span th:if="${bill.status.name() != 'DRAFT' and bill.status.name() != 'CONFIRMED'}"
                 class="text-ivory text-sm font-bold flex-shrink-0" th:text="'x' + ${item.quantity}">x1</span>
 
           <!-- Remove (DRAFT only) -->
@@ -148,11 +161,19 @@
             SEND TO KITCHEN 🍽
           </button>
         </form>
-        <p class="text-center text-sand/40 text-xs mt-2">Once sent, only staff can make changes to this order.</p>
+        <p class="text-center text-sand/40 text-xs mt-2">Once sent, you can still add more items — ask a staff member for any other changes.</p>
       </div>
 
-      <!-- CTA: locked (CONFIRMED / PAID) -->
-      <div th:unless="${bill.status.name() == 'DRAFT'}">
+      <!-- CTA: CONFIRMED — can still add items -->
+      <div th:if="${bill.status.name() == 'CONFIRMED'}">
+        <div class="w-full py-3 rounded-xl border border-accent/30 bg-accent/10
+                    text-accent text-center text-sm font-bold">
+          ✓ Sent to Kitchen — You Can Still Add Items
+        </div>
+      </div>
+
+      <!-- CTA: fully locked (PAID / CANCELLED) -->
+      <div th:if="${bill.status.name() != 'DRAFT' and bill.status.name() != 'CONFIRMED'}">
         <div class="w-full py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10
                     text-emerald-400 text-center text-sm font-bold">
           ✓ Order Sent — Ask a Staff Member for Changes

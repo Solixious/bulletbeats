@@ -12,6 +12,14 @@
        hx-swap="innerHTML"
        class="h-0 overflow-hidden pointer-events-none" aria-hidden="true"></div>
 
+  <!-- CONFIRMED sync poll: keeps the panel (still add-only editable) in sync across devices/tabs. -->
+  <div th:if="${bill.status.name() == 'CONFIRMED'}"
+       th:attr="hx-get=@{/order/{id}/poll(id=${bill.id},customerName=${customerName})}"
+       hx-trigger="every 5s [!document.getElementById('panel-body') || document.getElementById('panel-body').classList.contains('hidden')]"
+       hx-target="#order-panel"
+       hx-swap="innerHTML"
+       class="h-0 overflow-hidden pointer-events-none" aria-hidden="true"></div>
+
   <!-- Empty state: nothing rendered -->
   <div th:if="${#lists.isEmpty(bill.items)}"
        class="pointer-events-none h-0">
@@ -67,7 +75,7 @@
             <p class="text-sand text-xs" th:text="'₹' + ${item.lineTotal}">₹0</p>
           </div>
 
-          <!-- Qty stepper (DRAFT only) -->
+          <!-- Qty stepper (DRAFT: full +/-) -->
           <div th:if="${bill.status.name() == 'DRAFT'}" class="flex items-center gap-1.5 flex-shrink-0">
             <button th:attr="hx-patch=@{/order/{id}/items/{i}/quantity(id=${bill.id},i=${item.id},quantity=${item.quantity - 1},customerName=${customerName})}"
                     hx-target="#order-panel"
@@ -84,8 +92,21 @@
                            hover:bg-accent/20 transition-colors
                            flex items-center justify-center leading-none">+</button>
           </div>
-          <!-- Static quantity (locked) -->
-          <span th:unless="${bill.status.name() == 'DRAFT'}"
+
+          <!-- Qty stepper (CONFIRMED: add-only, no decrease) -->
+          <div th:if="${bill.status.name() == 'CONFIRMED'}" class="flex items-center gap-1.5 flex-shrink-0">
+            <span class="text-ivory text-sm font-bold w-5 text-center"
+                  th:text="${item.quantity}">1</span>
+            <button th:attr="hx-patch=@{/order/{id}/items/{i}/quantity(id=${bill.id},i=${item.id},quantity=${item.quantity + 1},customerName=${customerName})}"
+                    hx-target="#order-panel"
+                    hx-swap="innerHTML"
+                    class="w-7 h-7 rounded-lg bg-elevated text-ivory text-base
+                           hover:bg-accent/20 transition-colors
+                           flex items-center justify-center leading-none">+</button>
+          </div>
+
+          <!-- Static quantity (fully locked: PAID / CANCELLED) -->
+          <span th:if="${bill.status.name() != 'DRAFT' and bill.status.name() != 'CONFIRMED'}"
                 class="text-ivory text-sm font-bold flex-shrink-0" th:text="'x' + ${item.quantity}">x1</span>
 
           <!-- Remove (DRAFT only) -->
@@ -136,11 +157,19 @@
             PLACE ORDER 🛵
           </button>
         </form>
-        <p class="text-center text-sand/40 text-xs mt-2">Your order can't be changed once placed.</p>
+        <p class="text-center text-sand/40 text-xs mt-2">Once placed, you can still add more items — call the café for any other changes.</p>
       </div>
 
-      <!-- CTA: locked (CONFIRMED / PAID) -->
-      <div th:unless="${bill.status.name() == 'DRAFT'}">
+      <!-- CTA: CONFIRMED — can still add items -->
+      <div th:if="${bill.status.name() == 'CONFIRMED'}">
+        <div class="w-full py-3 rounded-xl border border-accent/30 bg-accent/10
+                    text-accent text-center text-sm font-bold">
+          ✓ Order Placed — You Can Still Add Items
+        </div>
+      </div>
+
+      <!-- CTA: fully locked (PAID / CANCELLED) -->
+      <div th:if="${bill.status.name() != 'DRAFT' and bill.status.name() != 'CONFIRMED'}">
         <div class="w-full py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10
                     text-emerald-400 text-center text-sm font-bold">
           ✓ Order Placed — We'll contact you shortly

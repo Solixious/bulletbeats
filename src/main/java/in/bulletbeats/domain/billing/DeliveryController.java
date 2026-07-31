@@ -74,7 +74,7 @@ public class DeliveryController {
         model.addAttribute("menuDto", deliveryOrderService.getMenuForOrder(billId));
         model.addAttribute("billId", billId);
         model.addAttribute("customerName", customerName != null ? customerName : "Guest");
-        model.addAttribute("locked", bill.getStatus() != BillStatus.DRAFT);
+        model.addAttribute("locked", bill.getStatus().isTerminal());
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
         model.addAttribute("promotedItem", bill.getStatus() == BillStatus.DRAFT
                 ? menuService.getPromotedItem().orElse(null) : null);
@@ -158,7 +158,7 @@ public class DeliveryController {
                        @RequestParam(required = false) String customerName,
                        Model model) {
         Bill bill = deliveryOrderService.getOrder(billId);
-        if (bill.getStatus() != BillStatus.DRAFT) {
+        if (bill.getStatus().isTerminal()) {
             List<BillActivityLog> allLogs = activityLogService.getLogsForBill(bill.getId());
             List<BillActivityLog> lastFive = allLogs.size() > 5
                     ? allLogs.subList(allLogs.size() - 5, allLogs.size())
@@ -198,7 +198,7 @@ public class DeliveryController {
         model.addAttribute("bill", bill);
         model.addAttribute("billId", billId);
         model.addAttribute("customerName", customerName);
-        model.addAttribute("locked", bill.getStatus() != BillStatus.DRAFT);
+        model.addAttribute("locked", bill.getStatus().isTerminal());
         return "delivery/fragments/menu-grid :: delivery-menu-grid";
     }
 
