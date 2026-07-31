@@ -30,7 +30,7 @@ public class MenuViewController {
         List<MenuItem> items;
 
         if (categoryId == null) {
-            items = menuService.getAllItems();
+            items = menuService.getAllItemsTreeOrdered();
         } else {
             Category selected = categoryService.getById(categoryId);
             List<Category> subs = selected.getParent() == null

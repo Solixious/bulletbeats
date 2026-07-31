@@ -3,8 +3,10 @@ package in.bulletbeats.domain.billing;
 import in.bulletbeats.domain.admin.AppConfigService;
 import in.bulletbeats.domain.billing.dto.AddBillItemDto;
 import in.bulletbeats.domain.billing.dto.ApplyDiscountDto;
+import in.bulletbeats.domain.billing.dto.CategoryWithItemsDto;
 import in.bulletbeats.domain.billing.dto.CreateBillDto;
 import in.bulletbeats.domain.billing.dto.PayBillDto;
+import in.bulletbeats.domain.billing.dto.SubcategoryWithItemsDto;
 import in.bulletbeats.domain.billing.dto.TableTransferDto;
 import in.bulletbeats.domain.billing.dto.TableTransferResult;
 import in.bulletbeats.domain.billing.entity.Bill;
@@ -37,7 +39,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -123,7 +124,9 @@ public class BillingController {
         model.addAttribute("billId", id);
         model.addAttribute("isManager", isManager(auth));
         model.addAttribute("categories", categoryService.getAllActive());
-        model.addAttribute("menuItems", menuService.getAllItems());
+        model.addAttribute("items", List.<MenuItem>of());
+        model.addAttribute("subcategoryGroups", List.<SubcategoryWithItemsDto>of());
+        model.addAttribute("groupedMenu", billingService.getGroupedMenuItems());
         model.addAttribute("logs", activityLogService.getLogsForBill(id));
         model.addAttribute("studentDiscountPercentage",
                 appConfigService.get("student.discount.percentage", "10"));
@@ -226,19 +229,24 @@ public class BillingController {
     public String menuItems(@PathVariable Long id,
                             @RequestParam(required = false) Long categoryId,
                             Model model) {
-        List<MenuItem> items;
+        List<MenuItem> items = List.of();
+        List<SubcategoryWithItemsDto> subcategoryGroups = List.of();
+        List<CategoryWithItemsDto> groupedMenu = List.of();
         if (categoryId == null) {
-            items = menuService.getAllItems();
+            groupedMenu = billingService.getGroupedMenuItems();
         } else {
-            items = new ArrayList<>(menuService.getItemsByCategory(categoryId));
+            items = menuService.getItemsByCategory(categoryId);
             Category selected = categoryService.getById(categoryId);
             if (selected.getParent() == null) {
-                for (Category sub : categoryService.getActiveSubcategories(categoryId)) {
-                    items.addAll(menuService.getItemsByCategory(sub.getId()));
-                }
+                subcategoryGroups = categoryService.getActiveSubcategories(categoryId).stream()
+                        .map(sub -> new SubcategoryWithItemsDto(sub, menuService.getItemsByCategory(sub.getId())))
+                        .filter(g -> !g.items().isEmpty())
+                        .toList();
             }
         }
-        model.addAttribute("menuItems", items);
+        model.addAttribute("items", items);
+        model.addAttribute("subcategoryGroups", subcategoryGroups);
+        model.addAttribute("groupedMenu", groupedMenu);
         model.addAttribute("billId", id);
         return "billing/fragments/menu-grid :: menu-grid";
     }
@@ -247,7 +255,9 @@ public class BillingController {
     public String menuSearch(@PathVariable Long id,
                              @RequestParam(defaultValue = "") String q,
                              Model model) {
-        model.addAttribute("menuItems", menuService.searchActiveItems(q.trim()));
+        model.addAttribute("items", menuService.searchActiveItemsTreeOrdered(q.trim()));
+        model.addAttribute("subcategoryGroups", List.<SubcategoryWithItemsDto>of());
+        model.addAttribute("groupedMenu", List.<CategoryWithItemsDto>of());
         model.addAttribute("billId", id);
         return "billing/fragments/menu-grid :: menu-grid";
     }

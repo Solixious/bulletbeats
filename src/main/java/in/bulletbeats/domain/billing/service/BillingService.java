@@ -8,8 +8,10 @@ import in.bulletbeats.domain.notification.NotificationService;
 import in.bulletbeats.domain.notification.WhatsappTemplate;
 import in.bulletbeats.domain.billing.dto.AddBillItemDto;
 import in.bulletbeats.domain.billing.dto.ApplyDiscountDto;
+import in.bulletbeats.domain.billing.dto.CategoryWithItemsDto;
 import in.bulletbeats.domain.billing.dto.CreateBillDto;
 import in.bulletbeats.domain.billing.dto.PayBillDto;
+import in.bulletbeats.domain.billing.dto.SubcategoryWithItemsDto;
 import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.BillItem;
 import in.bulletbeats.domain.billing.entity.Payment;
@@ -22,9 +24,11 @@ import in.bulletbeats.domain.crm.service.LoyaltyService;
 import in.bulletbeats.domain.inventory.entity.GroceryItem;
 import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
 import in.bulletbeats.domain.inventory.service.InventoryService;
+import in.bulletbeats.domain.menu.dto.CategoryNode;
 import in.bulletbeats.domain.menu.entity.ComboIngredient;
 import in.bulletbeats.domain.menu.entity.DishIngredient;
 import in.bulletbeats.domain.menu.entity.MenuItem;
+import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
@@ -80,6 +84,7 @@ public class BillingService {
     private final CustomerService customerService;
     private final LoyaltyService loyaltyService;
     private final MenuService menuService;
+    private final CategoryService categoryService;
     private final InventoryService inventoryService;
     private final GroceryItemRepository groceryItemRepository;
     private final AppConfigService appConfigService;
@@ -106,6 +111,32 @@ public class BillingService {
     public Bill getBillById(Long id) {
         return billRepository.findByIdWithItems(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found with id: " + id));
+    }
+
+    /**
+     * Active menu items (available and unavailable — staff can see both) grouped by category
+     * and subcategory in tree order, for the "All" view of the billing menu picker.
+     */
+    public List<CategoryWithItemsDto> getGroupedMenuItems() {
+        List<CategoryNode> tree = categoryService.getActiveCategoryTree();
+        List<MenuItem> allActive = menuService.getAllItems();
+
+        Map<Long, List<MenuItem>> byCategory = allActive.stream()
+                .filter(item -> item.getCategory() != null)
+                .collect(Collectors.groupingBy(item -> item.getCategory().getId()));
+
+        return tree.stream()
+                .map(node -> {
+                    List<MenuItem> direct = byCategory.getOrDefault(node.category().getId(), List.of());
+                    List<SubcategoryWithItemsDto> subs = node.subcategories().stream()
+                            .map(sub -> new SubcategoryWithItemsDto(
+                                    sub, byCategory.getOrDefault(sub.getId(), List.of())))
+                            .filter(s -> !s.items().isEmpty())
+                            .toList();
+                    return new CategoryWithItemsDto(node.category(), direct, subs);
+                })
+                .filter(dto -> !dto.items().isEmpty() || !dto.subcategories().isEmpty())
+                .collect(Collectors.toList());
     }
 
     public List<Bill> getBillsForTable(Long tableId) {

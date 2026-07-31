@@ -139,6 +139,16 @@
     </div>
   </div>
 
+  <script>
+    // Collapsible subcategory sections in the menu picker
+    function toggleSubcat(id) {
+      var body = document.getElementById('subcat-body-' + id);
+      var chev = document.getElementById('subcat-chevron-' + id);
+      if (body) body.classList.toggle('hidden');
+      if (chev) chev.classList.toggle('rotate-180');
+    }
+  </script>
+
 </main>
 </body>
 </html>

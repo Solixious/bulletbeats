@@ -1,5 +1,6 @@
 package in.bulletbeats.domain.menu.service;
 
+import in.bulletbeats.domain.menu.dto.CategoryNode;
 import in.bulletbeats.domain.menu.dto.CreateMenuItemDto;
 import in.bulletbeats.domain.menu.dto.UpdateMenuItemDto;
 import in.bulletbeats.domain.menu.entity.*;
@@ -14,8 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,7 @@ public class MenuService {
     private final PriceHistoryRepository priceHistoryRepository;
     private final MenuItemAvailabilityLogRepository availabilityLogRepository;
     private final ImageStorageService imageStorageService;
+    private final CategoryService categoryService;
 
     public List<MenuItem> getAllItems() {
         return menuItemRepository.findByIsActiveTrueOrderByCategoryDisplayOrderAscDisplayOrderAscNameAsc();
@@ -62,6 +67,65 @@ public class MenuService {
 
     public List<MenuItem> searchActiveItems(String q) {
         return menuItemRepository.searchActiveItems(q);
+    }
+
+    /**
+     * Active items ordered by the category tree (top-level category, then its subcategories in order)
+     * rather than the raw {@code category.displayOrder} column, which is scoped independently per
+     * parent and collides across unrelated categories/subcategories when compared directly.
+     */
+    public List<MenuItem> getAllItemsTreeOrdered() {
+        return treeOrder(getAllItems());
+    }
+
+    public List<MenuItem> searchActiveItemsTreeOrdered(String q) {
+        return treeOrder(searchActiveItems(q));
+    }
+
+    /**
+     * Admin "All" view: includes inactive items too (unlike {@link #getAllItemsTreeOrdered()}),
+     * and — since admins need to be able to find/reactivate items even under a since-deactivated
+     * category — items whose category isn't in the active tree are appended at the end rather
+     * than silently dropped.
+     */
+    public List<MenuItem> getAllItemsForAdminTreeOrdered() {
+        List<MenuItem> all = getAllItemsForAdmin();
+        List<CategoryNode> tree = categoryService.getActiveCategoryTree();
+        Map<Long, List<MenuItem>> byCategory = all.stream()
+                .filter(item -> item.getCategory() != null)
+                .collect(Collectors.groupingBy(item -> item.getCategory().getId()));
+
+        List<MenuItem> ordered = new ArrayList<>();
+        java.util.Set<Long> consumed = new java.util.HashSet<>();
+        for (CategoryNode node : tree) {
+            ordered.addAll(byCategory.getOrDefault(node.category().getId(), List.of()));
+            consumed.add(node.category().getId());
+            for (Category sub : node.subcategories()) {
+                ordered.addAll(byCategory.getOrDefault(sub.getId(), List.of()));
+                consumed.add(sub.getId());
+            }
+        }
+        byCategory.entrySet().stream()
+                .filter(e -> !consumed.contains(e.getKey()))
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> ordered.addAll(e.getValue()));
+        return ordered;
+    }
+
+    private List<MenuItem> treeOrder(List<MenuItem> items) {
+        List<CategoryNode> tree = categoryService.getActiveCategoryTree();
+        Map<Long, List<MenuItem>> byCategory = items.stream()
+                .filter(item -> item.getCategory() != null)
+                .collect(Collectors.groupingBy(item -> item.getCategory().getId()));
+
+        List<MenuItem> ordered = new ArrayList<>();
+        for (CategoryNode node : tree) {
+            ordered.addAll(byCategory.getOrDefault(node.category().getId(), List.of()));
+            for (Category sub : node.subcategories()) {
+                ordered.addAll(byCategory.getOrDefault(sub.getId(), List.of()));
+            }
+        }
+        return ordered;
     }
 
     @Transactional

@@ -54,7 +54,7 @@ public class MenuAdminController {
         Category topCategory = null;
 
         if (categoryId == null) {
-            items = menuService.getAllItemsForAdmin();
+            items = menuService.getAllItemsForAdminTreeOrdered();
             isLeafScope = false;
         } else {
             Category selected = categoryService.getById(categoryId);
