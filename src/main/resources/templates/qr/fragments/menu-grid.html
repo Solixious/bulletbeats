@@ -14,9 +14,15 @@
     </th:block>
   </div>
   <th:block th:each="sub : ${subcategoryGroups}">
-    <h4 class="font-heading text-base text-sand/80 tracking-widest mt-4 mb-2 uppercase pl-2 border-l-2 border-accent/40"
-        th:text="${sub.subcategory.name}">Subcategory</h4>
-    <div class="space-y-3">
+    <button type="button"
+            class="w-full flex items-center justify-between gap-2 mt-4 mb-2 pl-2 border-l-2 border-accent/40 cursor-pointer select-none"
+            th:attr="onclick=|toggleSubcat(${sub.subcategory.id})|">
+      <h4 class="font-heading text-base text-sand/80 tracking-widest uppercase"
+          th:text="${sub.subcategory.name}">Subcategory</h4>
+      <span th:id="'subcat-chevron-' + ${sub.subcategory.id}"
+            class="text-sand/60 transition-transform duration-200 text-xs leading-none flex-shrink-0 mr-2">▼</span>
+    </button>
+    <div th:id="'subcat-body-' + ${sub.subcategory.id}" class="space-y-3">
       <th:block th:each="item : ${sub.items}">
         <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked})}"/>
       </th:block>

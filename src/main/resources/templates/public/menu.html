@@ -134,9 +134,15 @@
             <th:block th:each="sub : ${node.subcategories}"
                       th:with="subItems=${items.?[category.id == __${sub.id}__]}">
               <div th:unless="${#lists.isEmpty(subItems)}" class="mb-7 pl-3 border-l-2 border-accent/30">
-                <h3 class="font-heading text-base text-sand/80 tracking-widest uppercase mb-3"
-                    th:text="${sub.name}">Subcategory</h3>
-                <div class="space-y-2">
+                <button type="button"
+                        class="w-full flex items-center justify-between gap-2 mb-3 cursor-pointer select-none"
+                        th:attr="onclick=|toggleSubcat(${sub.id})|">
+                  <h3 class="font-heading text-base text-sand/80 tracking-widest uppercase"
+                      th:text="${sub.name}">Subcategory</h3>
+                  <span th:id="'subcat-chevron-' + ${sub.id}"
+                        class="text-sand/60 transition-transform duration-200 text-xs leading-none flex-shrink-0">▼</span>
+                </button>
+                <div th:id="'subcat-body-' + ${sub.id}" class="space-y-2">
                   <div th:each="item : ${subItems}"
                        th:classappend="${!item.available} ? 'opacity-50' : ''"
                        class="bg-surface rounded-xl border border-elevated/60 px-5 py-4
@@ -269,6 +275,14 @@
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') pubCloseImage();
     });
+
+    // Collapsible subcategory sections
+    function toggleSubcat(id) {
+      var body = document.getElementById('subcat-body-' + id);
+      var chev = document.getElementById('subcat-chevron-' + id);
+      if (body) body.classList.toggle('hidden');
+      if (chev) chev.classList.toggle('rotate-180');
+    }
 
     // Expandable descriptions ("Show more" / "Show less")
     function toggleDesc(btn) {
