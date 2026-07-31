@@ -1,6 +1,7 @@
 package in.bulletbeats.domain.billing;
 
 import in.bulletbeats.domain.admin.AppConfigService;
+import in.bulletbeats.domain.billing.dto.CategoryWithItemsDto;
 import in.bulletbeats.domain.billing.dto.QrAddItemDto;
 import in.bulletbeats.domain.billing.dto.QrConfirmDto;
 import in.bulletbeats.domain.billing.dto.QrSessionResult;
@@ -207,10 +208,11 @@ public class QrController {
                             @RequestParam(required = false) String customerName,
                             @RequestParam(required = false) Long customerId,
                             Model model) {
-        List<MenuItem> items;
+        List<MenuItem> items = List.of();
         List<SubcategoryWithItemsDto> subcategoryGroups = List.of();
+        List<CategoryWithItemsDto> categories = List.of();
         if (categoryId == null) {
-            items = menuService.getAllAvailableItems();
+            categories = qrOrderService.getGroupedMenuItems();
         } else {
             items = menuService.getItemsByCategory(categoryId);
             Category selected = categoryService.getById(categoryId);
@@ -224,6 +226,7 @@ public class QrController {
         Bill bill = qrOrderService.getBillForQr(billId);
         model.addAttribute("items", items);
         model.addAttribute("subcategoryGroups", subcategoryGroups);
+        model.addAttribute("categories", categories);
         model.addAttribute("bill", bill);
         model.addAttribute("billId", billId);
         model.addAttribute("qrCode", qrCode);

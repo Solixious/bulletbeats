@@ -1,6 +1,7 @@
 package in.bulletbeats.domain.billing;
 
 import in.bulletbeats.domain.admin.AppConfigService;
+import in.bulletbeats.domain.billing.dto.CategoryWithItemsDto;
 import in.bulletbeats.domain.billing.dto.DeliveryStartResult;
 import in.bulletbeats.domain.billing.dto.QrAddItemDto;
 import in.bulletbeats.domain.billing.dto.QrConfirmDto;
@@ -178,10 +179,11 @@ public class DeliveryController {
                             @RequestParam(required = false) Long categoryId,
                             @RequestParam(required = false) String customerName,
                             Model model) {
-        List<MenuItem> items;
+        List<MenuItem> items = List.of();
         List<SubcategoryWithItemsDto> subcategoryGroups = List.of();
+        List<CategoryWithItemsDto> categories = List.of();
         if (categoryId == null) {
-            items = menuService.getAllAvailableItems();
+            categories = deliveryOrderService.getGroupedMenuItems();
         } else {
             items = menuService.getItemsByCategory(categoryId);
             Category selected = categoryService.getById(categoryId);
@@ -195,6 +197,7 @@ public class DeliveryController {
         Bill bill = deliveryOrderService.getOrder(billId);
         model.addAttribute("items", items);
         model.addAttribute("subcategoryGroups", subcategoryGroups);
+        model.addAttribute("categories", categories);
         model.addAttribute("bill", bill);
         model.addAttribute("billId", billId);
         model.addAttribute("customerName", customerName);

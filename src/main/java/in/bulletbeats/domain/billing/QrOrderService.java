@@ -121,6 +121,16 @@ public class QrOrderService {
         Bill bill = billRepository.findByIdWithItems(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
+        List<CategoryWithItemsDto> grouped = getGroupedMenuItems();
+
+        String customerName = bill.getCustomer() != null ? bill.getCustomer().getName() : null;
+        boolean isConfirmed = bill.getStatus() == BillStatus.CONFIRMED;
+
+        return new QrMenuDto(billId, bill.getCafeTable().getName(), customerName, false, isConfirmed, grouped);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryWithItemsDto> getGroupedMenuItems() {
         List<CategoryNode> tree = categoryService.getActiveCategoryTree();
         List<MenuItem> allAvailable = menuService.getAllAvailableItems();
 
@@ -128,7 +138,7 @@ public class QrOrderService {
                 .filter(item -> item.getCategory() != null)
                 .collect(Collectors.groupingBy(item -> item.getCategory().getId()));
 
-        List<CategoryWithItemsDto> grouped = tree.stream()
+        return tree.stream()
                 .map(node -> {
                     List<MenuItem> direct = byCategory.getOrDefault(node.category().getId(), List.of());
                     List<SubcategoryWithItemsDto> subs = node.subcategories().stream()
@@ -140,11 +150,6 @@ public class QrOrderService {
                 })
                 .filter(dto -> !dto.items().isEmpty() || !dto.subcategories().isEmpty())
                 .collect(Collectors.toList());
-
-        String customerName = bill.getCustomer() != null ? bill.getCustomer().getName() : null;
-        boolean isConfirmed = bill.getStatus() == BillStatus.CONFIRMED;
-
-        return new QrMenuDto(billId, bill.getCafeTable().getName(), customerName, false, isConfirmed, grouped);
     }
 
     @Transactional

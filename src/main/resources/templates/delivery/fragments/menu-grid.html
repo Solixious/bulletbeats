@@ -4,10 +4,40 @@
 
 <!-- ── Full grid (returned by category filter endpoint) ─────────────── -->
 <th:block th:fragment="delivery-menu-grid">
-  <div th:if="${#lists.isEmpty(items) and #lists.isEmpty(subcategoryGroups)}"
+  <div th:if="${#lists.isEmpty(items) and #lists.isEmpty(subcategoryGroups) and #lists.isEmpty(categories)}"
        class="py-16 text-center text-sand text-sm">
     No items available in this category.
   </div>
+
+  <!-- Grouped view ("All" tab): every category, sorted by category then subcategory -->
+  <th:block th:each="dto : ${categories}">
+    <div class="mb-6">
+      <h3 class="font-heading text-xl text-sand tracking-widest mb-3 uppercase"
+          th:text="${dto.category.name}">Category</h3>
+      <div th:unless="${#lists.isEmpty(dto.items)}" class="space-y-3">
+        <th:block th:each="item : ${dto.items}">
+          <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked})}"/>
+        </th:block>
+      </div>
+      <th:block th:each="sub : ${dto.subcategories}">
+        <button type="button"
+                class="w-full flex items-center justify-between gap-2 mt-4 mb-2 pl-2 border-l-2 border-accent/40 cursor-pointer select-none"
+                th:attr="onclick=|toggleSubcat(${sub.subcategory.id})|">
+          <h4 class="font-heading text-base text-sand/80 tracking-widest uppercase"
+              th:text="${sub.subcategory.name}">Subcategory</h4>
+          <span th:id="'subcat-chevron-' + ${sub.subcategory.id}"
+                class="text-sand/60 transition-transform duration-200 text-xs leading-none flex-shrink-0 mr-2">▼</span>
+        </button>
+        <div th:id="'subcat-body-' + ${sub.subcategory.id}" class="space-y-3">
+          <th:block th:each="item : ${sub.items}">
+            <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked})}"/>
+          </th:block>
+        </div>
+      </th:block>
+    </div>
+  </th:block>
+
+  <!-- Flat view (single category filter active) -->
   <div th:unless="${#lists.isEmpty(items)}" class="space-y-3">
     <th:block th:each="item : ${items}">
       <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked})}"/>
