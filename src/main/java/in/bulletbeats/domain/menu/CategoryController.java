@@ -153,7 +153,7 @@ public class CategoryController {
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes ra) {
         try {
-            categoryService.deleteSubcategory(id);
+            categoryService.delete(id);
             return "redirect:/admin/categories?deleted";
         } catch (CategoryInUseException | IllegalArgumentException e) {
             ra.addFlashAttribute("deleteError", e.getMessage());

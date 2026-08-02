@@ -30,7 +30,7 @@
   </div>
   <div th:if="${param.deleted}"
        class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
-    Subcategory deleted.
+    Category deleted.
   </div>
   <div th:if="${deleteError}"
        class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-red-500/40 text-red-400 text-sm"
@@ -114,6 +114,15 @@
                     class="text-xs px-2.5 py-1 rounded border border-emerald-500/40 text-emerald-400
                            hover:border-emerald-500/70 hover:bg-emerald-500/10 transition-colors">
               Reactivate
+            </button>
+          </form>
+          <form th:action="@{/admin/categories/{id}/delete(id=${cat.id})}"
+                method="post" class="inline"
+                onsubmit="return bbConfirm(this, 'Delete this category? This cannot be undone.')">
+            <button type="submit"
+                    class="text-xs px-2.5 py-1 rounded border border-red-500/50 text-red-400
+                           hover:border-red-500/80 hover:bg-red-500/10 transition-colors">
+              Delete
             </button>
           </form>
         </span>

@@ -133,13 +133,14 @@ public class CategoryService {
     }
 
     @Transactional
-    public void deleteSubcategory(Long id) {
+    public void delete(Long id) {
         Category category = getById(id);
-        if (category.getParent() == null) {
-            throw new IllegalArgumentException("Only subcategories can be deleted; deactivate top-level categories instead");
-        }
         if (menuItemRepository.existsByCategoryId(id)) {
             throw new CategoryInUseException(id);
+        }
+        if (category.getParent() == null && categoryRepository.existsByParentId(id)) {
+            throw new IllegalArgumentException(
+                    "This category has subcategories — delete or reassign them first");
         }
         categoryRepository.delete(category);
     }
