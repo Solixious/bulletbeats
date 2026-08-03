@@ -318,8 +318,8 @@
     document.addEventListener('DOMContentLoaded', initDescToggles);
     document.addEventListener('htmx:afterSettle', initDescToggles);
 
-    // Floating delivery CTA: shown once the inline card scrolls out of view
-    (function() {
+    // Floating delivery CTA: shown at the top of the screen once the inline card scrolls out of view
+    document.addEventListener('DOMContentLoaded', function() {
       var inline = document.getElementById('delivery-cta-inline');
       var floating = document.getElementById('delivery-cta-floating');
       if (!inline || !floating) return;
@@ -329,15 +329,15 @@
         floating.classList.toggle('flex', !visible);
       }, { threshold: 0 });
       observer.observe(inline);
-    })();
+    });
   </script>
 
-  <!-- Floating delivery CTA (shown once the inline card scrolls out of view) -->
+  <!-- Floating delivery CTA (shown at the top of the screen once the inline card scrolls out of view) -->
   <a id="delivery-cta-floating" href="/order"
-     class="hidden fixed left-1/2 -translate-x-1/2 bottom-5 z-40 items-center gap-3
-            pl-4 pr-5 py-3 rounded-full shadow-lg shadow-black/40
-            bg-accent text-base hover:bg-accent/90 transition-colors">
-    <span class="text-xl">🛵</span>
+     class="hidden fixed top-0 inset-x-0 z-40 items-center justify-center gap-2
+            px-4 py-3 bg-accent text-base
+            shadow-lg shadow-black/30 hover:bg-accent/90 transition-colors">
+    <span class="text-lg">🛵</span>
     <span class="font-medium text-sm">Get It Delivered</span>
   </a>
 
