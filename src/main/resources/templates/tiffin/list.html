@@ -57,6 +57,7 @@
           <th class="px-5 py-3 text-right">Monthly</th>
           <th class="px-5 py-3 text-left">Status</th>
           <th class="px-5 py-3 text-left">Since</th>
+          <th class="px-5 py-3 text-left">Paid Through</th>
           <th class="px-3 py-3"></th>
         </tr>
       </thead>
@@ -108,6 +109,16 @@
           </td>
           <td class="px-5 py-3 text-sand text-xs"
               th:text="${#temporals.format(sub.startDate, 'd MMM yyyy')}"></td>
+          <td class="px-5 py-3 text-xs">
+            <span th:if="${paidThroughMap[sub.id] == null}"
+                  class="text-red-400 font-medium">Unpaid</span>
+            <span th:if="${paidThroughMap[sub.id] != null and paidThroughMap[sub.id].isBefore(T(java.time.LocalDate).now())}"
+                  class="text-red-400 font-medium"
+                  th:text="'Overdue · ' + ${#temporals.format(paidThroughMap[sub.id], 'd MMM')}"></span>
+            <span th:if="${paidThroughMap[sub.id] != null and !paidThroughMap[sub.id].isBefore(T(java.time.LocalDate).now())}"
+                  class="text-emerald-400"
+                  th:text="${#temporals.format(paidThroughMap[sub.id], 'd MMM yyyy')}"></span>
+          </td>
           <td class="px-3 py-3">
             <a th:href="@{/tiffin/{id}(id=${sub.id})}"
                class="text-sand text-xs hover:text-accent transition-colors">View →</a>

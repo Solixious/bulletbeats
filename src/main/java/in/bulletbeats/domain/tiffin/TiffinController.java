@@ -3,6 +3,7 @@ package in.bulletbeats.domain.tiffin;
 import in.bulletbeats.domain.crm.entity.Customer;
 import in.bulletbeats.domain.crm.service.CustomerService;
 import in.bulletbeats.domain.tiffin.dto.TiffinPauseDto;
+import in.bulletbeats.domain.tiffin.dto.TiffinPaymentDto;
 import in.bulletbeats.domain.tiffin.dto.TiffinPricingOverrideDto;
 import in.bulletbeats.domain.tiffin.dto.TiffinSubscriptionDto;
 import in.bulletbeats.domain.tiffin.entity.TiffinSubscription;
@@ -39,6 +40,8 @@ public class TiffinController {
 
         model.addAttribute("subscriptions", subs);
         model.addAttribute("monthlyPrices", monthlyPrices);
+        model.addAttribute("paidThroughMap",
+                tiffinService.getPaidThroughMap(subs.stream().map(TiffinSubscription::getId).toList()));
         model.addAttribute("filter", filter);
         return "tiffin/list";
     }
@@ -109,6 +112,14 @@ public class TiffinController {
         pricingDto.setCustomMonthlyPrice(sub.getCustomMonthlyPrice());
         pricingDto.setDeliveryCharge(sub.getDeliveryCharge());
         model.addAttribute("pricingDto", pricingDto);
+
+        model.addAttribute("payments", tiffinService.getPaymentsForSubscription(id));
+        model.addAttribute("paidThroughDate", tiffinService.getPaidThroughDate(id));
+        model.addAttribute("totalPaid", tiffinService.getTotalPaid(id));
+        TiffinPaymentDto paymentDto = new TiffinPaymentDto();
+        paymentDto.setCoverageFrom(tiffinService.getNextCoverageStart(sub));
+        paymentDto.setAmountPaid(tiffinService.calculateMonthlyPrice(sub));
+        model.addAttribute("paymentDto", paymentDto);
 
         return "tiffin/detail";
     }
@@ -189,6 +200,38 @@ public class TiffinController {
         tiffinService.cancel(id);
         ra.addFlashAttribute("success", "Subscription cancelled");
         return "redirect:/tiffin";
+    }
+
+    @PostMapping("/{id}/payments")
+    public String recordPayment(@PathVariable Long id,
+                                @Valid @ModelAttribute("paymentDto") TiffinPaymentDto dto,
+                                BindingResult result,
+                                RedirectAttributes ra,
+                                Model model) {
+        if (dto.getCoverageFrom() != null && dto.getCoverageUntil() != null
+                && dto.getCoverageUntil().isBefore(dto.getCoverageFrom())) {
+            result.rejectValue("coverageUntil", "coverage.invalid",
+                    "Coverage end date can't be before the start date");
+        }
+        if (result.hasErrors()) {
+            TiffinSubscription sub = tiffinService.getById(id);
+            model.addAttribute("subscription", sub);
+            model.addAttribute("pauses", tiffinService.getPausesForSubscription(id));
+            model.addAttribute("pauseDto", new TiffinPauseDto());
+            model.addAttribute("monthlyPrice", tiffinService.calculateMonthlyPrice(sub));
+            TiffinPricingOverrideDto pricingDto = new TiffinPricingOverrideDto();
+            pricingDto.setCustomMonthlyPrice(sub.getCustomMonthlyPrice());
+            pricingDto.setDeliveryCharge(sub.getDeliveryCharge());
+            model.addAttribute("pricingDto", pricingDto);
+            model.addAttribute("payments", tiffinService.getPaymentsForSubscription(id));
+            model.addAttribute("paidThroughDate", tiffinService.getPaidThroughDate(id));
+            model.addAttribute("totalPaid", tiffinService.getTotalPaid(id));
+            return "tiffin/detail";
+        }
+
+        tiffinService.recordPayment(id, dto);
+        ra.addFlashAttribute("success", "Payment recorded");
+        return "redirect:/tiffin/" + id;
     }
 
     @PostMapping("/{id}/pricing")

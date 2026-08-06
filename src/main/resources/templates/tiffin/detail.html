@@ -92,13 +92,55 @@
     </div>
   </div>
 
-  <div class="bg-surface rounded-xl border border-elevated/60 p-4 mb-6">
-    <p class="text-sand text-xs uppercase tracking-widest mb-1">Active Since</p>
-    <p class="text-ivory text-sm" th:text="${#temporals.format(subscription.startDate, 'd MMMM yyyy')}"></p>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="bg-surface rounded-xl border border-elevated/60 p-4">
+      <p class="text-sand text-xs uppercase tracking-widest mb-1">Active Since</p>
+      <p class="text-ivory text-sm" th:text="${#temporals.format(subscription.startDate, 'd MMMM yyyy')}"></p>
+    </div>
+
+    <div class="bg-surface rounded-xl border border-elevated/60 p-4">
+      <p class="text-sand text-xs uppercase tracking-widest mb-1">Paid Through</p>
+      <p th:if="${paidThroughDate == null}" class="text-red-400 text-sm font-medium">Unpaid</p>
+      <p th:if="${paidThroughDate != null and paidThroughDate.isBefore(T(java.time.LocalDate).now())}"
+         class="text-red-400 text-sm font-medium">
+        Overdue since <span th:text="${#temporals.format(paidThroughDate, 'd MMM yyyy')}"></span>
+      </p>
+      <p th:if="${paidThroughDate != null and !paidThroughDate.isBefore(T(java.time.LocalDate).now())}"
+         class="text-emerald-400 text-sm font-medium"
+         th:text="${#temporals.format(paidThroughDate, 'd MMMM yyyy')}"></p>
+    </div>
+
+    <div class="bg-surface rounded-xl border border-elevated/60 p-4">
+      <p class="text-sand text-xs uppercase tracking-widest mb-1">Total Paid</p>
+      <p class="text-ivory text-sm">
+        ₹<span th:text="${#numbers.formatDecimal(totalPaid, 1, 'COMMA', 0, 'POINT')}"></span>
+      </p>
+    </div>
   </div>
 
   <!-- Controls (active/paused only) -->
   <div th:unless="${subscription.status.name() == 'CANCELLED'}" class="space-y-4 mb-6">
+
+    <!-- Record payment -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <p class="text-sand text-xs uppercase tracking-widest mb-4">Record Payment</p>
+
+      <form th:action="@{/tiffin/{id}/payments(id=${subscription.id})}"
+            th:object="${paymentDto}"
+            method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+        <div th:replace="~{tiffin/fragments/payment-form :: payment-form}"></div>
+
+        <div class="mt-4 flex items-center gap-3">
+          <button type="submit"
+                  class="px-5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
+                         font-heading tracking-widest text-xs hover:bg-emerald-500/20 transition-all">
+            RECORD PAYMENT
+          </button>
+        </div>
+      </form>
+    </div>
 
     <!-- Pause form -->
     <div th:if="${subscription.status.name() == 'ACTIVE'}"
@@ -202,6 +244,37 @@
         </button>
       </form>
     </div>
+  </div>
+
+  <!-- Payment history -->
+  <div th:if="${!#lists.isEmpty(payments)}"
+       class="bg-surface rounded-xl border border-elevated/60 overflow-hidden mb-6">
+    <div class="px-5 py-3 border-b border-elevated/60">
+      <p class="text-sand text-xs uppercase tracking-widest">Payment History</p>
+    </div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-5 py-3 text-left">Paid On</th>
+          <th class="px-5 py-3 text-left">Covers</th>
+          <th class="px-5 py-3 text-right">Amount</th>
+          <th class="px-5 py-3 text-left">Note</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-elevated/40">
+        <tr th:each="p : ${payments}" class="text-ivory">
+          <td class="px-5 py-3 text-sm" th:text="${#temporals.format(p.paidOn, 'd MMM yyyy')}"></td>
+          <td class="px-5 py-3 text-sm text-sand">
+            <span th:text="${#temporals.format(p.coverageFrom, 'd MMM')}"></span>
+            &nbsp;–&nbsp;
+            <span th:text="${#temporals.format(p.coverageUntil, 'd MMM yyyy')}"></span>
+          </td>
+          <td class="px-5 py-3 text-right font-medium"
+              th:text="'₹' + ${#numbers.formatDecimal(p.amountPaid, 1, 'COMMA', 0, 'POINT')}"></td>
+          <td class="px-5 py-3 text-sand text-xs" th:text="${p.note ?: '—'}"></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- Pause history -->

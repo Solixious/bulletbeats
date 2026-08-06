@@ -6,13 +6,16 @@ import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import in.bulletbeats.domain.tiffin.TiffinMealType;
 import in.bulletbeats.domain.tiffin.TiffinStatus;
 import in.bulletbeats.domain.tiffin.dto.TiffinPauseDto;
+import in.bulletbeats.domain.tiffin.dto.TiffinPaymentDto;
 import in.bulletbeats.domain.tiffin.dto.TiffinPricingDto;
 import in.bulletbeats.domain.tiffin.dto.TiffinPricingOverrideDto;
 import in.bulletbeats.domain.tiffin.dto.TiffinSubscriptionDto;
 import in.bulletbeats.domain.tiffin.entity.TiffinPause;
+import in.bulletbeats.domain.tiffin.entity.TiffinPayment;
 import in.bulletbeats.domain.tiffin.entity.TiffinPricing;
 import in.bulletbeats.domain.tiffin.entity.TiffinSubscription;
 import in.bulletbeats.domain.tiffin.repository.TiffinPauseRepository;
+import in.bulletbeats.domain.tiffin.repository.TiffinPaymentRepository;
 import in.bulletbeats.domain.tiffin.repository.TiffinPricingRepository;
 import in.bulletbeats.domain.tiffin.repository.TiffinSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +37,7 @@ public class TiffinService {
     private final TiffinSubscriptionRepository subscriptionRepository;
     private final TiffinPricingRepository pricingRepository;
     private final TiffinPauseRepository pauseRepository;
+    private final TiffinPaymentRepository paymentRepository;
     private final CustomerRepository customerRepository;
 
     public List<TiffinSubscription> getActiveAndPaused() {
@@ -187,5 +192,46 @@ public class TiffinService {
         return active.stream()
                 .map(sub -> calculateMonthlyPrice(sub, prices))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Transactional
+    public void recordPayment(Long subscriptionId, TiffinPaymentDto dto) {
+        TiffinSubscription sub = getById(subscriptionId);
+        TiffinPayment payment = TiffinPayment.builder()
+                .subscription(sub)
+                .amountPaid(dto.getAmountPaid())
+                .coverageFrom(dto.getCoverageFrom())
+                .coverageUntil(dto.getCoverageUntil())
+                .paidOn(dto.getPaidOn())
+                .note(dto.getNote())
+                .build();
+        paymentRepository.save(payment);
+    }
+
+    public List<TiffinPayment> getPaymentsForSubscription(Long subscriptionId) {
+        return paymentRepository.findBySubscriptionIdOrderByCoverageFromDesc(subscriptionId);
+    }
+
+    public LocalDate getPaidThroughDate(Long subscriptionId) {
+        return paymentRepository.findPaidThroughDate(subscriptionId).orElse(null);
+    }
+
+    public Map<Long, LocalDate> getPaidThroughMap(List<Long> subscriptionIds) {
+        Map<Long, LocalDate> map = new HashMap<>();
+        for (Object[] row : paymentRepository.findPaidThroughDates(subscriptionIds)) {
+            map.put((Long) row[0], (LocalDate) row[1]);
+        }
+        return map;
+    }
+
+    public BigDecimal getTotalPaid(Long subscriptionId) {
+        return paymentRepository.sumAmountPaidForSubscription(subscriptionId);
+    }
+
+    // Prefills the payment form's coverage-start with the day after the current
+    // paid-through date, so consecutive payments naturally chain without gaps.
+    public LocalDate getNextCoverageStart(TiffinSubscription sub) {
+        LocalDate paidThrough = getPaidThroughDate(sub.getId());
+        return paidThrough != null ? paidThrough.plusDays(1) : sub.getStartDate();
     }
 }

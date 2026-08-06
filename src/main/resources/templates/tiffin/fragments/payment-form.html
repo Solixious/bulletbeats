@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="payment-form">
+
+  <div class="space-y-4">
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-sand text-xs uppercase tracking-widest block mb-1.5">Amount Paid (₹)</label>
+        <input type="number" step="0.01" min="0.01"
+               th:field="*{amountPaid}"
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-3 py-2 text-ivory text-sm outline-none transition-all"/>
+        <p th:if="${#fields.hasErrors('amountPaid')}"
+           th:errors="*{amountPaid}"
+           class="mt-1 text-red-400 text-xs"></p>
+      </div>
+      <div>
+        <label class="text-sand text-xs uppercase tracking-widest block mb-1.5">Paid On</label>
+        <input type="date"
+               th:field="*{paidOn}"
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-3 py-2 text-ivory text-sm outline-none transition-all"/>
+        <p th:if="${#fields.hasErrors('paidOn')}"
+           th:errors="*{paidOn}"
+           class="mt-1 text-red-400 text-xs"></p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-sand text-xs uppercase tracking-widest block mb-1.5">Covers From</label>
+        <input type="date"
+               th:field="*{coverageFrom}"
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-3 py-2 text-ivory text-sm outline-none transition-all"/>
+        <p th:if="${#fields.hasErrors('coverageFrom')}"
+           th:errors="*{coverageFrom}"
+           class="mt-1 text-red-400 text-xs"></p>
+      </div>
+      <div>
+        <label class="text-sand text-xs uppercase tracking-widest block mb-1.5">Covers Until</label>
+        <input type="date"
+               th:field="*{coverageUntil}"
+               class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                      rounded-lg px-3 py-2 text-ivory text-sm outline-none transition-all"/>
+        <p th:if="${#fields.hasErrors('coverageUntil')}"
+           th:errors="*{coverageUntil}"
+           class="mt-1 text-red-400 text-xs"></p>
+      </div>
+    </div>
+    <div>
+      <label class="text-sand text-xs uppercase tracking-widest block mb-1.5">Note (optional)</label>
+      <input type="text"
+             th:field="*{note}"
+             placeholder="e.g. Paid by UPI"
+             class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                    rounded-lg px-3 py-2 text-ivory text-sm outline-none transition-all
+                    placeholder-sand/40"/>
+    </div>
+  </div>
+
+</th:block>
+</body>
+</html>
