@@ -27,7 +27,7 @@
 
   <!-- Has items: slim collapsed bar, expands on tap -->
   <div th:unless="${#lists.isEmpty(bill.items)}"
-       class="bg-surface border-t border-elevated/60 rounded-t-2xl shadow-2xl">
+       class="bg-neutral-700 border-t border-elevated/60 rounded-t-2xl shadow-2xl">
 
     <!-- ── Slim header (always visible, tap to expand) ──── -->
     <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
@@ -38,13 +38,13 @@
            chev.classList.toggle('rotate-180');
          })(this)">
 
-      <span class="flex-shrink-0 w-6 h-6 rounded-full bg-accent text-base text-xs font-bold
+      <span class="flex-shrink-0 w-6 h-6 rounded-full bg-amber-400 text-base text-xs font-bold
                    flex items-center justify-center leading-none"
             th:text="${#lists.size(bill.items)}">0</span>
 
       <span class="font-heading text-ivory text-base tracking-wide flex-1 leading-none">Your Order</span>
 
-      <span class="font-heading text-accent text-lg leading-none"
+      <span class="font-heading text-amber-400 text-lg leading-none"
             th:text="'₹' + ${bill.totalAmount}">₹0</span>
 
       <span id="panel-chevron"
@@ -139,7 +139,7 @@
         </div>
         <div class="flex justify-between text-ivory font-bold text-sm pt-1.5 border-t border-elevated/40">
           <span>Total</span>
-          <span class="text-accent font-heading text-lg" th:text="'₹' + ${bill.totalAmount}">₹0</span>
+          <span class="text-amber-400 font-heading text-lg" th:text="'₹' + ${bill.totalAmount}">₹0</span>
         </div>
         <p th:if="${bill.status.name() == 'DRAFT'}" class="text-sand/50 text-xs">Cash on delivery — pay when your order arrives</p>
       </div>
