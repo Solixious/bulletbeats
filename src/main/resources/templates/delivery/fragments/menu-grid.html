@@ -126,8 +126,10 @@
             <input type="hidden" name="quantity"     value="1"/>
             <input type="hidden" name="customerName" th:value="${customerName}"/>
             <button type="submit"
+                    hx-disabled-elt="this"
                     class="px-4 py-2 bg-accent rounded-lg text-base text-xs font-bold
-                           hover:brightness-110 transition-all active:scale-95">
+                           hover:brightness-110 transition-all active:scale-95
+                           disabled:opacity-50 disabled:pointer-events-none">
               + Add
             </button>
           </form>
