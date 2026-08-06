@@ -98,6 +98,19 @@
       </form>
     </div>
 
+    <div id="feedback-section">
+      <form th:attr="hx-post=@{/bills/{id}/feedback-request(id=${bill.id})}"
+            hx-target="#feedback-section"
+            hx-swap="innerHTML">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <button type="submit"
+                class="w-full py-2 rounded-lg border border-accent/30 text-accent
+                       text-sm hover:bg-accent/10 transition-colors">
+          Ask for Feedback via WhatsApp
+        </button>
+      </form>
+    </div>
+
     <a href="/bills"
        class="block text-center text-sand text-xs hover:text-ivory transition-colors mt-1">
       Back to all bills →

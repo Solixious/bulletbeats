@@ -2,6 +2,7 @@ package in.bulletbeats.domain.whatsapp.service;
 
 import in.bulletbeats.domain.crm.entity.Customer;
 import in.bulletbeats.domain.crm.repository.CustomerRepository;
+import in.bulletbeats.domain.feedback.service.FeedbackService;
 import in.bulletbeats.domain.notification.NotificationChannel;
 import in.bulletbeats.domain.notification.NotificationService;
 import in.bulletbeats.domain.whatsapp.entity.MessageDirection;
@@ -25,6 +26,7 @@ public class WhatsappMessageService {
     private final WhatsappMessageRepository messageRepository;
     private final CustomerRepository customerRepository;
     private final NotificationService notificationService;
+    private final FeedbackService feedbackService;
 
     /**
      * Sends a free-form reply to the customer via WhatsApp and stores it as an OUTBOUND message.
@@ -83,6 +85,8 @@ public class WhatsappMessageService {
 
         messageRepository.save(msg);
         log.info("WhatsApp message stored from={} sid={}", fromNumber, twilioSid);
+
+        feedbackService.tryCaptureFeedback(fromNumber, body, msg);
     }
 
     @Transactional(readOnly = true)

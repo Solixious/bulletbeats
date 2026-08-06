@@ -17,6 +17,7 @@ import in.bulletbeats.domain.shared.enums.OnlineOrderPlatform;
 import in.bulletbeats.domain.shared.enums.OrderType;
 import in.bulletbeats.domain.billing.service.CafeTableService;
 import in.bulletbeats.domain.crm.service.CustomerService;
+import in.bulletbeats.domain.feedback.service.FeedbackService;
 import in.bulletbeats.domain.menu.entity.Category;
 import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.service.CategoryService;
@@ -55,6 +56,7 @@ public class BillingController {
     private final ActivityLogService activityLogService;
     private final TableTransferService tableTransferService;
     private final AppConfigService appConfigService;
+    private final FeedbackService feedbackService;
 
     // ── List ─────────────────────────────────────────────────────────────
 
@@ -502,6 +504,16 @@ public class BillingController {
             model.addAttribute("error", e.getMessage());
         }
         return "billing/fragments/whatsapp-stub :: whatsapp-stub";
+    }
+
+    @PostMapping("/{id}/feedback-request")
+    public String feedbackRequest(@PathVariable Long id, Model model) {
+        try {
+            feedbackService.requestFeedback(id);
+        } catch (Exception e) {
+            model.addAttribute("error", e.getMessage());
+        }
+        return "billing/fragments/feedback-stub :: feedback-stub";
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Feedback — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-start justify-between gap-y-3 mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Feedback</h1>
+      <p class="text-sand text-sm mt-0.5">Customer replies to WhatsApp feedback requests</p>
+    </div>
+  </div>
+
+  <!-- Deleted confirmation -->
+  <div th:if="${param.deleted != null}"
+       class="mb-6 px-4 py-3 rounded-lg border border-emerald-400/30 bg-emerald-400/5 text-emerald-400 text-sm">
+    Feedback entry deleted.
+  </div>
+
+  <!-- Results -->
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+
+    <div class="px-4 py-3 border-b border-elevated/60 flex items-center justify-between">
+      <h2 class="font-heading text-lg text-ivory tracking-wide">Results</h2>
+      <span class="text-sand text-xs"
+            th:text="${#lists.size(requests)} + ' request' + (${#lists.size(requests)} != 1 ? 's' : '')">
+      </span>
+    </div>
+
+    <!-- Empty state -->
+    <div th:if="${#lists.isEmpty(requests)}"
+         class="py-16 text-center text-sand text-sm">
+      No feedback requests yet — use "Ask for Feedback via WhatsApp" on a paid bill.
+    </div>
+
+    <!-- Table -->
+    <table th:unless="${#lists.isEmpty(requests)}" class="w-full text-left">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-4 py-3 font-medium">Bill #</th>
+          <th class="px-4 py-3 font-medium">Requested</th>
+          <th class="px-4 py-3 font-medium">Customer</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Response</th>
+          <th class="px-4 py-3 font-medium">Responded</th>
+          <th class="px-4 py-3 font-medium"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="r : ${requests}"
+            class="border-b border-elevated/40 last:border-0 hover:bg-elevated/20 transition-colors">
+
+          <td class="px-4 py-3 font-mono text-accent text-sm">
+            <a th:href="@{/bills/{id}(id=${r.bill.id})}"
+               th:text="${r.bill.billNumber}" class="hover:underline"></a>
+          </td>
+
+          <td class="px-4 py-3 text-sand text-xs whitespace-nowrap"
+              th:text="${#temporals.format(r.requestedAt, 'dd MMM yyyy, HH:mm')}"></td>
+
+          <td class="px-4 py-3 text-sand text-sm">
+            <span th:if="${r.customer != null}">
+              <span th:text="${r.customer.name}" class="text-ivory"></span>
+              <span class="block text-xs font-mono" th:text="${r.customer.maskedPhone}"></span>
+            </span>
+            <span th:unless="${r.customer != null}" class="text-sand/60">Walk-in</span>
+          </td>
+
+          <td class="px-4 py-3">
+            <th:block th:with="expired=${r.status.name() == 'PENDING' and r.expiresAt.isBefore(T(java.time.LocalDateTime).now())}">
+              <span class="px-2 py-0.5 text-xs border rounded-full font-bold"
+                    th:classappend="${r.status.name() == 'RECEIVED'} ? 'text-emerald-400 border-emerald-400/40 bg-emerald-400/10' :
+                                   (${expired} ? 'text-sand border-sand/40 bg-sand/10' :
+                                                 'text-amber-400 border-amber-400/40 bg-amber-400/10')"
+                    th:text="${r.status.name() == 'RECEIVED'} ? 'Received' : (${expired} ? 'Expired' : 'Pending')">
+              </span>
+            </th:block>
+          </td>
+
+          <td class="px-4 py-3 text-ivory text-sm max-w-xs truncate"
+              th:text="${r.responseBody != null ? r.responseBody : '—'}"></td>
+
+          <td class="px-4 py-3 text-sand text-xs whitespace-nowrap"
+              th:text="${r.respondedAt != null ? #temporals.format(r.respondedAt, 'dd MMM, HH:mm') : '—'}"></td>
+
+          <td class="px-4 py-3">
+            <form sec:authorize="hasRole('ADMIN')"
+                  th:action="@{/feedback/{id}/delete(id=${r.id})}" method="post"
+                  onsubmit="return bbConfirm(this, 'Delete this feedback entry? This cannot be undone.')">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button type="submit" class="text-xs text-red-400 hover:underline">Delete</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+</main>
+</body>
+</html>

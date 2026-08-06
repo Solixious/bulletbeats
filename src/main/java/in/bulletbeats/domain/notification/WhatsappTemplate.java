@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 public enum WhatsappTemplate {
 
     BILL_RECEIPT("bill-receipt", TemplateAudience.CUSTOMER, "Bill Receipt"),
+    FEEDBACK_REQUEST("feedback-request", TemplateAudience.CUSTOMER, "Feedback Request"),
     MARKETING_PROMOTION("marketing-promotion", TemplateAudience.CUSTOMER, "Marketing / Promotion"),
     ORDER_RECEIVED_DINE_IN("order-received-dine-in", TemplateAudience.STAFF, "Order Received — Dine-In (QR)"),
     ORDER_RECEIVED_DELIVERY("order-received-delivery", TemplateAudience.STAFF, "Order Received — Direct Delivery"),

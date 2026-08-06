@@ -105,6 +105,7 @@ twilio:
     bill-receipt: ${TWILIO_CONTENT_SID:}
     order-received-dine-in: ${TWILIO_TEMPLATES_ORDER_RECEIVED_DINE_IN:}
     order-received-delivery: ${TWILIO_TEMPLATES_ORDER_RECEIVED_DELIVERY:}
+    feedback-request: ${TWILIO_TEMPLATES_FEEDBACK_REQUEST:}
 
 # ── Logging (console only — Docker captures stdout) ──────────
 logging:
