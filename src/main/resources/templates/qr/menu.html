@@ -52,6 +52,12 @@
     /* Hide scrollbar on category tabs but keep scrollable */
     .cat-tabs::-webkit-scrollbar { display: none; }
     .cat-tabs { -ms-overflow-style: none; scrollbar-width: none; }
+    /* Flash highlight on the cart panel after an item is added */
+    @keyframes qrCartFlash {
+      0%, 100% { box-shadow: none; }
+      50% { box-shadow: 0 0 0 3px rgba(0,212,255,0.55), 0 0 28px rgba(0,212,255,0.45); }
+    }
+    #order-panel-wrap.cart-flash { animation: qrCartFlash 0.55s ease-in-out 2; }
   </style>
 </head>
 <body class="bg-base font-body text-ivory min-h-screen" style="padding-bottom: 80px;">
@@ -99,9 +105,11 @@
           <input type="hidden" name="customerName" th:value="${customerName}"/>
           <input th:if="${customerId != null}" type="hidden" name="customerId" th:value="${customerId}"/>
           <button type="submit" id="promo-add-btn"
+                  hx-disabled-elt="this"
                   class="flex-shrink-0 px-5 py-2.5 rounded-xl bg-accent font-heading
                          tracking-widest text-sm hover:shadow-neon hover:brightness-110
-                         transition-all duration-200 active:scale-95">
+                         transition-all duration-200 active:scale-95
+                         disabled:opacity-50 disabled:pointer-events-none">
             + Add
           </button>
         </form>
@@ -218,6 +226,15 @@
     </div>
   </div>
 
+  <!-- ── Toast (item added confirmation) ───────────────────────────── -->
+  <div id="qr-toast"
+       style="transition:opacity 0.3s ease;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;opacity:0;"
+       class="fixed top-[112px] left-1/2 -translate-x-1/2 z-[150]
+              flex items-center gap-2 px-4 py-2 rounded-full
+              bg-elevated/90 border border-accent/40 text-accent text-xs font-bold
+              whitespace-nowrap shadow-neon-sm">
+  </div>
+
   <!-- ── Image lightbox ─────────────────────────────────────────────── -->
   <div id="lightbox"
        class="fixed inset-0 z-[100] bg-black/90 items-center justify-center p-4"
@@ -315,6 +332,42 @@
     }
     document.addEventListener('DOMContentLoaded', initDescToggles);
     document.addEventListener('htmx:afterSettle', initDescToggles);
+
+    // "Item added" toast
+    var _qrToastTimer;
+    function qrToast(msg) {
+      var el = document.getElementById('qr-toast');
+      if (!el) return;
+      clearTimeout(_qrToastTimer);
+      el.textContent = msg;
+      el.style.display = 'flex';
+      requestAnimationFrame(function () { el.style.opacity = '1'; });
+      _qrToastTimer = setTimeout(function () {
+        el.style.opacity = '0';
+        setTimeout(function () { el.style.display = 'none'; }, 300);
+      }, 2000);
+    }
+
+    // Flash-highlight the cart panel so customers can see where the item landed
+    function flashCartPanel() {
+      var wrap = document.getElementById('order-panel-wrap');
+      if (!wrap) return;
+      wrap.classList.remove('cart-flash');
+      void wrap.offsetWidth; // restart animation if triggered again quickly
+      wrap.classList.add('cart-flash');
+      setTimeout(function () { wrap.classList.remove('cart-flash'); }, 1200);
+    }
+
+    // Fire the toast + flash whenever an "add item" request succeeds
+    // (POST .../items — distinct from the PATCH quantity / DELETE remove endpoints)
+    document.addEventListener('htmx:afterRequest', function (e) {
+      var cfg = e.detail.requestConfig;
+      if (!cfg || !e.detail.successful) return;
+      if (String(cfg.verb).toLowerCase() !== 'post') return;
+      if (!/\/items$/.test(cfg.path || '')) return;
+      qrToast('✓ Item added to cart');
+      flashCartPanel();
+    });
 
     // Preserve bottom-sheet open state across order-panel HTMX swaps.
     // Without this, every qty change re-renders panel-body as hidden (default)
