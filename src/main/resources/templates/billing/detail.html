@@ -122,6 +122,41 @@
 
   </div>
 
+  <!-- Customer feedback (full width, below grid) -->
+  <div th:unless="${#lists.isEmpty(feedbackRequests)}" class="max-w-7xl mx-auto mt-8">
+    <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+      <div class="px-4 py-3 border-b border-elevated/60">
+        <h2 class="font-heading text-base text-ivory tracking-wide">Customer Feedback</h2>
+      </div>
+      <div class="px-4 py-4 space-y-4">
+        <div th:each="r : ${feedbackRequests}"
+             th:with="expired=${r.status.name() == 'PENDING' and r.expiresAt.isBefore(T(java.time.LocalDateTime).now())}"
+             class="border-b border-elevated/40 last:border-0 pb-4 last:pb-0">
+
+          <div class="flex items-center justify-between gap-3 mb-1.5">
+            <span class="px-2 py-0.5 text-xs border rounded-full font-bold"
+                  th:classappend="${r.status.name() == 'RECEIVED'} ? 'text-emerald-400 border-emerald-400/40 bg-emerald-400/10' :
+                                 (${expired} ? 'text-sand border-sand/40 bg-sand/10' :
+                                               'text-amber-400 border-amber-400/40 bg-amber-400/10')"
+                  th:text="${r.status.name() == 'RECEIVED'} ? 'Received' : (${expired} ? 'Expired' : 'Pending')">
+            </span>
+            <span class="text-sand text-xs"
+                  th:text="'Requested ' + ${#temporals.format(r.requestedAt, 'dd MMM yyyy, HH:mm')}"></span>
+          </div>
+
+          <p th:if="${r.responseBody != null}"
+             class="text-ivory text-sm whitespace-pre-wrap break-words"
+             th:text="${r.responseBody}"></p>
+          <p th:unless="${r.responseBody != null}"
+             class="text-sand/60 text-sm italic">No reply yet.</p>
+
+          <p th:if="${r.respondedAt != null}" class="text-sand text-xs mt-1"
+             th:text="'Replied ' + ${#temporals.format(r.respondedAt, 'dd MMM yyyy, HH:mm')}"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Activity log (full width, below grid) -->
   <div class="max-w-7xl mx-auto mt-8">
     <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">

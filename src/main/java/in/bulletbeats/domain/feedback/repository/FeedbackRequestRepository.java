@@ -19,4 +19,6 @@ public interface FeedbackRequestRepository extends JpaRepository<FeedbackRequest
            "LEFT JOIN FETCH r.customer " +
            "ORDER BY r.requestedAt DESC")
     List<FeedbackRequest> findAllByOrderByRequestedAtDesc();
+
+    List<FeedbackRequest> findByBillIdOrderByRequestedAtDesc(Long billId);
 }

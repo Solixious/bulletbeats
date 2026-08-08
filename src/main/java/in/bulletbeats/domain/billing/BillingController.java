@@ -130,6 +130,7 @@ public class BillingController {
         model.addAttribute("subcategoryGroups", List.<SubcategoryWithItemsDto>of());
         model.addAttribute("groupedMenu", billingService.getGroupedMenuItems());
         model.addAttribute("logs", activityLogService.getLogsForBill(id));
+        model.addAttribute("feedbackRequests", feedbackService.findByBillId(id));
         model.addAttribute("studentDiscountPercentage",
                 appConfigService.get("student.discount.percentage", "10"));
         model.addAttribute("minBillAmount",

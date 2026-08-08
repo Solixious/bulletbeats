@@ -86,6 +86,11 @@ public class FeedbackService {
         return feedbackRequestRepository.findAllByOrderByRequestedAtDesc();
     }
 
+    @Transactional(readOnly = true)
+    public List<FeedbackRequest> findByBillId(Long billId) {
+        return feedbackRequestRepository.findByBillIdOrderByRequestedAtDesc(billId);
+    }
+
     @Transactional
     public void deleteFeedback(Long id) {
         feedbackRequestRepository.deleteById(id);
