@@ -117,9 +117,9 @@
         <!-- Add / Qty stepper (only while still editable) -->
         <div th:if="${item.available and !locked}">
 
-          <!-- Item not in cart: show Add button -->
+          <!-- Item not in cart: show Add button (opens qty-confirmation modal) -->
           <form th:unless="${cartQty != null and cartQty > 0}"
-                th:attr="hx-post=@{/qr/{c}/items(c=${qrCode})}"
+                th:attr="hx-post=@{/qr/{c}/items(c=${qrCode})},data-item-name=${item.name}"
                 hx-target="#order-panel"
                 hx-swap="innerHTML"
                 style="display:inline">
@@ -128,8 +128,8 @@
             <input type="hidden" name="quantity"     value="1"/>
             <input type="hidden" name="customerName" th:value="${customerName}"/>
             <input th:if="${customerId != null}" type="hidden" name="customerId" th:value="${customerId}"/>
-            <button type="submit"
-                    hx-disabled-elt="this"
+            <button type="button"
+                    onclick="openQtyModal(this)"
                     class="px-4 py-2 bg-accent rounded-lg text-base text-xs font-bold
                            hover:brightness-110 transition-all active:scale-95
                            disabled:opacity-50 disabled:pointer-events-none">

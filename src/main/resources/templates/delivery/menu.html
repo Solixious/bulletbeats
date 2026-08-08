@@ -234,6 +234,36 @@
             onclick="closeLightbox()">×</button>
   </div>
 
+  <!-- ── Add-to-cart quantity confirmation modal ───────────────────────── -->
+  <div id="qty-modal"
+       class="fixed inset-0 z-[120] bg-black/70 items-center justify-center p-5"
+       style="display:none"
+       onclick="closeQtyModal(event)">
+    <div class="bg-surface rounded-2xl border border-elevated/60 w-full max-w-xs p-5"
+         onclick="event.stopPropagation()">
+      <p class="text-ivory font-bold text-base mb-1" id="qty-modal-item">Item</p>
+      <p class="text-sand text-xs mb-4">How many would you like to add?</p>
+      <div class="flex items-center justify-center gap-4 mb-5">
+        <button type="button" onclick="qtyModalStep(-1)"
+                class="w-10 h-10 rounded-lg border border-elevated/60 text-ivory text-xl
+                       hover:border-red-400/40 hover:text-red-400 transition-colors
+                       flex items-center justify-center">−</button>
+        <span id="qty-modal-value" class="text-ivory font-heading text-3xl w-10 text-center">1</span>
+        <button type="button" onclick="qtyModalStep(1)"
+                class="w-10 h-10 rounded-lg bg-accent text-base text-xl font-bold
+                       hover:brightness-110 transition-all flex items-center justify-center">+</button>
+      </div>
+      <div class="flex gap-3">
+        <button type="button" onclick="closeQtyModal()"
+                class="flex-1 py-2.5 rounded-lg border border-elevated/60 text-sand text-sm font-bold
+                       hover:text-ivory transition-colors">Cancel</button>
+        <button type="button" onclick="confirmQtyModal()"
+                class="flex-1 py-2.5 rounded-lg bg-accent text-base text-sm font-bold
+                       hover:brightness-110 transition-all">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     function setActiveTab(el) {
       document.querySelectorAll('.cat-tab').forEach(t => {
@@ -340,6 +370,38 @@
       deliveryToast('✓ Item added to cart');
       flashCartPanel();
     });
+
+    // Quantity-confirmation modal shown before a new item is added to the cart
+    // (guards against accidental taps adding the wrong item/quantity)
+    var _qtyModalForm = null;
+    var _qtyModalValue = 1;
+    function openQtyModal(btn) {
+      var form = btn.closest('form');
+      if (!form) return;
+      _qtyModalForm = form;
+      _qtyModalValue = 1;
+      document.getElementById('qty-modal-value').textContent = _qtyModalValue;
+      document.getElementById('qty-modal-item').textContent = form.dataset.itemName || 'Item';
+      document.getElementById('qty-modal').style.display = 'flex';
+    }
+    function qtyModalStep(delta) {
+      _qtyModalValue = Math.max(1, _qtyModalValue + delta);
+      document.getElementById('qty-modal-value').textContent = _qtyModalValue;
+    }
+    function closeQtyModal(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('qty-modal').style.display = 'none';
+      _qtyModalForm = null;
+    }
+    function confirmQtyModal() {
+      if (!_qtyModalForm) return;
+      var qtyInput = _qtyModalForm.querySelector('input[name="quantity"]');
+      if (qtyInput) qtyInput.value = _qtyModalValue;
+      var form = _qtyModalForm;
+      document.getElementById('qty-modal').style.display = 'none';
+      _qtyModalForm = null;
+      form.requestSubmit();
+    }
 
     // Preserve bottom-sheet open state across order-panel HTMX swaps.
     var _panelWasOpen = false;
