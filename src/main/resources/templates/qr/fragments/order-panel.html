@@ -96,7 +96,7 @@
                     hx-target="#order-panel"
                     hx-swap="innerHTML"
                     class="w-7 h-7 rounded-lg bg-elevated text-ivory text-base
-                           hover:bg-accent/20 transition-colors
+                           hover:bg-amber-400/20 transition-colors
                            flex items-center justify-center leading-none">+</button>
           </div>
 
@@ -108,7 +108,7 @@
                     hx-target="#order-panel"
                     hx-swap="innerHTML"
                     class="w-7 h-7 rounded-lg bg-elevated text-ivory text-base
-                           hover:bg-accent/20 transition-colors
+                           hover:bg-amber-400/20 transition-colors
                            flex items-center justify-center leading-none">+</button>
           </div>
 
@@ -155,8 +155,8 @@
           <input type="hidden" name="billId"       th:value="${bill.id}"/>
           <input type="hidden" name="customerName" th:value="${customerName}"/>
           <button type="submit"
-                  class="w-full py-3.5 rounded-xl bg-accent text-base font-heading tracking-widest
-                         text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200
+                  class="w-full py-3.5 rounded-xl bg-amber-400 text-base font-heading tracking-widest
+                         text-sm hover:brightness-110 transition-all duration-200
                          active:scale-95">
             SEND TO KITCHEN 🍽
           </button>
@@ -166,8 +166,8 @@
 
       <!-- CTA: CONFIRMED — can still add items -->
       <div th:if="${bill.status.name() == 'CONFIRMED'}">
-        <div class="w-full py-3 rounded-xl border border-accent/30 bg-accent/10
-                    text-accent text-center text-sm font-bold">
+        <div class="w-full py-3 rounded-xl border border-amber-400/30 bg-amber-400/10
+                    text-amber-400 text-center text-sm font-bold">
           ✓ Sent to Kitchen — You Can Still Add Items
         </div>
       </div>
