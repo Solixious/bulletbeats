@@ -10,7 +10,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -113,6 +115,24 @@ public class ReplenishmentController {
             @RequestParam(value = "qty", required = false) List<BigDecimal> qtys,
             Model model) {
         purchaseOrderService.createManualPOs(groceryItemIds, supplierIds, qtys);
+        model.addAttribute("orders", purchaseOrderService.getAllOrders());
+        return "inventory/replenishment/fragments/manual-po-form :: manual-po-created";
+    }
+
+    @GetMapping("/expense-po-form")
+    public String expensePoForm(Model model) {
+        model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
+        return "inventory/replenishment/fragments/expense-po-form :: expense-po-form";
+    }
+
+    @PostMapping("/expense-po")
+    public String createExpensePO(
+            @RequestParam Long supplierId,
+            @RequestParam BigDecimal totalAmount,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expectedDeliveryDate,
+            @RequestParam(required = false) String notes,
+            Model model) {
+        purchaseOrderService.createExpenseOnlyPO(supplierId, totalAmount, expectedDeliveryDate, notes);
         model.addAttribute("orders", purchaseOrderService.getAllOrders());
         return "inventory/replenishment/fragments/manual-po-form :: manual-po-created";
     }

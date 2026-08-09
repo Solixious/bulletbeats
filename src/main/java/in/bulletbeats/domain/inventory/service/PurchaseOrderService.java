@@ -113,6 +113,28 @@ public class PurchaseOrderService {
     }
 
     @Transactional
+    public PurchaseOrder createExpenseOnlyPO(Long supplierId, BigDecimal totalAmount,
+                                             LocalDate expectedDeliveryDate, String notes) {
+        if (supplierId == null) {
+            throw new IllegalArgumentException("Supplier is required.");
+        }
+        if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Total amount must be greater than zero.");
+        }
+        Supplier supplier = supplierService.getById(supplierId);
+        PurchaseOrder po = PurchaseOrder.builder()
+                .supplier(supplier)
+                .status(PurchaseOrderStatus.RECEIVED)
+                .totalAmount(totalAmount)
+                .expectedDeliveryDate(expectedDeliveryDate)
+                .orderedAt(LocalDateTime.now())
+                .notes(notes)
+                .tenantId(1L)
+                .build();
+        return purchaseOrderRepository.save(po);
+    }
+
+    @Transactional
     public void cancelOrder(Long id) {
         PurchaseOrder po = getById(id);
         po.setStatus(PurchaseOrderStatus.CANCELLED);

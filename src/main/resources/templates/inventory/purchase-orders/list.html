@@ -44,6 +44,7 @@
               <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
                 <th class="px-4 py-3 font-medium">PO #</th>
                 <th class="px-4 py-3 font-medium">Supplier</th>
+                <th class="px-4 py-3 font-medium">Total Spend</th>
                 <th class="px-4 py-3 font-medium">Expected</th>
                 <th class="px-4 py-3 font-medium">Created</th>
                 <th class="px-4 py-3 font-medium"></th>
@@ -55,6 +56,9 @@
                 <td class="px-4 py-3 text-sand text-xs font-mono"
                     th:text="'PO-' + ${po.id}"></td>
                 <td class="px-4 py-3 text-ivory text-sm" th:text="${po.supplier.name}"></td>
+                <td class="px-4 py-3 text-ivory text-sm font-mono"
+                    th:text="${po.totalAmount != null} ? ('₹' + ${#numbers.formatDecimal(po.totalAmount, 1, 'COMMA', 2, 'POINT')}) : '—'">
+                </td>
                 <td class="px-4 py-3 text-sand text-sm"
                     th:text="${po.expectedDeliveryDate != null} ? ${#temporals.format(po.expectedDeliveryDate, 'dd MMM yyyy')} : '—'">
                 </td>

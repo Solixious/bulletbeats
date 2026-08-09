@@ -68,6 +68,12 @@
       </div>
     </div>
 
+    <!-- Notes -->
+    <div th:if="${po.notes != null and !po.notes.isBlank()}" class="mt-5 pt-5 border-t border-elevated/40">
+      <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Notes</p>
+      <p class="text-ivory text-sm" th:text="${po.notes}"></p>
+    </div>
+
     <!-- WhatsApp copy button -->
     <div th:if="${po.whatsappText != null}" class="mt-5 pt-5 border-t border-elevated/40">
       <button type="button"

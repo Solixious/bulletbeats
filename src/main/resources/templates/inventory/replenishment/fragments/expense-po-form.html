@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- ── Expense-only PO form panel ────────────────────────────────────── -->
+<div th:fragment="expense-po-form"
+     class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+
+  <div class="px-5 py-4 border-b border-elevated/60 flex items-center justify-between">
+    <h2 class="font-heading text-xl text-ivory tracking-wide">Log Expense</h2>
+    <button type="button"
+            onclick="document.getElementById('manual-po-panel').innerHTML=''"
+            class="text-sand/50 hover:text-sand text-2xl leading-none transition-colors">&times;</button>
+  </div>
+
+  <form hx-post="/inventory/replenishment/expense-po"
+        hx-target="#po-card"
+        hx-swap="innerHTML"
+        class="p-5">
+
+    <p class="text-sand text-xs mb-4">
+      Record a spend against a supplier without tracking individual items — useful for
+      one-off purchases you don't need in inventory.
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Supplier</label>
+        <select name="supplierId" required
+                class="w-full bg-base border border-elevated/60 focus:border-accent rounded
+                       px-3 py-2 text-ivory text-sm outline-none transition-colors focus:shadow-neon-sm">
+          <option value="0">Select supplier…</option>
+          <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Amount</label>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sand/60 text-sm font-mono pointer-events-none">₹</span>
+          <input type="number" name="totalAmount" step="0.01" min="0.01" placeholder="0.00" required
+                 class="w-full pl-7 bg-base border border-elevated/60 focus:border-accent rounded
+                        px-3 py-2 text-ivory text-sm font-mono outline-none transition-colors focus:shadow-neon-sm"/>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Date (optional)</label>
+        <input type="date" name="expectedDeliveryDate"
+               class="w-full bg-base border border-elevated/60 focus:border-accent rounded
+                      px-3 py-2 text-ivory text-sm outline-none transition-colors focus:shadow-neon-sm"/>
+      </div>
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Notes (optional)</label>
+        <input type="text" name="notes" placeholder="e.g. equipment repair"
+               class="w-full bg-base border border-elevated/60 focus:border-accent rounded
+                      px-3 py-2 text-ivory text-sm outline-none transition-colors focus:shadow-neon-sm"/>
+      </div>
+    </div>
+
+    <div class="flex gap-3 pt-4 border-t border-elevated/60">
+      <button type="submit"
+              class="px-5 py-2 rounded-lg bg-accent text-base font-heading tracking-widest
+                     text-xs hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        LOG EXPENSE
+      </button>
+      <button type="button"
+              onclick="document.getElementById('manual-po-panel').innerHTML=''"
+              class="px-4 py-2 rounded-lg border border-elevated/60 text-sand font-heading
+                     tracking-widest text-xs hover:border-sand/40 hover:text-ivory transition-all">
+        CANCEL
+      </button>
+    </div>
+  </form>
+</div>
+
+</body>
+</html>

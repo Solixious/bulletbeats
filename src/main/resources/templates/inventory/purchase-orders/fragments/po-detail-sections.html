@@ -13,7 +13,9 @@
   </div>
 
   <div th:if="${#lists.isEmpty(po.items)}"
-       class="py-10 text-center text-sand text-sm">No items remaining in this order.</div>
+       class="py-10 text-center text-sand text-sm">
+    No line items — this order tracks spend only.
+  </div>
 
   <table th:unless="${#lists.isEmpty(po.items)}" class="w-full text-left">
     <thead>

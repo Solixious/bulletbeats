@@ -22,6 +22,13 @@
                      tracking-widest hover:shadow-neon hover:brightness-110 transition-all duration-200">
         + NEW ORDER
       </button>
+      <button hx-get="/inventory/replenishment/expense-po-form"
+              hx-target="#manual-po-panel"
+              hx-swap="innerHTML"
+              class="text-xs px-3 py-1.5 rounded-lg border border-accent/40 text-accent font-heading
+                     tracking-widest hover:bg-accent/10 transition-all duration-200">
+        + LOG EXPENSE
+      </button>
       <a href="/inventory"
          class="text-xs px-3 py-1.5 border border-sand/30 text-sand rounded
                 hover:border-ivory/40 hover:text-ivory transition-colors">
