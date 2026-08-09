@@ -205,7 +205,10 @@ public class BillingService {
                     dto.getCustomerPhone(), dto.getCustomerName(), userId);
         }
 
-        String billNumber = billNumberService.generateBillNumber();
+        LocalDate billDate = dto.getBillDate() != null ? dto.getBillDate() : LocalDate.now();
+        boolean backdated = !billDate.isEqual(LocalDate.now());
+
+        String billNumber = billNumberService.generateBillNumber(billDate);
         Bill.BillBuilder builder = Bill.builder()
                 .billNumber(billNumber)
                 .orderType(orderType)
@@ -219,10 +222,15 @@ public class BillingService {
         Bill bill = builder.build();
         bill = billRepository.save(bill);
 
+        if (backdated) {
+            billRepository.backdateCreatedAt(bill.getId(), billDate.atTime(LocalTime.now()));
+        }
+
         String staffName = userService.getUserById(userId).getUsername();
         String location = table != null ? table.getName() : orderType.getDisplayName();
-        activityLogService.log(bill.getId(), ActorType.STAFF, staffName,
-                "Bill created for " + location + " by " + staffName);
+        String logMessage = "Bill created for " + location + " by " + staffName
+                + (backdated ? " (backdated to " + billDate + ")" : "");
+        activityLogService.log(bill.getId(), ActorType.STAFF, staffName, logMessage);
 
         if (table != null) {
             cafeTableService.markOccupied(table.getId());

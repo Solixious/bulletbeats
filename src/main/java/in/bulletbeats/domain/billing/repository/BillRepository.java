@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -111,5 +112,12 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
             WHERE b.status IN ('DRAFT', 'CONFIRMED')
             """)
     long countActiveBills();
+
+    // createdAt is @Column(updatable = false) so JPA auditing never lets the
+    // entity's own save() path touch it again; this bulk update is the only
+    // way to backdate a bill's creation timestamp for the admin flow.
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Bill b SET b.createdAt = :createdAt WHERE b.id = :id")
+    void backdateCreatedAt(@Param("id") Long id, @Param("createdAt") LocalDateTime createdAt);
 
 }

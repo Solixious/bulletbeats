@@ -18,12 +18,16 @@ public class BillNumberService {
 
     @Transactional
     public String generateBillNumber() {
-        LocalDate today = LocalDate.now();
+        return generateBillNumber(LocalDate.now());
+    }
+
+    @Transactional
+    public String generateBillNumber(LocalDate date) {
         Integer seq = jdbcTemplate.queryForObject(
                 "INSERT INTO bill_sequence(bill_date, last_seq) VALUES(?, 1) " +
                 "ON CONFLICT (bill_date) DO UPDATE SET last_seq = bill_sequence.last_seq + 1 " +
                 "RETURNING last_seq",
-                Integer.class, today);
-        return "BB-" + today.format(DATE_FMT) + "-" + String.format("%04d", seq);
+                Integer.class, date);
+        return "BB-" + date.format(DATE_FMT) + "-" + String.format("%04d", seq);
     }
 }

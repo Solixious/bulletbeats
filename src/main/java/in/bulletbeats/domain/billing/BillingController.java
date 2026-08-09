@@ -91,12 +91,13 @@ public class BillingController {
     // ── New bill ──────────────────────────────────────────────────────────
 
     @GetMapping("/new")
-    public String newBillForm(Model model) {
+    public String newBillForm(Authentication auth, Model model) {
         model.addAttribute("tables", cafeTableService.getAllActive());
         model.addAttribute("activeBillsByTable", billingService.getActiveBillCountByTable());
         model.addAttribute("dto", new CreateBillDto());
         model.addAttribute("orderTypes", OrderType.values());
         model.addAttribute("platforms", OnlineOrderPlatform.values());
+        model.addAttribute("isAdmin", isAdmin(auth));
         return "billing/new";
     }
 
@@ -106,11 +107,16 @@ public class BillingController {
         if (dto.getOrderType() == OrderType.DINE_IN && dto.getCafeTableId() == null) {
             result.rejectValue("cafeTableId", "table.required", "Please select a table for dine-in orders");
         }
+        boolean isAdmin = isAdmin(auth);
+        if (!isAdmin) {
+            dto.setBillDate(null);
+        }
         if (result.hasErrors()) {
             model.addAttribute("tables", cafeTableService.getAllActive());
             model.addAttribute("activeBillsByTable", billingService.getActiveBillCountByTable());
             model.addAttribute("orderTypes", OrderType.values());
             model.addAttribute("platforms", OnlineOrderPlatform.values());
+            model.addAttribute("isAdmin", isAdmin);
             return "billing/new";
         }
         Bill bill = billingService.createBill(dto, currentUserId(auth));
@@ -542,5 +548,10 @@ public class BillingController {
         return auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER")
                             || a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    private boolean isAdmin(Authentication auth) {
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }
