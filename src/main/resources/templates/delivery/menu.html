@@ -179,13 +179,21 @@
 
   <!-- ── Menu grid ──────────────────────────────────────────────────── -->
   <div id="menu-grid" th:class="${locked} ? 'px-4 pt-20 pb-4' : 'px-4 pt-32 pb-4'">
+    <!-- Closed banner (delivery hours) -->
+    <div th:if="${hoursStatus.closed}"
+         class="mb-4 px-4 py-3 rounded-lg bg-amber-500/15 border border-amber-500/30
+                text-amber-400 text-sm text-center font-bold">
+      <span th:text="'We''re closed for delivery orders right now — ordering opens again at ' + ${hoursStatus.reopensAtLabel} + '.'">
+        We're closed right now.
+      </span>
+    </div>
     <th:block th:each="dto : ${menuDto.categories}">
       <div class="mb-6">
         <h3 class="font-heading text-xl text-sand tracking-widest mb-3 uppercase"
             th:text="${dto.category.name}">Category</h3>
         <div class="space-y-3">
           <th:block th:each="item : ${dto.items}">
-            <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked})}"/>
+            <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked},hoursStatus=${hoursStatus})}"/>
           </th:block>
         </div>
         <th:block th:each="sub : ${dto.subcategories}">
@@ -199,7 +207,7 @@
           </button>
           <div th:id="'subcat-body-' + ${sub.subcategory.id}" class="space-y-3">
             <th:block th:each="item : ${sub.items}">
-              <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked})}"/>
+              <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked},hoursStatus=${hoursStatus})}"/>
             </th:block>
           </div>
         </th:block>

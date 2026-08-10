@@ -36,6 +36,9 @@ public class AppSettingsController {
                 appConfigService.getBoolean("notification.enabled", false));
         model.addAttribute("notificationConfigured", notificationService.isConfigured());
         model.addAttribute("deliveryFee", appConfigService.get("delivery.fee", "0.00"));
+        model.addAttribute("deliveryHoursEnabled", appConfigService.getBoolean("delivery.hours.enabled", false));
+        model.addAttribute("deliveryClosedStart", appConfigService.get("delivery.closed.start", "00:00"));
+        model.addAttribute("deliveryClosedEnd", appConfigService.get("delivery.closed.end", "00:00"));
         model.addAttribute("feedbackWindowMinutes",
                 appConfigService.getInt("feedback.window_minutes", 60));
         return "admin/settings";
@@ -65,6 +68,9 @@ public class AppSettingsController {
             "student.discount.min_bill_amount",
             "notification.enabled",
             "delivery.fee",
+            "delivery.hours.enabled",
+            "delivery.closed.start",
+            "delivery.closed.end",
             "feedback.window_minutes"
     );
 

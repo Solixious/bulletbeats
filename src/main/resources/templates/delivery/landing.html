@@ -59,6 +59,15 @@
          class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm"
          th:text="${error}"></div>
 
+    <!-- Closed banner (delivery hours) -->
+    <div th:if="${hoursStatus.closed}"
+         class="mb-4 px-4 py-3 rounded-lg bg-amber-500/15 border border-amber-500/30
+                text-amber-400 text-sm text-center font-bold">
+      <span th:text="'We''re closed for delivery orders right now — ordering opens again at ' + ${hoursStatus.reopensAtLabel} + '.'">
+        We're closed right now.
+      </span>
+    </div>
+
     <!-- ── Welcome-back card (shown when localStorage has saved details) ── -->
     <div id="welcome-back-card" class="hidden bg-surface rounded-2xl p-6 shadow-xl border border-elevated/60">
       <div class="flex items-center gap-3 mb-5">

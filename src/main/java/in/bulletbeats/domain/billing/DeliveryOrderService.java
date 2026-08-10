@@ -2,6 +2,7 @@ package in.bulletbeats.domain.billing;
 
 import in.bulletbeats.domain.admin.AppConfigService;
 import in.bulletbeats.domain.billing.dto.CategoryWithItemsDto;
+import in.bulletbeats.domain.billing.dto.DeliveryHoursStatus;
 import in.bulletbeats.domain.billing.dto.DeliveryMenuDto;
 import in.bulletbeats.domain.billing.dto.DeliveryStartResult;
 import in.bulletbeats.domain.billing.dto.SubcategoryWithItemsDto;
@@ -28,6 +29,7 @@ import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.OrderType;
 import in.bulletbeats.domain.shared.exception.BillNotEditableException;
+import in.bulletbeats.domain.shared.exception.DeliveryClosedException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import in.bulletbeats.domain.user.service.UserService;
@@ -54,6 +56,7 @@ public class DeliveryOrderService {
 
     private static final Long SYSTEM_USER_ID = 0L;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter DISPLAY_TIME_FMT = DateTimeFormatter.ofPattern("h:mm a");
 
     private final BillRepository billRepository;
     private final BillNumberService billNumberService;
@@ -133,6 +136,31 @@ public class DeliveryOrderService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public DeliveryHoursStatus getHoursStatus() {
+        if (!appConfigService.getBoolean("delivery.hours.enabled", false)) {
+            return new DeliveryHoursStatus(false, null);
+        }
+        LocalTime start = appConfigService.getTime("delivery.closed.start", LocalTime.MIDNIGHT);
+        LocalTime end = appConfigService.getTime("delivery.closed.end", LocalTime.MIDNIGHT);
+        if (start.equals(end)) {
+            return new DeliveryHoursStatus(false, null);
+        }
+        LocalTime now = LocalTime.now();
+        boolean closed = start.isBefore(end)
+                ? !now.isBefore(start) && now.isBefore(end)
+                : !now.isBefore(start) || now.isBefore(end);
+        return new DeliveryHoursStatus(closed, closed ? end.format(DISPLAY_TIME_FMT) : null);
+    }
+
+    private void assertOpenForOrdering() {
+        DeliveryHoursStatus hours = getHoursStatus();
+        if (hours.closed()) {
+            throw new DeliveryClosedException(
+                    "We're closed for delivery orders right now. Ordering opens again at " + hours.reopensAtLabel() + ".");
+        }
+    }
+
     @Transactional
     public Bill addItem(Long billId, Long menuItemId, int quantity, String customerName) {
         Bill bill = billRepository.findByIdWithItems(billId)
@@ -141,6 +169,7 @@ public class DeliveryOrderService {
         if (bill.getStatus().isTerminal()) {
             throw new BillNotEditableException("Order " + bill.getBillNumber() + " has already been placed and can't be changed");
         }
+        assertOpenForOrdering();
         boolean wasConfirmed = bill.getStatus() == BillStatus.CONFIRMED;
 
         MenuItem menuItem = menuService.getItemById(menuItemId);
@@ -243,6 +272,10 @@ public class DeliveryOrderService {
         if (wasConfirmed && newQty <= item.getQuantity()) {
             throw new BillNotEditableException("Order " + bill.getBillNumber()
                     + " has already been placed — items can only be added, not reduced or removed.");
+        }
+
+        if (newQty > item.getQuantity()) {
+            assertOpenForOrdering();
         }
 
         if (newQty <= 0) {

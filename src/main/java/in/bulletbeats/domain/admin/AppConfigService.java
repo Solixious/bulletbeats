@@ -6,6 +6,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +45,16 @@ public class AppConfigService {
         try {
             return Integer.parseInt(val);
         } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    public LocalTime getTime(String key, LocalTime defaultValue) {
+        String val = get(key, null);
+        if (val == null) return defaultValue;
+        try {
+            return LocalTime.parse(val);
+        } catch (DateTimeParseException e) {
             return defaultValue;
         }
     }

@@ -349,6 +349,75 @@
       </form>
       <p class="text-sand text-xs mt-1">Set to 0 to disable. Shown to customers ordering via the delivery QR code.</p>
     </div>
+
+    <div class="mt-5 pt-5 border-t border-elevated/40">
+      <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Closed Hours</label>
+      <form th:attr="hx-post=@{/admin/settings/key}"
+            hx-target="#delivery-hours-enabled-save-status"
+            hx-swap="innerHTML"
+            class="flex items-center gap-3 mb-3">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <input type="hidden" name="key" value="delivery.hours.enabled"/>
+        <select name="value"
+                class="bg-elevated rounded-lg px-3 py-2 text-ivory text-sm border
+                       border-elevated/60 focus:border-accent outline-none transition-colors">
+          <option value="true"  th:selected="${deliveryHoursEnabled}">Enabled</option>
+          <option value="false" th:selected="${!deliveryHoursEnabled}">Disabled</option>
+        </select>
+        <button type="submit"
+                class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                       hover:border-ivory/40 hover:text-ivory transition-colors">
+          Save
+        </button>
+        <span id="delivery-hours-enabled-save-status"></span>
+      </form>
+
+      <div class="flex flex-wrap items-end gap-3">
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Closed From</label>
+          <form th:attr="hx-post=@{/admin/settings/key}"
+                hx-target="#delivery-closed-start-save-status"
+                hx-swap="innerHTML"
+                class="flex items-center gap-2">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <input type="hidden" name="key" value="delivery.closed.start"/>
+            <input type="time" name="value" th:value="${deliveryClosedStart}" required
+                   class="bg-elevated rounded-lg px-3 py-2 text-ivory text-sm font-mono
+                          border border-elevated/60 focus:border-accent outline-none transition-colors"/>
+            <button type="submit"
+                    class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                           hover:border-ivory/40 hover:text-ivory transition-colors">
+              Save
+            </button>
+            <span id="delivery-closed-start-save-status"></span>
+          </form>
+        </div>
+
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Closed Until</label>
+          <form th:attr="hx-post=@{/admin/settings/key}"
+                hx-target="#delivery-closed-end-save-status"
+                hx-swap="innerHTML"
+                class="flex items-center gap-2">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <input type="hidden" name="key" value="delivery.closed.end"/>
+            <input type="time" name="value" th:value="${deliveryClosedEnd}" required
+                   class="bg-elevated rounded-lg px-3 py-2 text-ivory text-sm font-mono
+                          border border-elevated/60 focus:border-accent outline-none transition-colors"/>
+            <button type="submit"
+                    class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                           hover:border-ivory/40 hover:text-ivory transition-colors">
+              Save
+            </button>
+            <span id="delivery-closed-end-save-status"></span>
+          </form>
+        </div>
+      </div>
+      <p class="text-sand text-xs mt-2">
+        While enabled, customers on the public delivery menu see a "closed" notice during this window and can't add items to
+        their cart — set "Closed Until" earlier than "Closed From" for a window that spans midnight (e.g. 23:00 → 09:00).
+      </p>
+    </div>
   </div>
 
   <!-- ── Feedback (inline-save, outside main form) ───────────────────── -->

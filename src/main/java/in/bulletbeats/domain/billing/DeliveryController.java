@@ -2,6 +2,7 @@ package in.bulletbeats.domain.billing;
 
 import in.bulletbeats.domain.admin.AppConfigService;
 import in.bulletbeats.domain.billing.dto.CategoryWithItemsDto;
+import in.bulletbeats.domain.billing.dto.DeliveryHoursStatus;
 import in.bulletbeats.domain.billing.dto.DeliveryStartResult;
 import in.bulletbeats.domain.billing.dto.QrAddItemDto;
 import in.bulletbeats.domain.billing.dto.QrConfirmDto;
@@ -14,6 +15,7 @@ import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.exception.BillNotEditableException;
+import in.bulletbeats.domain.shared.exception.DeliveryClosedException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
@@ -41,6 +43,7 @@ public class DeliveryController {
     @GetMapping
     public String landing(Model model) {
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
+        model.addAttribute("hoursStatus", deliveryOrderService.getHoursStatus());
         return "delivery/landing";
     }
 
@@ -60,6 +63,7 @@ public class DeliveryController {
         } catch (IllegalArgumentException e) {
             model.addAttribute("error", e.getMessage());
             model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
+            model.addAttribute("hoursStatus", deliveryOrderService.getHoursStatus());
             return "delivery/landing";
         }
     }
@@ -71,13 +75,15 @@ public class DeliveryController {
                        @RequestParam(required = false) String customerName,
                        Model model) {
         Bill bill = deliveryOrderService.getOrder(billId);
+        DeliveryHoursStatus hoursStatus = deliveryOrderService.getHoursStatus();
         model.addAttribute("bill", bill);
         model.addAttribute("menuDto", deliveryOrderService.getMenuForOrder(billId));
         model.addAttribute("billId", billId);
         model.addAttribute("customerName", customerName != null ? customerName : "Guest");
         model.addAttribute("locked", bill.getStatus().isTerminal());
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
-        model.addAttribute("promotedItem", bill.getStatus() == BillStatus.DRAFT
+        model.addAttribute("hoursStatus", hoursStatus);
+        model.addAttribute("promotedItem", bill.getStatus() == BillStatus.DRAFT && !hoursStatus.closed()
                 ? menuService.getPromotedItem().orElse(null) : null);
         return "delivery/menu";
     }
@@ -93,6 +99,10 @@ public class DeliveryController {
             return orderPanelResponse(bill, dto.getCustomerName(), model);
         } catch (InsufficientStockException e) {
             model.addAttribute("stockError", "Sorry, this item isn't available right now. Please try something else.");
+            Bill bill = deliveryOrderService.getOrder(billId);
+            return orderPanelResponse(bill, dto.getCustomerName(), model);
+        } catch (DeliveryClosedException e) {
+            model.addAttribute("closedError", e.getMessage());
             Bill bill = deliveryOrderService.getOrder(billId);
             return orderPanelResponse(bill, dto.getCustomerName(), model);
         }
@@ -111,6 +121,10 @@ public class DeliveryController {
             return orderPanelResponse(bill, customerName, model);
         } catch (InsufficientStockException e) {
             model.addAttribute("stockError", "Sorry, that quantity isn't available right now.");
+            Bill bill = deliveryOrderService.getOrder(billId);
+            return orderPanelResponse(bill, customerName, model);
+        } catch (DeliveryClosedException e) {
+            model.addAttribute("closedError", e.getMessage());
             Bill bill = deliveryOrderService.getOrder(billId);
             return orderPanelResponse(bill, customerName, model);
         }
@@ -202,6 +216,7 @@ public class DeliveryController {
         model.addAttribute("billId", billId);
         model.addAttribute("customerName", customerName);
         model.addAttribute("locked", bill.getStatus().isTerminal());
+        model.addAttribute("hoursStatus", deliveryOrderService.getHoursStatus());
         return "delivery/fragments/menu-grid :: delivery-menu-grid";
     }
 
@@ -224,6 +239,7 @@ public class DeliveryController {
     private String orderPanelResponse(Bill bill, String customerName, Model model) {
         model.addAttribute("bill", bill);
         model.addAttribute("customerName", customerName != null ? customerName : "Guest");
+        model.addAttribute("hoursStatus", deliveryOrderService.getHoursStatus());
         return "delivery/fragments/order-panel :: order-panel";
     }
 }
