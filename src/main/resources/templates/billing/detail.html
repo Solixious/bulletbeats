@@ -59,7 +59,7 @@
   <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start max-w-7xl mx-auto">
 
     <!-- ── LEFT: persistent container; content switches between menu and kitchen ── -->
-    <div id="detail-left-col">
+    <div id="detail-left-col" class="order-2 lg:order-1">
 
       <!-- DRAFT: poll for DRAFT→CONFIRMED transition + menu browser -->
       <th:block th:if="${bill.status.name() == 'DRAFT'}">
@@ -116,7 +116,7 @@
     </div>
 
     <!-- ── RIGHT: Bill panel ──────────────────────────────────────────── -->
-    <div id="bill-panel" class="space-y-0">
+    <div id="bill-panel" class="space-y-0 order-1 lg:order-2">
       <th:block th:replace="~{billing/fragments/bill-panel :: bill-panel}"/>
     </div>
 
