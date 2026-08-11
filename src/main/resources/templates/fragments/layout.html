@@ -201,6 +201,16 @@
              class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
             <span class="text-base">📋</span> Categories
           </a>
+          <a href="/admin/offers"
+             th:classappend="${uri.startsWith('/admin/offers')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">🏷️</span> Offers
+          </a>
+          <a href="/admin/cohorts"
+             th:classappend="${uri.startsWith('/admin/cohorts')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">👥</span> Cohorts
+          </a>
           <a href="/admin/tables"
              th:classappend="${uri.startsWith('/admin/tables')} ? ${activeClass} : ${inactiveClass}"
              class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">

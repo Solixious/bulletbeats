@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${mode == 'edit'} ? 'Edit Offer — Bullet Beats Café' : 'New Offer — Bullet Beats Café'">
+    Offer — Bullet Beats Café
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-2xl mx-auto">
+
+  <a href="/admin/offers"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Offers
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide"
+        th:text="${mode == 'edit'} ? 'Edit Offer' : 'New Offer'">Offer</h1>
+  </div>
+
+  <div th:if="${mode == 'edit' and offer.isSystem}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-blue-400/30 text-blue-400 text-sm">
+    This is a system offer (the migrated student discount) and cannot be edited or deleted here.
+    Its percentage/minimum-bill settings are still managed under Admin → Settings.
+  </div>
+
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+    <p th:if="${formError}" th:text="${formError}"
+       class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/40 text-red-400 text-sm"></p>
+
+    <form th:action="${mode == 'edit'} ? @{/admin/offers/{id}/edit(id=${offer.id})} : @{/admin/offers/new}"
+          th:object="${dto}"
+          method="post"
+          th:classappend="${mode == 'edit' and offer.isSystem} ? 'opacity-50 pointer-events-none' : ''"
+          class="space-y-5">
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Name</label>
+        <input type="text" th:field="*{name}" required
+               class="w-full bg-elevated border border-elevated focus:border-accent
+                      rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+      </div>
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Description <span class="text-sand/40 normal-case">(optional)</span>
+        </label>
+        <textarea th:field="*{description}" rows="2"
+                  class="w-full bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200 resize-none"></textarea>
+      </div>
+
+      <!-- Mechanism -->
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Mechanism</label>
+        <select th:field="*{mechanism}" id="mechanism" onchange="offerFormUpdate()"
+                class="w-full bg-elevated border border-elevated focus:border-accent
+                       rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200 cursor-pointer">
+          <option th:each="m : ${mechanisms}" th:value="${m}" th:text="${m}"></option>
+        </select>
+      </div>
+
+      <div id="field-percentage">
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Percentage off</label>
+        <input type="number" step="0.01" min="0.01" max="100" th:field="*{percentageValue}"
+               class="w-full bg-elevated border border-elevated focus:border-accent
+                      rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+      </div>
+
+      <div id="field-fixed">
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Fixed amount off (₹)</label>
+        <input type="number" step="0.01" min="0.01" th:field="*{fixedValue}"
+               class="w-full bg-elevated border border-elevated focus:border-accent
+                      rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+      </div>
+
+      <div id="field-bogo" class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Buy quantity</label>
+          <input type="number" min="1" th:field="*{buyQuantity}"
+                 class="w-full bg-elevated border border-elevated focus:border-accent
+                        rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+        </div>
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Get quantity free</label>
+          <input type="number" min="1" th:field="*{getQuantity}"
+                 class="w-full bg-elevated border border-elevated focus:border-accent
+                        rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+        </div>
+      </div>
+
+      <div id="field-item-scope" class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Menu items</label>
+          <select multiple th:field="*{menuItemIds}" size="6"
+                  class="w-full bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-3 py-2 text-ivory text-xs outline-none transition-all duration-200">
+            <option th:each="item : ${menuItems}" th:value="${item.id}" th:text="${item.name}"></option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Categories</label>
+          <select multiple th:field="*{categoryIds}" size="6"
+                  class="w-full bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-3 py-2 text-ivory text-xs outline-none transition-all duration-200">
+            <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Target -->
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Target</label>
+        <select th:field="*{targetType}" id="targetType" onchange="offerFormUpdate()"
+                class="w-full bg-elevated border border-elevated focus:border-accent
+                       rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200 cursor-pointer">
+          <option th:each="t : ${targetTypes}" th:value="${t}" th:text="${t}"></option>
+        </select>
+      </div>
+
+      <div id="field-cohort">
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Cohort</label>
+        <select th:field="*{cohortId}"
+                class="w-full bg-elevated border border-elevated focus:border-accent
+                       rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200 cursor-pointer">
+          <option value="">Select a cohort</option>
+          <option th:each="c : ${cohorts}" th:value="${c.id}" th:text="${c.name}"></option>
+        </select>
+      </div>
+
+      <div id="field-customer">
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Customer phone <span class="text-sand/40 normal-case">(must already exist)</span>
+        </label>
+        <input type="text" th:field="*{customerPhone}"
+               class="w-full bg-elevated border border-elevated focus:border-accent
+                      rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Minimum spend (₹)</label>
+          <input type="number" step="0.01" min="0" th:field="*{minSpend}"
+                 class="w-full bg-elevated border border-elevated focus:border-accent
+                        rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+        </div>
+        <div class="flex items-end gap-2 pb-2.5">
+          <input type="checkbox" id="requiresCode" th:field="*{requiresCode}" class="w-4 h-4"/>
+          <label for="requiresCode" class="text-sand text-sm">Requires a code to redeem</label>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Starts <span class="text-sand/40 normal-case">(optional)</span>
+          </label>
+          <input type="datetime-local" th:field="*{startsAt}"
+                 class="w-full bg-elevated border border-elevated focus:border-accent
+                        rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+        </div>
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Ends <span class="text-sand/40 normal-case">(optional — blank means indefinite)</span>
+          </label>
+          <input type="datetime-local" th:field="*{endsAt}"
+                 class="w-full bg-elevated border border-elevated focus:border-accent
+                        rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Max total uses <span class="text-sand/40 normal-case">(optional)</span>
+          </label>
+          <input type="number" min="1" th:field="*{maxTotalUses}"
+                 class="w-full bg-elevated border border-elevated focus:border-accent
+                        rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+        </div>
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Max uses per customer <span class="text-sand/40 normal-case">(optional)</span>
+          </label>
+          <input type="number" min="1" th:field="*{maxUsesPerCustomer}"
+                 class="w-full bg-elevated border border-elevated focus:border-accent
+                        rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="active" th:field="*{active}" class="w-4 h-4"/>
+        <label for="active" class="text-sand text-sm">Active</label>
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button type="submit"
+                class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200"
+                th:text="${mode == 'edit'} ? 'UPDATE OFFER' : 'CREATE OFFER'">Submit</button>
+        <a href="/admin/offers" class="px-4 py-2.5 text-sand text-sm hover:text-ivory transition-colors">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Codes (edit mode only) -->
+  <div th:if="${mode == 'edit' and !offer.isSystem}" class="bg-surface rounded-xl border border-elevated/60 p-6 mt-6">
+    <p class="text-sand text-xs uppercase tracking-widest mb-3">Redemption Codes</p>
+
+    <p th:if="${codeError}" th:text="${codeError}"
+       class="mb-3 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/40 text-red-400 text-sm"></p>
+
+    <div th:if="${#lists.isEmpty(codes)}" class="text-sand/50 text-xs mb-3">No codes generated yet.</div>
+    <div th:unless="${#lists.isEmpty(codes)}" class="space-y-2 mb-4">
+      <div th:each="c : ${codes}"
+           class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-elevated/50 border border-elevated/60">
+        <span class="text-ivory text-xs font-mono" th:text="${c.code}"></span>
+        <span class="text-sand text-xs" th:text="${c.usageType}"></span>
+        <span class="text-sand text-xs"
+              th:text="${c.usesCount} + (${c.maxUses != null} ? ('/' + ${c.maxUses}) : '') + ' used'"></span>
+        <span class="text-sand text-xs" th:text="${c.customer != null} ? ${c.customer.maskedPhone} : 'Anyone'"></span>
+        <span th:unless="${c.active}" class="px-1.5 py-0.5 text-[10px] rounded-full border border-sand/30 text-sand uppercase">Inactive</span>
+        <span class="flex items-center gap-2">
+          <form th:if="${c.active}" th:action="@{/admin/offers/{id}/codes/{cid}/deactivate(id=${offer.id},cid=${c.id})}" method="post" class="inline">
+            <button type="submit" class="text-xs text-sand hover:text-red-400 transition-colors">Deactivate</button>
+          </form>
+          <form th:unless="${c.active}" th:action="@{/admin/offers/{id}/codes/{cid}/reactivate(id=${offer.id},cid=${c.id})}" method="post" class="inline">
+            <button type="submit" class="text-xs text-sand hover:text-accent transition-colors">Reactivate</button>
+          </form>
+          <form th:action="@{/admin/offers/{id}/codes/{cid}/delete(id=${offer.id},cid=${c.id})}" method="post" class="inline"
+                onsubmit="return bbConfirm(this, 'Delete this code?')">
+            <button type="submit" class="text-xs text-sand hover:text-red-400 transition-colors">Delete</button>
+          </form>
+        </span>
+      </div>
+    </div>
+
+    <form th:action="@{/admin/offers/{id}/codes(id=${offer.id})}" th:object="${codeDto}" method="post"
+          class="flex flex-wrap items-end gap-2">
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1">
+          Code <span class="text-sand/40 normal-case">(blank = auto-generate)</span>
+        </label>
+        <input type="text" th:field="*{code}"
+               class="bg-elevated border border-elevated focus:border-accent rounded-lg px-3 py-2 text-ivory text-xs outline-none"/>
+      </div>
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1">Customer phone (optional)</label>
+        <input type="text" th:field="*{customerPhone}"
+               class="bg-elevated border border-elevated focus:border-accent rounded-lg px-3 py-2 text-ivory text-xs outline-none"/>
+      </div>
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1">Usage</label>
+        <select th:field="*{usageType}"
+                class="bg-elevated border border-elevated focus:border-accent rounded-lg px-3 py-2 text-ivory text-xs outline-none cursor-pointer">
+          <option th:each="u : ${usageTypes}" th:value="${u}" th:text="${u}"></option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1">Max uses (if limited)</label>
+        <input type="number" min="1" th:field="*{maxUses}"
+               class="w-24 bg-elevated border border-elevated focus:border-accent rounded-lg px-3 py-2 text-ivory text-xs outline-none"/>
+      </div>
+      <button type="submit"
+              class="px-4 py-2 rounded-lg border border-accent/40 text-accent text-xs hover:bg-accent/10 transition-colors">
+        Generate
+      </button>
+    </form>
+  </div>
+
+  <script th:inline="javascript">
+    function offerFormUpdate() {
+      var mechanism = document.getElementById('mechanism').value;
+      var targetType = document.getElementById('targetType').value;
+
+      var showPct = mechanism === 'BILL_PERCENTAGE' || mechanism === 'ITEM_PERCENTAGE';
+      var showFixed = mechanism === 'BILL_FIXED' || mechanism === 'ITEM_FIXED';
+      var showBogo = mechanism === 'BUY_X_GET_Y_FREE';
+      var showItemScope = mechanism === 'ITEM_PERCENTAGE' || mechanism === 'ITEM_FIXED' || showBogo;
+
+      document.getElementById('field-percentage').style.display = showPct ? '' : 'none';
+      document.getElementById('field-fixed').style.display = showFixed ? '' : 'none';
+      document.getElementById('field-bogo').style.display = showBogo ? '' : 'none';
+      document.getElementById('field-item-scope').style.display = showItemScope ? '' : 'none';
+
+      document.getElementById('field-cohort').style.display = targetType === 'COHORT' ? '' : 'none';
+      document.getElementById('field-customer').style.display = targetType === 'CUSTOMER' ? '' : 'none';
+    }
+    offerFormUpdate();
+  </script>
+
+</main>
+</body>
+</html>

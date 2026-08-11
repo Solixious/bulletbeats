@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "customers")
@@ -31,6 +32,8 @@ public class Customer extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private int visitCount = 0;
+
+    private LocalDateTime lastVisitDate;
 
     @Column(nullable = false, precision = 12, scale = 2)
     @Builder.Default

@@ -1,6 +1,8 @@
 package in.bulletbeats.domain.billing.entity;
 
 import in.bulletbeats.domain.crm.entity.Customer;
+import in.bulletbeats.domain.offers.entity.Offer;
+import in.bulletbeats.domain.offers.entity.OfferCode;
 import in.bulletbeats.domain.shared.BaseEntity;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.DiscountType;
@@ -102,6 +104,18 @@ public class Bill extends BaseEntity {
 
     private LocalDateTime studentDiscountAppliedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "applied_offer_id")
+    private Offer appliedOffer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "applied_offer_code_id")
+    private OfferCode appliedOfferCode;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal offerDiscountAmount = BigDecimal.ZERO;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -127,6 +141,14 @@ public class Bill extends BaseEntity {
         return studentDiscountApplied
                 && studentDiscountAmount != null
                 && studentDiscountAmount.signum() > 0;
+    }
+
+    public boolean hasAppliedOffer() {
+        return appliedOffer != null;
+    }
+
+    public boolean hasManagerDiscount() {
+        return discountType != null && discountValue != null;
     }
 
     public boolean canAddItems() {

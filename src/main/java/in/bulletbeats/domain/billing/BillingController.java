@@ -22,7 +22,10 @@ import in.bulletbeats.domain.menu.entity.Category;
 import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
+import in.bulletbeats.domain.offers.entity.Offer;
+import in.bulletbeats.domain.offers.service.OfferEligibilityService;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
+import in.bulletbeats.domain.shared.exception.OfferException;
 import in.bulletbeats.domain.shared.exception.StudentDiscountException;
 import in.bulletbeats.domain.user.entity.User;
 import jakarta.servlet.http.HttpServletResponse;
@@ -57,6 +60,7 @@ public class BillingController {
     private final TableTransferService tableTransferService;
     private final AppConfigService appConfigService;
     private final FeedbackService feedbackService;
+    private final OfferEligibilityService offerEligibilityService;
 
     // ── List ─────────────────────────────────────────────────────────────
 
@@ -145,6 +149,10 @@ public class BillingController {
                 appConfigService.getBoolean("bill.show_gst", true));
         model.addAttribute("gstin",
                 appConfigService.get("cafe.gstin", ""));
+        model.addAttribute("eligibleOffers",
+                bill.getStatus().name().equals("DRAFT")
+                        ? offerEligibilityService.findAutoEligibleOffers(bill.getCustomer(), bill)
+                        : List.<Offer>of());
         return "billing/detail";
     }
 
@@ -425,6 +433,33 @@ public class BillingController {
         return billPanelResponse(bill, auth, model);
     }
 
+    // ── Offers (HTMX) ─────────────────────────────────────────────────────
+
+    @PostMapping("/{id}/offers/apply")
+    public String applyOffer(@PathVariable Long id,
+                             @RequestParam(required = false) Long offerId,
+                             @RequestParam(required = false, defaultValue = "") String code,
+                             Authentication auth, Model model, HttpServletResponse response) {
+        try {
+            Bill bill = billingService.applyOffer(id, offerId, code, currentUserId(auth));
+            return billPanelResponse(bill, auth, model);
+        } catch (OfferException | StudentDiscountException e) {
+            String reason = e instanceof OfferException oe ? oe.getReason()
+                    : ((StudentDiscountException) e).getReason();
+            response.setStatus(HttpServletResponse.SC_UNPROCESSABLE_CONTENT);
+            response.setHeader("HX-Retarget", "#offer-error");
+            response.setHeader("HX-Reswap", "outerHTML");
+            model.addAttribute("reason", reason);
+            return "billing/fragments/offer-error :: offer-error";
+        }
+    }
+
+    @DeleteMapping("/{id}/offers")
+    public String removeOffer(@PathVariable Long id, Authentication auth, Model model) {
+        Bill bill = billingService.removeOffer(id, currentUserId(auth));
+        return billPanelResponse(bill, auth, model);
+    }
+
     // ── Discount (HTMX, Manager+) ─────────────────────────────────────────
 
     @PostMapping("/{id}/discount")
@@ -537,6 +572,10 @@ public class BillingController {
                 appConfigService.getBoolean("bill.show_gst", true));
         model.addAttribute("gstin",
                 appConfigService.get("cafe.gstin", ""));
+        model.addAttribute("eligibleOffers",
+                bill.getStatus().name().equals("DRAFT")
+                        ? offerEligibilityService.findAutoEligibleOffers(bill.getCustomer(), bill)
+                        : List.<Offer>of());
         return "billing/fragments/bill-panel :: bill-panel";
     }
 

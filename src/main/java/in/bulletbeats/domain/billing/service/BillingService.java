@@ -30,6 +30,14 @@ import in.bulletbeats.domain.menu.entity.DishIngredient;
 import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.MenuService;
+import in.bulletbeats.domain.offers.entity.Offer;
+import in.bulletbeats.domain.offers.entity.OfferCode;
+import in.bulletbeats.domain.offers.entity.OfferRedemption;
+import in.bulletbeats.domain.offers.repository.OfferCodeRepository;
+import in.bulletbeats.domain.offers.repository.OfferRedemptionRepository;
+import in.bulletbeats.domain.offers.repository.OfferRepository;
+import in.bulletbeats.domain.offers.service.OfferEligibilityService;
+import in.bulletbeats.domain.offers.service.OfferPricingService;
 import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.DiscountType;
@@ -38,6 +46,7 @@ import in.bulletbeats.domain.shared.enums.OrderType;
 import in.bulletbeats.domain.shared.exception.BillNotEditableException;
 import in.bulletbeats.domain.shared.exception.EmptyBillException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
+import in.bulletbeats.domain.shared.exception.OfferException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import in.bulletbeats.domain.shared.exception.StudentDiscountException;
 import in.bulletbeats.domain.shared.exception.TableNotActiveException;
@@ -91,6 +100,11 @@ public class BillingService {
     private final ActivityLogService activityLogService;
     private final UserService userService;
     private final NotificationService notificationService;
+    private final OfferRepository offerRepository;
+    private final OfferCodeRepository offerCodeRepository;
+    private final OfferRedemptionRepository offerRedemptionRepository;
+    private final OfferEligibilityService offerEligibilityService;
+    private final OfferPricingService offerPricingService;
 
     public List<Bill> getActiveBills() {
         return billRepository.findActiveBills(TERMINAL);
@@ -346,6 +360,8 @@ public class BillingService {
                 && dto.getDiscountValue().compareTo(BigDecimal.valueOf(100)) > 0) {
             throw new IllegalArgumentException("Percentage discount cannot exceed 100%");
         }
+        clearStudentDiscount(bill);
+        clearOffer(bill);
         bill.setDiscountType(dto.getDiscountType());
         bill.setDiscountValue(dto.getDiscountValue());
         recalculateTotals(bill);
@@ -437,6 +453,27 @@ public class BillingService {
                     + freshCustomer.getStudentDiscountCount());
         }
 
+        if (bill.hasAppliedOffer() && !bill.getAppliedOffer().isLegacyStudentDiscount()) {
+            OfferRedemption redemption = OfferRedemption.builder()
+                    .offer(bill.getAppliedOffer())
+                    .offerCode(bill.getAppliedOfferCode())
+                    .billId(bill.getId())
+                    .customer(bill.getCustomer())
+                    .discountAmount(bill.getOfferDiscountAmount())
+                    .appliedBy(userId)
+                    .build();
+            offerRedemptionRepository.save(redemption);
+            if (bill.getAppliedOfferCode() != null) {
+                OfferCode usedCode = bill.getAppliedOfferCode();
+                usedCode.setUsesCount(usedCode.getUsesCount() + 1);
+                offerCodeRepository.save(usedCode);
+            }
+            String t3 = LocalTime.now().format(TIME_FMT);
+            activityLogService.log(billId, ActorType.SYSTEM, "System",
+                    "[" + t3 + "] Offer '" + bill.getAppliedOffer().getName() + "' redeemed — −₹"
+                    + bill.getOfferDiscountAmount().setScale(2, RoundingMode.HALF_UP));
+        }
+
         String staffName = userService.getUserById(userId).getUsername();
         String t = LocalTime.now().format(TIME_FMT);
         activityLogService.log(billId, ActorType.STAFF, staffName,
@@ -482,10 +519,11 @@ public class BillingService {
             throw new BillNotEditableException("Customer can only be changed on a DRAFT bill");
         }
         if (bill.isStudentDiscountApplied()) {
-            bill.setStudentDiscountApplied(false);
-            bill.setStudentDiscountAppliedBy(null);
-            bill.setStudentDiscountAppliedAt(null);
-            bill.setStudentDiscountAmount(BigDecimal.ZERO);
+            clearStudentDiscount(bill);
+            recalculateTotals(bill);
+        }
+        if (bill.hasAppliedOffer()) {
+            clearOffer(bill);
             recalculateTotals(bill);
         }
         bill.setCustomer(null);
@@ -580,6 +618,8 @@ public class BillingService {
                     + " does not meet minimum ₹" + minBill.setScale(2, RoundingMode.HALF_UP)
                     + " for student discount");
         }
+        clearManagerDiscount(bill);
+        clearOffer(bill);
         bill.setStudentDiscountApplied(true);
         bill.setStudentDiscountAppliedBy(appliedByUserId);
         bill.setStudentDiscountAppliedAt(LocalDateTime.now());
@@ -614,6 +654,92 @@ public class BillingService {
         activityLogService.log(billId, ActorType.STAFF, staffName,
                 "[" + t + "] Student discount removed by " + staffName);
         return saved;
+    }
+
+    @Transactional
+    public Bill applyOffer(Long billId, Long offerId, String code, Long userId) {
+        Bill bill = getBillById(billId);
+        if (!bill.isEditable()) {
+            throw new BillNotEditableException("Bill " + bill.getBillNumber() + " is not editable");
+        }
+        if (bill.hasAppliedOffer() || bill.isStudentDiscountApplied()) {
+            throw new OfferException("An offer is already applied to this bill");
+        }
+
+        Offer offer;
+        OfferCode resolvedCode = null;
+        if (code != null && !code.isBlank()) {
+            OfferEligibilityService.ResolvedOffer resolved =
+                    offerEligibilityService.resolveCode(code, bill.getCustomer(), bill);
+            offer = resolved.offer();
+            resolvedCode = resolved.code();
+        } else if (offerId != null) {
+            offer = offerRepository.findById(offerId)
+                    .orElseThrow(() -> new OfferException("Offer not found"));
+            boolean eligible = offerEligibilityService.findAutoEligibleOffers(bill.getCustomer(), bill).stream()
+                    .anyMatch(o -> o.getId().equals(offerId));
+            if (!eligible) {
+                throw new OfferException("This offer is not available for this bill");
+            }
+        } else {
+            throw new OfferException("Select an offer or enter a code");
+        }
+
+        if (offer.isLegacyStudentDiscount()) {
+            return applyStudentDiscount(billId, userId);
+        }
+
+        clearManagerDiscount(bill);
+        clearStudentDiscount(bill);
+        bill.setAppliedOffer(offer);
+        bill.setAppliedOfferCode(resolvedCode);
+        recalculateTotals(bill);
+        Bill saved = billRepository.save(bill);
+
+        String staffName = userService.getUserById(userId).getUsername();
+        String t = LocalTime.now().format(TIME_FMT);
+        activityLogService.log(billId, ActorType.STAFF, staffName,
+                "[" + t + "] Offer '" + offer.getName() + "' applied by " + staffName);
+        return saved;
+    }
+
+    @Transactional
+    public Bill removeOffer(Long billId, Long userId) {
+        Bill bill = getBillById(billId);
+        if (!bill.isEditable()) {
+            throw new BillNotEditableException("Bill " + bill.getBillNumber() + " is not editable");
+        }
+        if (!bill.hasAppliedOffer()) {
+            return bill;
+        }
+        String offerName = bill.getAppliedOffer().getName();
+        clearOffer(bill);
+        recalculateTotals(bill);
+        Bill saved = billRepository.save(bill);
+
+        String staffName = userService.getUserById(userId).getUsername();
+        String t = LocalTime.now().format(TIME_FMT);
+        activityLogService.log(billId, ActorType.STAFF, staffName,
+                "[" + t + "] Offer '" + offerName + "' removed by " + staffName);
+        return saved;
+    }
+
+    private void clearManagerDiscount(Bill bill) {
+        bill.setDiscountType(null);
+        bill.setDiscountValue(null);
+    }
+
+    private void clearStudentDiscount(Bill bill) {
+        bill.setStudentDiscountApplied(false);
+        bill.setStudentDiscountAppliedBy(null);
+        bill.setStudentDiscountAppliedAt(null);
+        bill.setStudentDiscountAmount(BigDecimal.ZERO);
+    }
+
+    private void clearOffer(Bill bill) {
+        bill.setAppliedOffer(null);
+        bill.setAppliedOfferCode(null);
+        bill.setOfferDiscountAmount(BigDecimal.ZERO);
     }
 
     public String generateWhatsappText(Long billId) {
@@ -698,6 +824,8 @@ public class BillingService {
         BigDecimal subtotal = bill.getItems().stream()
                 .map(BillItem::getLineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Set early so OfferPricingService (which reads bill.getSubtotal()) sees the fresh value.
+        bill.setSubtotal(subtotal);
 
         // Student discount (on subtotal, applied first)
         BigDecimal studentDiscountAmount = BigDecimal.ZERO;
@@ -720,9 +848,17 @@ public class BillingService {
             };
         }
 
-        // Combined — capped at subtotal
+        // Generic offer discount (mutually exclusive with student/manager discount by construction,
+        // but recomputed fresh here — same as the other two — since subtotal may have changed since apply time)
+        BigDecimal offerDiscountAmount = BigDecimal.ZERO;
+        if (bill.getAppliedOffer() != null && !bill.getAppliedOffer().isLegacyStudentDiscount()) {
+            offerDiscountAmount = offerPricingService.computeDiscount(bill.getAppliedOffer(), bill);
+        }
+
+        // Combined — capped at subtotal (student/manager/offer are mutually exclusive, so at most
+        // one of these three is ever nonzero, but summing keeps this resilient either way)
         BigDecimal totalDiscountAmount =
-                studentDiscountAmount.add(managerDiscountAmount).min(subtotal);
+                studentDiscountAmount.add(managerDiscountAmount).add(offerDiscountAmount).min(subtotal);
 
         BigDecimal gstRate = appConfigService.getDecimal("gst.rate", new BigDecimal("18.00"));
         boolean gstInclusive = appConfigService.getBoolean("gst.inclusive", false);
@@ -747,8 +883,8 @@ public class BillingService {
             totalAmount   = taxableAmount.add(gstAmount).add(deliveryFee);
         }
 
-        bill.setSubtotal(subtotal);
         bill.setStudentDiscountAmount(studentDiscountAmount);
+        bill.setOfferDiscountAmount(offerDiscountAmount);
         bill.setDiscountAmount(totalDiscountAmount);
         bill.setTaxableAmount(taxableAmount);
         bill.setGstRate(gstRate);

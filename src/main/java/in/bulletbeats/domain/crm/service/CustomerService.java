@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -76,6 +77,7 @@ public class CustomerService {
         Customer customer = getById(customerId);
         customer.setVisitCount(customer.getVisitCount() + 1);
         customer.setTotalSpend(customer.getTotalSpend().add(billTotal));
+        customer.setLastVisitDate(LocalDateTime.now());
         customerRepository.save(customer);
     }
 

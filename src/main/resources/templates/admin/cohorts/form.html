@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${mode == 'edit'} ? 'Edit Cohort — Bullet Beats Café' : 'New Cohort — Bullet Beats Café'">
+    Cohort — Bullet Beats Café
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-2xl mx-auto">
+
+  <a href="/admin/cohorts"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Cohorts
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide"
+        th:text="${mode == 'edit'} ? 'Edit Cohort' : 'New Cohort'">Cohort</h1>
+  </div>
+
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+    <form th:action="${mode == 'edit'} ? @{/admin/cohorts/{id}/edit(id=${cohort.id})} : @{/admin/cohorts/new}"
+          th:object="${dto}"
+          method="post"
+          class="space-y-5">
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Name</label>
+        <input type="text" th:field="*{name}" required
+               class="w-full bg-elevated border border-elevated focus:border-accent
+                      rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200"/>
+      </div>
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Description <span class="text-sand/40 normal-case">(optional)</span>
+        </label>
+        <textarea th:field="*{description}" rows="2"
+                  class="w-full bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-4 py-2.5 text-ivory text-sm outline-none transition-all duration-200 resize-none"></textarea>
+      </div>
+
+      <!-- Built-in: rules are fixed, shown read-only -->
+      <div th:if="${mode == 'edit' and cohort.builtIn}">
+        <p class="text-sand text-xs uppercase tracking-[0.2em] mb-2">Conditions (locked for built-in cohorts)</p>
+        <div th:if="${#lists.isEmpty(cohort.rules)}" class="text-sand/50 text-xs">No conditions — matches every customer.</div>
+        <ul th:unless="${#lists.isEmpty(cohort.rules)}" class="space-y-1">
+          <li th:each="r : ${cohort.rules}" class="text-sand text-xs"
+              th:text="${r.field} + ' ' + ${r.operator} + ' ' + ${r.value}"></li>
+        </ul>
+      </div>
+
+      <!-- Custom cohort: editable repeatable rule rows -->
+      <div th:unless="${mode == 'edit' and cohort.builtIn}">
+        <p class="text-sand text-xs uppercase tracking-[0.2em] mb-2">
+          Conditions <span class="text-sand/40 normal-case">(all must match — AND)</span>
+        </p>
+        <div id="rule-rows" class="space-y-2">
+          <div th:each="rule, ruleStat : *{rules}" class="rule-row grid grid-cols-[1fr_5rem_5rem_5rem_2rem] gap-2 items-center">
+            <select th:field="*{rules[__${ruleStat.index}__].field}"
+                    class="bg-elevated border border-elevated focus:border-accent rounded-lg px-2 py-2 text-ivory text-xs outline-none cursor-pointer">
+              <option th:each="f : ${fields}" th:value="${f}" th:text="${f}"></option>
+            </select>
+            <select th:field="*{rules[__${ruleStat.index}__].operator}"
+                    class="bg-elevated border border-elevated focus:border-accent rounded-lg px-2 py-2 text-ivory text-xs outline-none cursor-pointer">
+              <option th:each="op : ${operators}" th:value="${op}" th:text="${op}"></option>
+            </select>
+            <input type="number" step="0.01" th:field="*{rules[__${ruleStat.index}__].value}"
+                   class="bg-elevated border border-elevated focus:border-accent rounded-lg px-2 py-2 text-ivory text-xs outline-none"/>
+            <input type="number" th:field="*{rules[__${ruleStat.index}__].periodDays}" placeholder="days"
+                   class="bg-elevated border border-elevated focus:border-accent rounded-lg px-2 py-2 text-ivory text-xs outline-none"/>
+            <button type="button" onclick="this.closest('.rule-row').remove()"
+                    class="text-sand/50 text-xs hover:text-red-400 transition-colors">×</button>
+          </div>
+        </div>
+        <button type="button" onclick="addRuleRow()"
+                class="mt-2 text-accent text-xs hover:underline">+ Add condition</button>
+        <p class="mt-1 text-sand/50 text-xs">
+          "days" only applies to the two "in period" fields (spend/visits in the last N days).
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button type="submit"
+                class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200"
+                th:text="${mode == 'edit'} ? 'UPDATE COHORT' : 'CREATE COHORT'">Submit</button>
+        <a href="/admin/cohorts" class="px-4 py-2.5 text-sand text-sm hover:text-ivory transition-colors">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <script th:inline="javascript">
+    var ruleIndex = /*[[${dto.rules != null ? #lists.size(dto.rules) : 0}]]*/ 0;
+    var fieldOptions = /*[[${fields}]]*/ [];
+    var operatorOptions = /*[[${operators}]]*/ [];
+
+    function addRuleRow() {
+      var container = document.getElementById('rule-rows');
+      if (!container) return;
+      var row = document.createElement('div');
+      row.className = 'rule-row grid grid-cols-[1fr_5rem_5rem_5rem_2rem] gap-2 items-center';
+
+      var fieldSelect = '<select name="rules[' + ruleIndex + '].field" class="bg-elevated border border-elevated focus:border-accent rounded-lg px-2 py-2 text-ivory text-xs outline-none cursor-pointer">'
+        + fieldOptions.map(function (f) { return '<option value="' + f + '">' + f + '</option>'; }).join('') + '</select>';
+      var operatorSelect = '<select name="rules[' + ruleIndex + '].operator" class="bg-elevated border border-elevated focus:border-accent rounded-lg px-2 py-2 text-ivory text-xs outline-none cursor-pointer">'
+        + operatorOptions.map(function (o) { return '<option value="' + o + '">' + o + '</option>'; }).join('') + '</select>';
+
+      row.innerHTML = fieldSelect + operatorSelect
+        + '<input type="number" step="0.01" name="rules[' + ruleIndex + '].value" class="bg-elevated border border-elevated focus:border-accent rounded-lg px-2 py-2 text-ivory text-xs outline-none"/>'
+        + '<input type="number" name="rules[' + ruleIndex + '].periodDays" placeholder="days" class="bg-elevated border border-elevated focus:border-accent rounded-lg px-2 py-2 text-ivory text-xs outline-none"/>'
+        + '<button type="button" onclick="this.closest(\'.rule-row\').remove()" class="text-sand/50 text-xs hover:text-red-400 transition-colors">×</button>';
+
+      container.appendChild(row);
+      ruleIndex++;
+    }
+  </script>
+
+</main>
+</body>
+</html>

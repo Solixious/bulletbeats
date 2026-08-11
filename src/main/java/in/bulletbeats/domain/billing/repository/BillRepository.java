@@ -113,6 +113,26 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
             """)
     long countActiveBills();
 
+    @Query("""
+            SELECT COALESCE(SUM(b.totalAmount), 0)
+            FROM Bill b
+            WHERE b.customer.id = :customerId
+            AND b.status = 'PAID'
+            AND b.createdAt >= :since
+            """)
+    BigDecimal sumTotalAmountByCustomerIdAndCreatedAtAfter(
+            @Param("customerId") Long customerId, @Param("since") LocalDateTime since);
+
+    @Query("""
+            SELECT COUNT(b)
+            FROM Bill b
+            WHERE b.customer.id = :customerId
+            AND b.status = 'PAID'
+            AND b.createdAt >= :since
+            """)
+    long countByCustomerIdAndCreatedAtAfter(
+            @Param("customerId") Long customerId, @Param("since") LocalDateTime since);
+
     // createdAt is @Column(updatable = false) so JPA auditing never lets the
     // entity's own save() path touch it again; this bulk update is the only
     // way to backdate a bill's creation timestamp for the admin flow.
