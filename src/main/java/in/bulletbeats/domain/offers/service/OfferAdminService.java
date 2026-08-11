@@ -48,7 +48,7 @@ public class OfferAdminService {
     }
 
     public Offer getById(Long id) {
-        return offerRepository.findById(id)
+        return offerRepository.findByIdWithItems(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer not found with id: " + id));
     }
 

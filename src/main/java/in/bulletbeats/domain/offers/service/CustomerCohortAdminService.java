@@ -26,7 +26,7 @@ public class CustomerCohortAdminService {
     }
 
     public CustomerCohort getById(Long id) {
-        return cohortRepository.findById(id)
+        return cohortRepository.findByIdWithRules(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cohort not found with id: " + id));
     }
 
