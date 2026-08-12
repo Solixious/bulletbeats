@@ -197,7 +197,7 @@
             th:text="${dto.category.name}">Category</h3>
         <div class="space-y-3">
           <th:block th:each="item : ${dto.items}">
-            <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked})}"/>
+            <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked},noteMap=${noteMap})}"/>
           </th:block>
         </div>
         <th:block th:each="sub : ${dto.subcategories}">
@@ -211,7 +211,7 @@
           </button>
           <div th:id="'subcat-body-' + ${sub.subcategory.id}" class="space-y-3">
             <th:block th:each="item : ${sub.items}">
-              <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked})}"/>
+              <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked},noteMap=${noteMap})}"/>
             </th:block>
           </div>
         </th:block>
@@ -265,6 +265,11 @@
                 class="w-10 h-10 rounded-lg bg-accent text-base text-xl font-bold
                        hover:brightness-110 transition-all flex items-center justify-center">+</button>
       </div>
+      <textarea id="qty-modal-note" rows="2" maxlength="300"
+                placeholder="Note for the kitchen (optional) — e.g. no onions"
+                class="w-full bg-elevated border border-elevated/60 focus:border-accent
+                       rounded-lg px-3 py-2 text-ivory text-xs placeholder-sand/40
+                       outline-none transition-all duration-200 resize-none mb-4"></textarea>
       <div class="flex gap-3">
         <button type="button" onclick="closeQtyModal()"
                 class="flex-1 py-2.5 rounded-lg border border-elevated/60 text-sand text-sm font-bold
@@ -410,6 +415,7 @@
       _qtyModalValue = 1;
       document.getElementById('qty-modal-value').textContent = _qtyModalValue;
       document.getElementById('qty-modal-item').textContent = form.dataset.itemName || 'Item';
+      document.getElementById('qty-modal-note').value = form.dataset.note || '';
       document.getElementById('qty-modal').style.display = 'flex';
     }
     function qtyModalStep(delta) {
@@ -425,6 +431,8 @@
       if (!_qtyModalForm) return;
       var qtyInput = _qtyModalForm.querySelector('input[name="quantity"]');
       if (qtyInput) qtyInput.value = _qtyModalValue;
+      var noteInput = _qtyModalForm.querySelector('input[name="note"]');
+      if (noteInput) noteInput.value = document.getElementById('qty-modal-note').value;
       var form = _qtyModalForm;
       document.getElementById('qty-modal').style.display = 'none';
       _qtyModalForm = null;

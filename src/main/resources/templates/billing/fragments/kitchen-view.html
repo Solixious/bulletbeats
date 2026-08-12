@@ -42,6 +42,11 @@
           <p class="font-heading text-2xl text-ivory tracking-wide leading-tight pr-12"
              th:text="${item.itemName}">Item</p>
 
+          <p th:if="${item.note != null and !#strings.isEmpty(item.note)}"
+             class="text-amber-300 text-sm font-bold px-2.5 py-1.5 rounded-lg bg-amber-400/10
+                    border border-amber-400/30"
+             th:text="'📝 ' + ${item.note}">Note</p>
+
           <div class="flex items-end justify-between mt-auto pt-1">
             <div class="flex items-center gap-2">
               <span class="text-sand text-sm">Qty</span>
@@ -62,6 +67,11 @@
 
           <p class="font-heading text-2xl text-ivory tracking-wide leading-tight"
              th:text="${item.itemName}">Item</p>
+
+          <p th:if="${item.note != null and !#strings.isEmpty(item.note)}"
+             class="text-amber-300 text-sm font-bold px-2.5 py-1.5 rounded-lg bg-amber-400/10
+                    border border-amber-400/30"
+             th:text="'📝 ' + ${item.note}">Note</p>
 
           <div class="flex items-end justify-between mt-auto pt-1">
             <div class="flex items-center gap-2">

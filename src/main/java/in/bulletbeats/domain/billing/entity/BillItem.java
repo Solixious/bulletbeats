@@ -45,6 +45,9 @@ public class BillItem {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal lineTotal;
 
+    @Column(length = 300)
+    private String note;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

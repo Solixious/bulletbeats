@@ -144,6 +144,8 @@
           <td class="pl-4 pr-2 py-2.5">
             <p class="text-ivory text-xs font-medium" th:text="${item.itemName}"></p>
             <p class="text-sand text-xs" th:text="'₹' + ${#numbers.formatDecimal(item.unitPrice, 1, 2)} + ' each'"></p>
+            <p th:if="${item.note != null and !#strings.isEmpty(item.note)}"
+               class="text-amber-400 text-xs italic mt-0.5" th:text="'📝 ' + ${item.note}"></p>
           </td>
 
           <!-- Quantity controls (DRAFT only) -->

@@ -2,6 +2,7 @@ package in.bulletbeats.domain.billing.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,4 +22,7 @@ public class QrAddItemDto {
     private String customerName;
 
     private Long customerId;
+
+    @Size(max = 300)
+    private String note;
 }

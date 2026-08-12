@@ -99,6 +99,7 @@ public class QrController {
         model.addAttribute("customerId", customerId);
         model.addAttribute("customerName", customerName != null ? customerName : "Guest");
         model.addAttribute("returning", returning);
+        model.addAttribute("noteMap", qrOrderService.getSavedNotesForCustomer(customerId));
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
         model.addAttribute("locked", bill.getStatus().isTerminal());
         model.addAttribute("promotedItem", bill.getStatus() == BillStatus.DRAFT
@@ -115,7 +116,7 @@ public class QrController {
         try {
             Bill bill = qrOrderService.addItemViaQr(
                     dto.getBillId(), dto.getMenuItemId(), dto.getQuantity(),
-                    dto.getCustomerName(), dto.getCustomerId());
+                    dto.getCustomerName(), dto.getCustomerId(), dto.getNote());
             return orderPanelResponse(bill, qrCode, dto.getCustomerName(), model);
         } catch (InsufficientStockException e) {
             model.addAttribute("stockError", "Sorry, this item isn't available right now. Please try something else.");
@@ -233,6 +234,7 @@ public class QrController {
         model.addAttribute("customerName", customerName);
         model.addAttribute("customerId", customerId);
         model.addAttribute("locked", bill.getStatus().isTerminal());
+        model.addAttribute("noteMap", qrOrderService.getSavedNotesForCustomer(customerId));
         return "qr/fragments/menu-grid :: qr-menu-grid";
     }
 

@@ -8,6 +8,7 @@ import in.bulletbeats.domain.billing.dto.SubcategoryWithItemsDto;
 import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.BillItem;
 import in.bulletbeats.domain.billing.entity.CafeTable;
+import in.bulletbeats.domain.billing.repository.BillItemRepository;
 import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.service.BillNumberService;
 import in.bulletbeats.domain.billing.service.CafeTableService;
@@ -59,6 +60,7 @@ public class QrOrderService {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final BillRepository billRepository;
+    private final BillItemRepository billItemRepository;
     private final BillNumberService billNumberService;
     private final CafeTableService cafeTableService;
     private final CustomerService customerService;
@@ -154,7 +156,7 @@ public class QrOrderService {
 
     @Transactional
     public Bill addItemViaQr(Long billId, Long menuItemId, int quantity,
-                             String customerName, Long customerId) {
+                             String customerName, Long customerId, String note) {
         Bill bill = billRepository.findByIdWithItems(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
@@ -185,10 +187,15 @@ public class QrOrderService {
             }
         }
 
+        String normalizedNote = normalizeNote(note);
+
         if (existing.isPresent()) {
             BillItem item = existing.get();
             item.setQuantity(newTotalQty);
             item.recalculate();
+            if (normalizedNote != null) {
+                item.setNote(normalizedNote);
+            }
         } else {
             BillItem newItem = BillItem.builder()
                     .bill(bill)
@@ -197,6 +204,7 @@ public class QrOrderService {
                     .unitPrice(menuItem.getPrice())
                     .quantity(quantity)
                     .lineTotal(menuItem.getPrice().multiply(BigDecimal.valueOf(quantity)))
+                    .note(normalizedNote)
                     .build();
             bill.getItems().add(newItem);
         }
@@ -214,6 +222,23 @@ public class QrOrderService {
         }
 
         return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, String> getSavedNotesForCustomer(Long customerId) {
+        if (customerId == null) {
+            return Map.of();
+        }
+        return billItemRepository.findLatestNotesByCustomer(customerId).stream()
+                .collect(Collectors.toMap(
+                        BillItemRepository.MenuItemNoteRow::getMenuItemId,
+                        BillItemRepository.MenuItemNoteRow::getNote));
+    }
+
+    private String normalizeNote(String note) {
+        if (note == null) return null;
+        String trimmed = note.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     @Transactional

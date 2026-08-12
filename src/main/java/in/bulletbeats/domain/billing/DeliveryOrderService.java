@@ -8,6 +8,7 @@ import in.bulletbeats.domain.billing.dto.DeliveryStartResult;
 import in.bulletbeats.domain.billing.dto.SubcategoryWithItemsDto;
 import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.BillItem;
+import in.bulletbeats.domain.billing.repository.BillItemRepository;
 import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.service.BillNumberService;
 import in.bulletbeats.domain.crm.entity.Customer;
@@ -59,6 +60,7 @@ public class DeliveryOrderService {
     private static final DateTimeFormatter DISPLAY_TIME_FMT = DateTimeFormatter.ofPattern("h:mm a");
 
     private final BillRepository billRepository;
+    private final BillItemRepository billItemRepository;
     private final BillNumberService billNumberService;
     private final CustomerService customerService;
     private final MenuService menuService;
@@ -162,7 +164,7 @@ public class DeliveryOrderService {
     }
 
     @Transactional
-    public Bill addItem(Long billId, Long menuItemId, int quantity, String customerName) {
+    public Bill addItem(Long billId, Long menuItemId, int quantity, String customerName, String note) {
         Bill bill = billRepository.findByIdWithItems(billId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bill not found: " + billId));
 
@@ -194,10 +196,15 @@ public class DeliveryOrderService {
             }
         }
 
+        String normalizedNote = normalizeNote(note);
+
         if (existing.isPresent()) {
             BillItem item = existing.get();
             item.setQuantity(newTotalQty);
             item.recalculate();
+            if (normalizedNote != null) {
+                item.setNote(normalizedNote);
+            }
         } else {
             BillItem newItem = BillItem.builder()
                     .bill(bill)
@@ -206,6 +213,7 @@ public class DeliveryOrderService {
                     .unitPrice(menuItem.getPrice())
                     .quantity(quantity)
                     .lineTotal(menuItem.getPrice().multiply(BigDecimal.valueOf(quantity)))
+                    .note(normalizedNote)
                     .build();
             bill.getItems().add(newItem);
         }
@@ -223,6 +231,23 @@ public class DeliveryOrderService {
         }
 
         return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, String> getSavedNotesForCustomer(Long customerId) {
+        if (customerId == null) {
+            return Map.of();
+        }
+        return billItemRepository.findLatestNotesByCustomer(customerId).stream()
+                .collect(Collectors.toMap(
+                        BillItemRepository.MenuItemNoteRow::getMenuItemId,
+                        BillItemRepository.MenuItemNoteRow::getNote));
+    }
+
+    private String normalizeNote(String note) {
+        if (note == null) return null;
+        String trimmed = note.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     @Transactional

@@ -25,7 +25,7 @@
           th:text="${dto.category.name}">Category</h3>
       <div th:unless="${#lists.isEmpty(dto.items)}" class="space-y-3">
         <th:block th:each="item : ${dto.items}">
-          <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked},hoursStatus=${hoursStatus})}"/>
+          <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked},hoursStatus=${hoursStatus},noteMap=${noteMap})}"/>
         </th:block>
       </div>
       <th:block th:each="sub : ${dto.subcategories}">
@@ -39,7 +39,7 @@
         </button>
         <div th:id="'subcat-body-' + ${sub.subcategory.id}" class="space-y-3">
           <th:block th:each="item : ${sub.items}">
-            <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked},hoursStatus=${hoursStatus})}"/>
+            <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked},hoursStatus=${hoursStatus},noteMap=${noteMap})}"/>
           </th:block>
         </div>
       </th:block>
@@ -49,7 +49,7 @@
   <!-- Flat view (single category filter active) -->
   <div th:unless="${#lists.isEmpty(items)}" class="space-y-3">
     <th:block th:each="item : ${items}">
-      <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked},hoursStatus=${hoursStatus})}"/>
+      <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked},hoursStatus=${hoursStatus},noteMap=${noteMap})}"/>
     </th:block>
   </div>
   <th:block th:each="sub : ${subcategoryGroups}">
@@ -63,18 +63,19 @@
     </button>
     <div th:id="'subcat-body-' + ${sub.subcategory.id}" class="space-y-3">
       <th:block th:each="item : ${sub.items}">
-        <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked},hoursStatus=${hoursStatus})}"/>
+        <th:block th:replace="~{delivery/fragments/menu-grid :: delivery-menu-item(item=${item},bill=${bill},billId=${billId},customerName=${customerName},locked=${locked},hoursStatus=${hoursStatus},noteMap=${noteMap})}"/>
       </th:block>
     </div>
   </th:block>
 </th:block>
 
 <!-- ── Single item card (reused from menu.html too) ─────────────────── -->
-<th:block th:fragment="delivery-menu-item(item, bill, billId, customerName, locked, hoursStatus)">
+<th:block th:fragment="delivery-menu-item(item, bill, billId, customerName, locked, hoursStatus, noteMap)">
 
   <!-- Find how many of this item are already in the cart -->
   <th:block th:with="matchedItems=${bill.items.?[menuItem.id == __${item.id}__]},
-                     cartQty=${#lists.isEmpty(matchedItems) ? 0 : matchedItems[0].quantity}">
+                     cartQty=${#lists.isEmpty(matchedItems) ? 0 : matchedItems[0].quantity},
+                     savedNote=${noteMap != null ? noteMap.get(item.id) : null}">
 
   <div th:classappend="${!item.available} ? 'opacity-50' : ''"
        class="bg-surface rounded-xl border border-elevated/60 overflow-hidden flex gap-3 p-3">
@@ -127,13 +128,14 @@
 
           <!-- Item not in cart: show Add button (opens qty-confirmation modal) -->
           <form th:unless="${cartQty != null and cartQty > 0}"
-                th:attr="hx-post=@{/order/{id}/items(id=${billId})},data-item-name=${item.name}"
+                th:attr="hx-post=@{/order/{id}/items(id=${billId})},data-item-name=${item.name},data-note=${savedNote}"
                 hx-target="#order-panel"
                 hx-swap="innerHTML"
                 style="display:inline">
             <input type="hidden" name="menuItemId"   th:value="${item.id}"/>
             <input type="hidden" name="quantity"     value="1"/>
             <input type="hidden" name="customerName" th:value="${customerName}"/>
+            <input type="hidden" name="note"/>
             <button type="button"
                     onclick="openQtyModal(this)"
                     th:disabled="${hoursStatus.closed}"

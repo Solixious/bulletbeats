@@ -90,6 +90,8 @@
           <div class="flex-1 min-w-0">
             <p class="text-ivory text-sm truncate" th:text="${item.itemName}">Item</p>
             <p class="text-sand text-xs" th:text="'₹' + ${item.lineTotal}">₹0</p>
+            <p th:if="${item.note != null and !#strings.isEmpty(item.note)}"
+               class="text-accent/80 text-xs italic truncate" th:text="'Note: ' + ${item.note}">Note</p>
           </div>
 
           <!-- Qty stepper (DRAFT: full +/-) -->

@@ -85,6 +85,8 @@ public class DeliveryController {
         model.addAttribute("hoursStatus", hoursStatus);
         model.addAttribute("promotedItem", bill.getStatus() == BillStatus.DRAFT && !hoursStatus.closed()
                 ? menuService.getPromotedItem().orElse(null) : null);
+        model.addAttribute("noteMap", deliveryOrderService.getSavedNotesForCustomer(
+                bill.getCustomer() != null ? bill.getCustomer().getId() : null));
         return "delivery/menu";
     }
 
@@ -95,7 +97,7 @@ public class DeliveryController {
                           @Valid @ModelAttribute QrAddItemDto dto,
                           Model model) {
         try {
-            Bill bill = deliveryOrderService.addItem(billId, dto.getMenuItemId(), dto.getQuantity(), dto.getCustomerName());
+            Bill bill = deliveryOrderService.addItem(billId, dto.getMenuItemId(), dto.getQuantity(), dto.getCustomerName(), dto.getNote());
             return orderPanelResponse(bill, dto.getCustomerName(), model);
         } catch (InsufficientStockException e) {
             model.addAttribute("stockError", "Sorry, this item isn't available right now. Please try something else.");
@@ -217,6 +219,8 @@ public class DeliveryController {
         model.addAttribute("customerName", customerName);
         model.addAttribute("locked", bill.getStatus().isTerminal());
         model.addAttribute("hoursStatus", deliveryOrderService.getHoursStatus());
+        model.addAttribute("noteMap", deliveryOrderService.getSavedNotesForCustomer(
+                bill.getCustomer() != null ? bill.getCustomer().getId() : null));
         return "delivery/fragments/menu-grid :: delivery-menu-grid";
     }
 
