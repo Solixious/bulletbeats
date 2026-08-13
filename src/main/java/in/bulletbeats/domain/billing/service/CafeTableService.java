@@ -1,12 +1,15 @@
 package in.bulletbeats.domain.billing.service;
 
 import in.bulletbeats.config.SupabaseStorageService;
+import in.bulletbeats.domain.billing.ActivityLogService;
 import in.bulletbeats.domain.billing.dto.CafeTableDto;
+import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.CafeTable;
 import in.bulletbeats.domain.billing.entity.Floor;
 import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.repository.CafeTableRepository;
 import in.bulletbeats.domain.billing.repository.FloorRepository;
+import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.TableStatus;
 import in.bulletbeats.domain.shared.exception.DuplicateTableException;
@@ -16,8 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,12 +34,16 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class CafeTableService {
 
+    private static final List<BillStatus> ACTIVE_BILL_STATUSES = List.of(BillStatus.DRAFT, BillStatus.CONFIRMED);
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
+
     private final CafeTableRepository cafeTableRepository;
     private final BillRepository billRepository;
     private final QrCodeService qrCodeService;
     private final JdbcTemplate jdbcTemplate;
     private final FloorRepository floorRepository;
     private final SupabaseStorageService supabaseStorageService;
+    private final ActivityLogService activityLogService;
 
     public List<CafeTable> getAllActive() {
         return cafeTableRepository.findByIsActiveTrueOrderByNameAsc();
@@ -115,6 +126,56 @@ public class CafeTableService {
         CafeTable table = getById(tableId);
         table.setStatus(TableStatus.FREE);
         cafeTableRepository.save(table);
+    }
+
+    /**
+     * Re-validates and cancels a table's idle bills in its own fresh transaction.
+     * Runs in REQUIRES_NEW (its own persistence context) so it re-reads the table and
+     * its bills as of "now" rather than trusting a snapshot the caller took a moment
+     * earlier — and Bill's optimistic {@code @Version} check means that if a staff
+     * member adds an item / confirms / pays in the sliver of time between this method's
+     * read and its write, the save below fails with ObjectOptimisticLockingFailureException
+     * instead of silently overwriting their change. Isolating this in its own transaction
+     * also means that failure only skips this one table, not the whole sweep.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void cancelIfStillIdle(Long tableId, int globalTimeoutMinutes) {
+        CafeTable table = cafeTableRepository.findById(tableId).orElse(null);
+        if (table == null || table.getStatus() != TableStatus.OCCUPIED) {
+            return;
+        }
+
+        int effectiveTimeout = table.getIdleTimeoutMinutes() > 0
+                ? table.getIdleTimeoutMinutes()
+                : globalTimeoutMinutes;
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(effectiveTimeout);
+
+        if (table.getLastScannedAt() != null && table.getLastScannedAt().isAfter(cutoff)) {
+            return;
+        }
+
+        List<Bill> activeBills = billRepository.findByCafeTableIdAndStatusIn(tableId, ACTIVE_BILL_STATUSES);
+        if (activeBills.isEmpty()) {
+            return;
+        }
+
+        boolean allEmpty = activeBills.stream().allMatch(b -> b.getItems().isEmpty());
+        boolean allOldEnough = activeBills.stream()
+                .allMatch(b -> b.getUpdatedAt() != null && b.getUpdatedAt().isBefore(cutoff));
+        if (!allEmpty || !allOldEnough) {
+            return;
+        }
+
+        String t = LocalTime.now().format(TIME_FMT);
+        for (Bill bill : activeBills) {
+            bill.setStatus(BillStatus.CANCELLED);
+            billRepository.save(bill);
+            activityLogService.log(bill.getId(), ActorType.SYSTEM, "System",
+                    "[" + t + "] Bill auto-cancelled — table idle timeout");
+        }
+        table.setStatus(TableStatus.FREE);
+        cafeTableRepository.save(table);
+        log.info("Table '{}' auto-freed after idle timeout", table.getName());
     }
 
     @Transactional

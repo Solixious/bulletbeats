@@ -20,6 +20,7 @@ import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -105,6 +106,10 @@ public class DeliveryController {
             return orderPanelResponse(bill, dto.getCustomerName(), model);
         } catch (DeliveryClosedException e) {
             model.addAttribute("closedError", e.getMessage());
+            Bill bill = deliveryOrderService.getOrder(billId);
+            return orderPanelResponse(bill, dto.getCustomerName(), model);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            model.addAttribute("closedError", "This order was cancelled due to inactivity. Please ask a staff member.");
             Bill bill = deliveryOrderService.getOrder(billId);
             return orderPanelResponse(bill, dto.getCustomerName(), model);
         }

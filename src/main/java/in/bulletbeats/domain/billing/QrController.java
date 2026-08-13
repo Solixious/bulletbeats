@@ -20,6 +20,7 @@ import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -120,6 +121,10 @@ public class QrController {
             return orderPanelResponse(bill, qrCode, dto.getCustomerName(), model);
         } catch (InsufficientStockException e) {
             model.addAttribute("stockError", "Sorry, this item isn't available right now. Please try something else.");
+            Bill bill = qrOrderService.getBillForQr(dto.getBillId());
+            return orderPanelResponse(bill, qrCode, dto.getCustomerName(), model);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            model.addAttribute("stockError", "This order was cancelled due to inactivity. Please ask a staff member.");
             Bill bill = qrOrderService.getBillForQr(dto.getBillId());
             return orderPanelResponse(bill, qrCode, dto.getCustomerName(), model);
         }

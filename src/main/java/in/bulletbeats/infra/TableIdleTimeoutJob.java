@@ -1,24 +1,17 @@
 package in.bulletbeats.infra;
 
 import in.bulletbeats.domain.admin.AppConfigService;
-import in.bulletbeats.domain.billing.ActivityLogService;
-import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.CafeTable;
-import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.repository.CafeTableRepository;
 import in.bulletbeats.domain.billing.service.CafeTableService;
-import in.bulletbeats.domain.shared.enums.ActorType;
-import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.TableStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Slf4j
@@ -26,17 +19,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TableIdleTimeoutJob {
 
-    private static final List<BillStatus> ACTIVE_STATUSES = List.of(BillStatus.DRAFT, BillStatus.CONFIRMED);
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
-
     private final CafeTableRepository cafeTableRepository;
-    private final BillRepository billRepository;
     private final CafeTableService cafeTableService;
-    private final ActivityLogService activityLogService;
     private final AppConfigService appConfigService;
 
     @Scheduled(fixedDelay = 60_000)
-    @Transactional
     public void checkIdleTables() {
         int globalTimeout;
         try {
@@ -50,37 +37,16 @@ public class TableIdleTimeoutJob {
         List<CafeTable> idleTables = cafeTableRepository.findIdleOccupiedTables(TableStatus.OCCUPIED, cutoff);
 
         for (CafeTable table : idleTables) {
-            int effectiveTimeout = table.getIdleTimeoutMinutes() > 0
-                    ? table.getIdleTimeoutMinutes()
-                    : globalTimeout;
-
-            if (table.getLastScannedAt() != null
-                    && table.getLastScannedAt().isAfter(LocalDateTime.now().minusMinutes(effectiveTimeout))) {
-                continue;
-            }
-
-            List<Bill> activeBills = billRepository.findByCafeTableIdAndStatusIn(table.getId(), ACTIVE_STATUSES);
-
-            LocalDateTime billCutoff = LocalDateTime.now().minusMinutes(effectiveTimeout);
-            boolean allEmpty = activeBills.stream().allMatch(b -> b.getItems().isEmpty());
-            // Use updatedAt, not createdAt: admin backdating (BillRepository.backdateCreatedAt)
-            // rewrites createdAt into the past for business-date purposes, which would otherwise
-            // make a freshly created bill look idle-timeout-eligible immediately.
-            boolean allOldEnough = activeBills.stream()
-                    .allMatch(b -> b.getUpdatedAt() != null && b.getUpdatedAt().isBefore(billCutoff));
-
-            if (allEmpty && allOldEnough) {
-                String t = LocalTime.now().format(TIME_FMT);
-                for (Bill bill : activeBills) {
-                    bill.setStatus(BillStatus.CANCELLED);
-                    billRepository.save(bill);
-                    activityLogService.log(bill.getId(), ActorType.SYSTEM, "System",
-                            "[" + t + "] Bill auto-cancelled — table idle timeout");
-                }
-                cafeTableService.markFree(table.getId());
-                log.info("Table '{}' auto-freed after idle timeout", table.getName());
-            } else {
-                log.debug("Table '{}' has items — skipping auto-free", table.getName());
+            try {
+                // cancelIfStillIdle re-reads the table and its bills fresh in its own
+                // transaction and re-checks every condition — this loop only supplies
+                // candidates, it never acts on the (possibly stale) snapshot above.
+                cafeTableService.cancelIfStillIdle(table.getId(), globalTimeout);
+            } catch (ObjectOptimisticLockingFailureException e) {
+                // A bill on this table was edited concurrently (e.g. an item was added)
+                // right as we tried to cancel it. Skip it — it's no longer idle, and if
+                // it genuinely is later, the next sweep (60s) will catch it.
+                log.debug("Table '{}' skipped — bill was modified concurrently", table.getName());
             }
         }
     }

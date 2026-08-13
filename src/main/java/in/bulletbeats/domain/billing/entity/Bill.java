@@ -137,6 +137,9 @@ public class Bill extends BaseEntity {
     @OneToMany(mappedBy = "bill", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BillActivityLog> activityLog = new ArrayList<>();
 
+    @Version
+    private Long version;
+
     public boolean hasStudentDiscount() {
         return studentDiscountApplied
                 && studentDiscountAmount != null

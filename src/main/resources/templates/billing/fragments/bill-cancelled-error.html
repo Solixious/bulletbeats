@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="bill-cancelled-error"
+     class="mb-3 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+  This bill was auto-cancelled due to inactivity while you were editing it.
+  <button type="button" onclick="window.location.reload()"
+          class="ml-2 underline hover:text-red-300">Refresh</button>
+</div>
+</body>
+</html>

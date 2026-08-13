@@ -34,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -353,24 +354,36 @@ public class BillingController {
     @PostMapping("/{id}/items")
     public String addItem(@PathVariable Long id,
                           @ModelAttribute AddBillItemDto dto,
-                          Authentication auth, Model model) {
-        Bill bill = billingService.addItem(id, dto, currentUserId(auth));
-        return billPanelResponse(bill, auth, model);
+                          Authentication auth, Model model, HttpServletResponse response) {
+        try {
+            Bill bill = billingService.addItem(id, dto, currentUserId(auth));
+            return billPanelResponse(bill, auth, model);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            return billCancelledResponse(response);
+        }
     }
 
     @DeleteMapping("/{id}/items/{itemId}")
     public String removeItem(@PathVariable Long id, @PathVariable Long itemId,
-                             Authentication auth, Model model) {
-        Bill bill = billingService.removeItem(id, itemId, currentUserId(auth));
-        return billPanelResponse(bill, auth, model);
+                             Authentication auth, Model model, HttpServletResponse response) {
+        try {
+            Bill bill = billingService.removeItem(id, itemId, currentUserId(auth));
+            return billPanelResponse(bill, auth, model);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            return billCancelledResponse(response);
+        }
     }
 
     @PatchMapping("/{id}/items/{itemId}/quantity")
     public String updateQuantity(@PathVariable Long id, @PathVariable Long itemId,
                                  @RequestParam int quantity,
-                                 Authentication auth, Model model) {
-        Bill bill = billingService.updateItemQuantity(id, itemId, quantity, currentUserId(auth));
-        return billPanelResponse(bill, auth, model);
+                                 Authentication auth, Model model, HttpServletResponse response) {
+        try {
+            Bill bill = billingService.updateItemQuantity(id, itemId, quantity, currentUserId(auth));
+            return billPanelResponse(bill, auth, model);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            return billCancelledResponse(response);
+        }
     }
 
     // ── Customer student status (HTMX, all roles) ────────────────────────
@@ -482,7 +495,8 @@ public class BillingController {
     // ── Confirm (HTMX) ────────────────────────────────────────────────────
 
     @PostMapping("/{id}/confirm")
-    public String confirmBill(@PathVariable Long id, Authentication auth, Model model) {
+    public String confirmBill(@PathVariable Long id, Authentication auth, Model model,
+                              HttpServletResponse response) {
         try {
             billingService.confirmBill(id, currentUserId(auth));
             Bill bill = billingService.getBillById(id);
@@ -493,6 +507,8 @@ public class BillingController {
             model.addAttribute("stockDetails", e.getDetails());
             model.addAttribute("billId", id);
             return "billing/fragments/stock-error :: stock-error";
+        } catch (ObjectOptimisticLockingFailureException e) {
+            return billCancelledResponse(response);
         }
     }
 
@@ -501,12 +517,16 @@ public class BillingController {
     @PostMapping("/{id}/pay")
     public String payBill(@PathVariable Long id,
                           @Valid @ModelAttribute PayBillDto dto,
-                          Authentication auth, Model model) {
-        billingService.payBill(id, dto, currentUserId(auth));
-        Bill bill = billingService.getBillById(id);
-        model.addAttribute("bill", bill);
-        model.addAttribute("isManager", isManager(auth));
-        return "billing/fragments/pay-success :: pay-success";
+                          Authentication auth, Model model, HttpServletResponse response) {
+        try {
+            billingService.payBill(id, dto, currentUserId(auth));
+            Bill bill = billingService.getBillById(id);
+            model.addAttribute("bill", bill);
+            model.addAttribute("isManager", isManager(auth));
+            return "billing/fragments/pay-success :: pay-success";
+        } catch (ObjectOptimisticLockingFailureException e) {
+            return billCancelledResponse(response);
+        }
     }
 
     // ── Reopen (Staff+) ──────────────────────────────────────────────────
@@ -559,6 +579,13 @@ public class BillingController {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    private String billCancelledResponse(HttpServletResponse response) {
+        response.setStatus(HttpServletResponse.SC_CONFLICT);
+        response.setHeader("HX-Retarget", "#bill-panel");
+        response.setHeader("HX-Reswap", "innerHTML");
+        return "billing/fragments/bill-cancelled-error :: bill-cancelled-error";
+    }
 
     private String billPanelResponse(Bill bill, Authentication auth, Model model) {
         model.addAttribute("bill", bill);
