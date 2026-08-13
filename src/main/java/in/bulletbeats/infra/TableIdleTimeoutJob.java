@@ -63,8 +63,11 @@ public class TableIdleTimeoutJob {
 
             LocalDateTime billCutoff = LocalDateTime.now().minusMinutes(effectiveTimeout);
             boolean allEmpty = activeBills.stream().allMatch(b -> b.getItems().isEmpty());
+            // Use updatedAt, not createdAt: admin backdating (BillRepository.backdateCreatedAt)
+            // rewrites createdAt into the past for business-date purposes, which would otherwise
+            // make a freshly created bill look idle-timeout-eligible immediately.
             boolean allOldEnough = activeBills.stream()
-                    .allMatch(b -> b.getCreatedAt() != null && b.getCreatedAt().isBefore(billCutoff));
+                    .allMatch(b -> b.getUpdatedAt() != null && b.getUpdatedAt().isBefore(billCutoff));
 
             if (allEmpty && allOldEnough) {
                 String t = LocalTime.now().format(TIME_FMT);
