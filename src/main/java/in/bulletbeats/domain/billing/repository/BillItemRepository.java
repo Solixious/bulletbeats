@@ -26,6 +26,27 @@ public interface BillItemRepository extends JpaRepository<BillItem, Long> {
             """, nativeQuery = true)
     List<Object[]> findTopItemsForRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, @Param("limit") int limit);
 
+    /** Same as findTopItemsForRange but grouped by menu_item_id (robust to item renames) and includes category, for the Reports page. */
+    @Query(value = """
+            SELECT
+              mi.id AS itemId,
+              mi.name AS itemName,
+              c.name AS categoryName,
+              SUM(bi.quantity) AS quantity,
+              SUM(bi.line_total) AS revenue
+            FROM bill_items bi
+            JOIN bills b ON b.id = bi.bill_id
+            JOIN menu_items mi ON mi.id = bi.menu_item_id
+            JOIN categories c ON c.id = mi.category_id
+            WHERE b.status = 'PAID'
+            AND b.created_at >= :from
+            AND b.created_at < :to
+            GROUP BY mi.id, mi.name, c.name
+            ORDER BY SUM(bi.quantity) DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Object[]> findTopItemsForRangeGrouped(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, @Param("limit") int limit);
+
     /** Most recent note this customer left per menu item, across all their bills — used to prefill the add-to-cart note field. */
     @Query(value = """
             SELECT DISTINCT ON (bi.menu_item_id)

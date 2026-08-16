@@ -75,4 +75,24 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
     @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.isActive = true AND m.promoted = true")
     java.util.Optional<MenuItem> findActivePromoted();
+
+    /** All-time sales summary for every active menu item, including items with zero sales (dead stock), for the Reports page. */
+    @Query(value = """
+            SELECT
+              mi.id AS itemId,
+              mi.name AS itemName,
+              c.name AS categoryName,
+              mi.price AS price,
+              COALESCE(SUM(CASE WHEN b.status = 'PAID' THEN bi.quantity END), 0) AS quantity,
+              COALESCE(SUM(CASE WHEN b.status = 'PAID' THEN bi.line_total END), 0) AS revenue,
+              MAX(CASE WHEN b.status = 'PAID' THEN b.created_at END) AS lastSoldAt
+            FROM menu_items mi
+            JOIN categories c ON c.id = mi.category_id
+            LEFT JOIN bill_items bi ON bi.menu_item_id = mi.id
+            LEFT JOIN bills b ON b.id = bi.bill_id
+            WHERE mi.is_active = true
+            GROUP BY mi.id, mi.name, c.name, mi.price
+            ORDER BY quantity ASC, mi.name ASC
+            """, nativeQuery = true)
+    List<Object[]> findAllActiveItemsSalesSummary();
 }

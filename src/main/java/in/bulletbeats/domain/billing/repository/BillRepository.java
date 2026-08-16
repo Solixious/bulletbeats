@@ -116,6 +116,13 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
     @Query("""
             SELECT COALESCE(SUM(b.totalAmount), 0)
             FROM Bill b
+            WHERE b.status = 'PAID'
+            """)
+    BigDecimal getTotalRevenueAllTime();
+
+    @Query("""
+            SELECT COALESCE(SUM(b.totalAmount), 0)
+            FROM Bill b
             WHERE b.customer.id = :customerId
             AND b.status = 'PAID'
             AND b.createdAt >= :since

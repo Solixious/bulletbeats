@@ -165,6 +165,14 @@
           <span class="text-base">⭐</span> Feedback
         </a>
 
+        <!-- Reports — visible to Manager+ -->
+        <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+           href="/reports"
+           th:classappend="${uri.startsWith('/reports')} ? ${activeClass} : ${inactiveClass}"
+           class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+          <span class="text-base">📈</span> Reports
+        </a>
+
         <!-- Share menu — visible to Manager+ -->
         <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
            href="/admin/share"
