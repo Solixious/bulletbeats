@@ -12,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.TextStyle;
 import java.util.Comparator;
 import java.util.List;
@@ -99,9 +101,13 @@ public class ReportService {
     }
 
     private LocalDateTime toLocalDateTime(Object value) {
-        if (value == null) {
-            return null;
-        }
-        return value instanceof LocalDateTime dt ? dt : ((Timestamp) value).toLocalDateTime();
+        return switch (value) {
+            case null -> null;
+            case LocalDateTime dt -> dt;
+            case Timestamp ts -> ts.toLocalDateTime();
+            case Instant instant -> LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+            default -> throw new IllegalArgumentException(
+                    "Unexpected type for lastSoldAt: " + value.getClass());
+        };
     }
 }
