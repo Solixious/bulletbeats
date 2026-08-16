@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
@@ -76,16 +77,31 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
     @Query("SELECT m FROM MenuItem m JOIN FETCH m.category WHERE m.isActive = true AND m.promoted = true")
     java.util.Optional<MenuItem> findActivePromoted();
 
-    /** All-time sales summary for every active menu item, including items with zero sales (dead stock), for the Reports page. */
+    long countByIsActiveTrue();
+
+    /**
+     * Sales summary for every active menu item, scoped to [from, to) when both are given, or
+     * all-time when both are null — powers the Reports page (top sellers / slow movers / never
+     * sold), including items with zero sales in the scope so dead stock and slow movers surface.
+     */
     @Query(value = """
             SELECT
               mi.id AS itemId,
               mi.name AS itemName,
               c.name AS categoryName,
               mi.price AS price,
-              COALESCE(SUM(CASE WHEN b.status = 'PAID' THEN bi.quantity END), 0) AS quantity,
-              COALESCE(SUM(CASE WHEN b.status = 'PAID' THEN bi.line_total END), 0) AS revenue,
-              MAX(CASE WHEN b.status = 'PAID' THEN b.created_at END) AS lastSoldAt
+              COALESCE(SUM(CASE WHEN b.status = 'PAID'
+                                 AND (CAST(:from AS timestamp) IS NULL OR b.created_at >= :from)
+                                 AND (CAST(:to AS timestamp) IS NULL OR b.created_at < :to)
+                            THEN bi.quantity END), 0) AS quantity,
+              COALESCE(SUM(CASE WHEN b.status = 'PAID'
+                                 AND (CAST(:from AS timestamp) IS NULL OR b.created_at >= :from)
+                                 AND (CAST(:to AS timestamp) IS NULL OR b.created_at < :to)
+                            THEN bi.line_total END), 0) AS revenue,
+              MAX(CASE WHEN b.status = 'PAID'
+                            AND (CAST(:from AS timestamp) IS NULL OR b.created_at >= :from)
+                            AND (CAST(:to AS timestamp) IS NULL OR b.created_at < :to)
+                       THEN b.created_at END) AS lastSoldAt
             FROM menu_items mi
             JOIN categories c ON c.id = mi.category_id
             LEFT JOIN bill_items bi ON bi.menu_item_id = mi.id
@@ -94,5 +110,5 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
             GROUP BY mi.id, mi.name, c.name, mi.price
             ORDER BY quantity ASC, mi.name ASC
             """, nativeQuery = true)
-    List<Object[]> findAllActiveItemsSalesSummary();
+    List<Object[]> findActiveItemsSalesSummary(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

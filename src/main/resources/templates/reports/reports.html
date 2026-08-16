@@ -18,218 +18,210 @@
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
 
     <div class="bg-surface rounded-2xl border border-elevated/60 p-5 flex flex-col gap-3">
-      <p class="text-sand text-xs uppercase tracking-widest" th:text="'Revenue — ' + ${report.monthLabel}"></p>
+      <p class="text-sand text-xs uppercase tracking-widest" th:text="'Revenue — ' + ${summary.monthLabel}"></p>
       <p class="font-heading text-3xl text-accent tracking-wide"
-         th:text="'₹' + ${#numbers.formatDecimal(report.revenueThisMonth, 1, 'COMMA', 2, 'POINT')}">
+         th:text="'₹' + ${#numbers.formatDecimal(summary.revenueThisMonth, 1, 'COMMA', 2, 'POINT')}">
       </p>
     </div>
 
     <div class="bg-surface rounded-2xl border border-elevated/60 p-5 flex flex-col gap-3">
       <p class="text-sand text-xs uppercase tracking-widest">Revenue — All Time</p>
       <p class="font-heading text-3xl text-ivory tracking-wide"
-         th:text="'₹' + ${#numbers.formatDecimal(report.revenueAllTime, 1, 'COMMA', 2, 'POINT')}">
+         th:text="'₹' + ${#numbers.formatDecimal(summary.revenueAllTime, 1, 'COMMA', 2, 'POINT')}">
       </p>
     </div>
 
     <div class="bg-surface rounded-2xl border border-elevated/60 p-5 flex flex-col gap-3">
       <p class="text-sand text-xs uppercase tracking-widest">Active Menu Items</p>
-      <p class="font-heading text-3xl text-ivory tracking-wide" th:text="${report.activeMenuItemCount}"></p>
+      <p class="font-heading text-3xl text-ivory tracking-wide" th:text="${summary.activeMenuItemCount}"></p>
     </div>
 
-    <div th:with="hasDeadStock=${report.deadStockCount > 0}"
+    <div th:with="hasDeadStock=${summary.neverSoldAllTimeCount > 0}"
          th:classappend="${hasDeadStock} ? 'border-amber-500/40' : 'border-elevated/60'"
          class="bg-surface rounded-2xl border p-5 flex flex-col gap-3">
-      <p class="text-sand text-xs uppercase tracking-widest">Never Sold</p>
+      <p class="text-sand text-xs uppercase tracking-widest">Never Sold (All Time)</p>
       <p class="font-heading text-3xl tracking-wide"
-         th:classappend="${report.deadStockCount > 0} ? 'text-amber-400' : 'text-emerald-400'"
-         th:text="${report.deadStockCount}">
+         th:classappend="${summary.neverSoldAllTimeCount > 0} ? 'text-amber-400' : 'text-emerald-400'"
+         th:text="${summary.neverSoldAllTimeCount}">
       </p>
     </div>
 
   </div><!-- /KPI row -->
 
-  <!-- ── Top Items This Month ────────────────────────────────────── -->
+  <!-- ── Top Sellers ──────────────────────────────────────────────── -->
   <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
-    <h2 class="font-heading text-2xl text-ivory tracking-widest mb-5"
-        th:text="'Top Sellers — ' + ${report.monthLabel}"></h2>
-
-    <div th:if="${#lists.isEmpty(report.topItemsThisMonth)}" class="py-8 text-center text-sand/50 text-sm">
-      No sales recorded this month yet.
+    <div class="flex items-center justify-between mb-5 gap-4">
+      <h2 class="font-heading text-2xl text-ivory tracking-widest">Top Sellers</h2>
+      <select name="period"
+              hx-get="/reports/top-sellers" hx-target="#top-sellers-results"
+              hx-trigger="change" hx-swap="outerHTML"
+              class="bg-elevated text-ivory text-sm rounded-lg border border-elevated/80 px-3 py-1.5
+                     focus:outline-none focus:ring-1 focus:ring-accent">
+        <option th:each="opt : ${periodOptions}"
+                th:value="${opt.value}"
+                th:text="${opt.label}"
+                th:selected="${opt.value == topSellersPeriod}">
+        </option>
+      </select>
     </div>
 
-    <div th:unless="${#lists.isEmpty(report.topItemsThisMonth)}" class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
-            <th class="pb-3 text-left w-12">Rank</th>
-            <th class="pb-3 text-left">Item</th>
-            <th class="pb-3 text-left">Category</th>
-            <th class="pb-3 text-right">Qty Sold</th>
-            <th class="pb-3 text-right">Revenue</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr th:each="item, iterStat : ${report.topItemsThisMonth}"
-              class="border-b border-elevated/30 last:border-0">
-            <td class="py-3 pr-4">
-              <span class="font-heading text-xl"
-                    th:with="rank=${iterStat.count}"
-                    th:classappend="${rank == 1} ? 'text-amber-400' : (${rank == 2} ? 'text-slate-300' : (${rank == 3} ? 'text-amber-700' : 'text-sand/50'))"
-                    th:text="${iterStat.count}">
-              </span>
-            </td>
-            <td class="py-3">
-              <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
-            </td>
-            <td class="py-3">
-              <span class="text-sand text-xs" th:text="${item.categoryName}"></span>
-            </td>
-            <td class="py-3 text-right">
-              <span class="font-heading text-2xl text-accent" th:text="${item.quantity}"></span>
-            </td>
-            <td class="py-3 text-right">
-              <span class="text-ivory text-sm"
-                    th:text="'₹' + ${#numbers.formatDecimal(item.revenue, 1, 'COMMA', 2, 'POINT')}">
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Also served standalone by GET /reports/top-sellers (htmx swap target, replaced via outerHTML) -->
+    <div id="top-sellers-results" th:fragment="topSellersResults">
+      <div th:if="${#lists.isEmpty(topSellers)}" class="py-8 text-center text-sand/50 text-sm">
+        No sales recorded for this period.
+      </div>
+      <div th:unless="${#lists.isEmpty(topSellers)}" class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+              <th class="pb-3 text-left w-12">Rank</th>
+              <th class="pb-3 text-left">Item</th>
+              <th class="pb-3 text-left">Category</th>
+              <th class="pb-3 text-right">Qty Sold</th>
+              <th class="pb-3 text-right">Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="item, iterStat : ${topSellers}" class="border-b border-elevated/30 last:border-0">
+              <td class="py-3 pr-4">
+                <span class="font-heading text-xl"
+                      th:with="rank=${iterStat.count}"
+                      th:classappend="${rank == 1} ? 'text-amber-400' : (${rank == 2} ? 'text-slate-300' : (${rank == 3} ? 'text-amber-700' : 'text-sand/50'))"
+                      th:text="${iterStat.count}">
+                </span>
+              </td>
+              <td class="py-3">
+                <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
+              </td>
+              <td class="py-3">
+                <span class="text-sand text-xs" th:text="${item.categoryName}"></span>
+              </td>
+              <td class="py-3 text-right">
+                <span class="font-heading text-2xl text-accent" th:text="${item.quantity}"></span>
+              </td>
+              <td class="py-3 text-right">
+                <span class="text-ivory text-sm"
+                      th:text="'₹' + ${#numbers.formatDecimal(item.revenue, 1, 'COMMA', 2, 'POINT')}">
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div><!-- /Top Items This Month -->
-
-  <!-- ── Top Items All Time ──────────────────────────────────────── -->
-  <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
-    <h2 class="font-heading text-2xl text-ivory tracking-widest mb-5">Top Sellers — All Time</h2>
-
-    <div th:if="${#lists.isEmpty(report.topItemsAllTime)}" class="py-8 text-center text-sand/50 text-sm">
-      No paid bills recorded yet.
-    </div>
-
-    <div th:unless="${#lists.isEmpty(report.topItemsAllTime)}" class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
-            <th class="pb-3 text-left w-12">Rank</th>
-            <th class="pb-3 text-left">Item</th>
-            <th class="pb-3 text-left">Category</th>
-            <th class="pb-3 text-right">Qty Sold</th>
-            <th class="pb-3 text-right">Revenue</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr th:each="item, iterStat : ${report.topItemsAllTime}"
-              class="border-b border-elevated/30 last:border-0">
-            <td class="py-3 pr-4">
-              <span class="font-heading text-xl"
-                    th:with="rank=${iterStat.count}"
-                    th:classappend="${rank == 1} ? 'text-amber-400' : (${rank == 2} ? 'text-slate-300' : (${rank == 3} ? 'text-amber-700' : 'text-sand/50'))"
-                    th:text="${iterStat.count}">
-              </span>
-            </td>
-            <td class="py-3">
-              <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
-            </td>
-            <td class="py-3">
-              <span class="text-sand text-xs" th:text="${item.categoryName}"></span>
-            </td>
-            <td class="py-3 text-right">
-              <span class="font-heading text-2xl text-accent" th:text="${item.quantity}"></span>
-            </td>
-            <td class="py-3 text-right">
-              <span class="text-ivory text-sm"
-                    th:text="'₹' + ${#numbers.formatDecimal(item.revenue, 1, 'COMMA', 2, 'POINT')}">
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div><!-- /Top Items All Time -->
+  </div><!-- /Top Sellers -->
 
   <!-- ── Slow Movers ──────────────────────────────────────────────── -->
   <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
-    <h2 class="font-heading text-2xl text-ivory tracking-widest mb-1">Slow Movers</h2>
-    <p class="text-sand text-xs mb-5">Active menu items with the lowest all-time sales (excluding items never sold)</p>
-
-    <div th:if="${#lists.isEmpty(report.slowMovers)}" class="py-8 text-center text-sand/50 text-sm">
-      Not enough sales data yet.
+    <div class="flex items-center justify-between mb-1 gap-4">
+      <h2 class="font-heading text-2xl text-ivory tracking-widest">Slow Movers</h2>
+      <select name="period"
+              hx-get="/reports/slow-movers" hx-target="#slow-movers-results"
+              hx-trigger="change" hx-swap="outerHTML"
+              class="bg-elevated text-ivory text-sm rounded-lg border border-elevated/80 px-3 py-1.5
+                     focus:outline-none focus:ring-1 focus:ring-accent">
+        <option th:each="opt : ${periodOptions}"
+                th:value="${opt.value}"
+                th:text="${opt.label}"
+                th:selected="${opt.value == slowMoversPeriod}">
+        </option>
+      </select>
     </div>
+    <p class="text-sand text-xs mb-5">Active menu items with the lowest sales in the selected period (excluding items with zero sales)</p>
 
-    <div th:unless="${#lists.isEmpty(report.slowMovers)}" class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
-            <th class="pb-3 text-left">Item</th>
-            <th class="pb-3 text-left">Category</th>
-            <th class="pb-3 text-right">Qty Sold (All Time)</th>
-            <th class="pb-3 text-right">Revenue</th>
-            <th class="pb-3 text-right">Last Sold</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr th:each="item : ${report.slowMovers}" class="border-b border-elevated/30 last:border-0">
-            <td class="py-3">
-              <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
-            </td>
-            <td class="py-3">
-              <span class="text-sand text-xs" th:text="${item.categoryName}"></span>
-            </td>
-            <td class="py-3 text-right">
-              <span class="font-heading text-xl text-amber-400" th:text="${item.quantity}"></span>
-            </td>
-            <td class="py-3 text-right">
-              <span class="text-ivory text-sm"
-                    th:text="'₹' + ${#numbers.formatDecimal(item.revenue, 1, 'COMMA', 2, 'POINT')}">
-              </span>
-            </td>
-            <td class="py-3 text-right">
-              <span class="text-sand text-xs"
-                    th:text="${item.lastSoldAt != null} ? ${#temporals.format(item.lastSoldAt, 'd MMM yyyy')} : '—'">
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div id="slow-movers-results" th:fragment="slowMoversResults">
+      <div th:if="${#lists.isEmpty(slowMovers)}" class="py-8 text-center text-sand/50 text-sm">
+        Not enough sales data for this period.
+      </div>
+      <div th:unless="${#lists.isEmpty(slowMovers)}" class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+              <th class="pb-3 text-left">Item</th>
+              <th class="pb-3 text-left">Category</th>
+              <th class="pb-3 text-right">Qty Sold</th>
+              <th class="pb-3 text-right">Revenue</th>
+              <th class="pb-3 text-right">Last Sold</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="item : ${slowMovers}" class="border-b border-elevated/30 last:border-0">
+              <td class="py-3">
+                <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
+              </td>
+              <td class="py-3">
+                <span class="text-sand text-xs" th:text="${item.categoryName}"></span>
+              </td>
+              <td class="py-3 text-right">
+                <span class="font-heading text-xl text-amber-400" th:text="${item.quantity}"></span>
+              </td>
+              <td class="py-3 text-right">
+                <span class="text-ivory text-sm"
+                      th:text="'₹' + ${#numbers.formatDecimal(item.revenue, 1, 'COMMA', 2, 'POINT')}">
+                </span>
+              </td>
+              <td class="py-3 text-right">
+                <span class="text-sand text-xs"
+                      th:text="${item.lastSoldAt != null} ? ${#temporals.format(item.lastSoldAt, 'd MMM yyyy')} : '—'">
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div><!-- /Slow Movers -->
 
-  <!-- ── Never Sold (dead stock) ──────────────────────────────────── -->
+  <!-- ── Not Sold ─────────────────────────────────────────────────── -->
   <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
-    <h2 class="font-heading text-2xl text-ivory tracking-widest mb-1">Never Sold</h2>
-    <p class="text-sand text-xs mb-5">Active menu items with zero sales, ever — candidates to rework or drop from the menu</p>
-
-    <div th:if="${#lists.isEmpty(report.deadStockItems)}" class="py-8 text-center text-emerald-400/70 text-sm">
-      Every active menu item has sold at least once. 🎉
+    <div class="flex items-center justify-between mb-1 gap-4">
+      <h2 class="font-heading text-2xl text-ivory tracking-widest">Not Sold</h2>
+      <select name="period"
+              hx-get="/reports/not-sold" hx-target="#not-sold-results"
+              hx-trigger="change" hx-swap="outerHTML"
+              class="bg-elevated text-ivory text-sm rounded-lg border border-elevated/80 px-3 py-1.5
+                     focus:outline-none focus:ring-1 focus:ring-accent">
+        <option th:each="opt : ${periodOptions}"
+                th:value="${opt.value}"
+                th:text="${opt.label}"
+                th:selected="${opt.value == notSoldPeriod}">
+        </option>
+      </select>
     </div>
+    <p class="text-sand text-xs mb-5">Active menu items with zero sales in the selected period — candidates to rework or drop from the menu</p>
 
-    <div th:unless="${#lists.isEmpty(report.deadStockItems)}" class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
-            <th class="pb-3 text-left">Item</th>
-            <th class="pb-3 text-left">Category</th>
-            <th class="pb-3 text-right">Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr th:each="item : ${report.deadStockItems}" class="border-b border-elevated/30 last:border-0">
-            <td class="py-3">
-              <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
-            </td>
-            <td class="py-3">
-              <span class="text-sand text-xs" th:text="${item.categoryName}"></span>
-            </td>
-            <td class="py-3 text-right">
-              <span class="text-ivory text-sm"
-                    th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 'COMMA', 2, 'POINT')}">
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div id="not-sold-results" th:fragment="notSoldResults">
+      <div th:if="${#lists.isEmpty(notSold)}" class="py-8 text-center text-emerald-400/70 text-sm">
+        Every active menu item sold at least once in this period. 🎉
+      </div>
+      <div th:unless="${#lists.isEmpty(notSold)}" class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+              <th class="pb-3 text-left">Item</th>
+              <th class="pb-3 text-left">Category</th>
+              <th class="pb-3 text-right">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="item : ${notSold}" class="border-b border-elevated/30 last:border-0">
+              <td class="py-3">
+                <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
+              </td>
+              <td class="py-3">
+                <span class="text-sand text-xs" th:text="${item.categoryName}"></span>
+              </td>
+              <td class="py-3 text-right">
+                <span class="text-ivory text-sm"
+                      th:text="'₹' + ${#numbers.formatDecimal(item.price, 1, 'COMMA', 2, 'POINT')}">
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div><!-- /Never Sold -->
+  </div><!-- /Not Sold -->
 
 </main>
 </body>

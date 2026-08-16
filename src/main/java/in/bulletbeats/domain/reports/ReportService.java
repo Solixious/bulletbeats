@@ -1,11 +1,10 @@
 package in.bulletbeats.domain.reports;
 
-import in.bulletbeats.domain.billing.repository.BillItemRepository;
 import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.menu.repository.MenuItemRepository;
 import in.bulletbeats.domain.reports.dto.MenuItemSalesSummaryDto;
-import in.bulletbeats.domain.reports.dto.ReportDto;
-import in.bulletbeats.domain.reports.dto.ReportItemDto;
+import in.bulletbeats.domain.reports.dto.PeriodOptionDto;
+import in.bulletbeats.domain.reports.dto.ReportSummaryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,8 +14,10 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.TextStyle;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -26,67 +27,80 @@ import java.util.Locale;
 @Transactional(readOnly = true)
 public class ReportService {
 
+    public static final String ALL_TIME = "ALL";
+    private static final int PERIOD_MONTHS_BACK = 11;
     private static final int TOP_N = 15;
     private static final int SLOW_MOVER_N = 10;
 
-    private final BillItemRepository billItemRepository;
     private final BillRepository billRepository;
     private final MenuItemRepository menuItemRepository;
 
-    public ReportDto buildReport() {
+    public List<PeriodOptionDto> buildPeriodOptions() {
+        List<PeriodOptionDto> options = new ArrayList<>();
+        options.add(new PeriodOptionDto(ALL_TIME, "All Time"));
+        YearMonth current = YearMonth.now();
+        for (int i = 0; i <= PERIOD_MONTHS_BACK; i++) {
+            YearMonth ym = current.minusMonths(i);
+            options.add(new PeriodOptionDto(ym.toString(), monthLabel(ym)));
+        }
+        return options;
+    }
+
+    public ReportSummaryDto getSummary() {
         LocalDate today = LocalDate.now();
         LocalDateTime todayEnd = today.plusDays(1).atStartOfDay();
         LocalDateTime monthStart = today.withDayOfMonth(1).atStartOfDay();
 
-        List<ReportItemDto> topThisMonth = billItemRepository
-                .findTopItemsForRangeGrouped(monthStart, todayEnd, TOP_N).stream()
-                .map(this::toReportItem)
-                .toList();
+        BigDecimal revenueThisMonth = billRepository.getRevenueForRange(monthStart, todayEnd);
+        BigDecimal revenueAllTime = billRepository.getTotalRevenueAllTime();
+        long activeMenuItemCount = menuItemRepository.countByIsActiveTrue();
+        long neverSoldAllTimeCount = fetchSummary(ALL_TIME).stream()
+                .filter(item -> item.getQuantity() == 0)
+                .count();
 
-        List<MenuItemSalesSummaryDto> allActiveItems = menuItemRepository.findAllActiveItemsSalesSummary().stream()
-                .map(this::toSalesSummary)
-                .toList();
+        return new ReportSummaryDto(
+                revenueThisMonth, revenueAllTime, activeMenuItemCount, neverSoldAllTimeCount,
+                monthLabel(YearMonth.from(today)));
+    }
 
-        List<MenuItemSalesSummaryDto> soldAtLeastOnce = allActiveItems.stream()
+    public List<MenuItemSalesSummaryDto> getTopSellers(String period) {
+        return fetchSummary(period).stream()
                 .filter(item -> item.getQuantity() > 0)
                 .sorted(Comparator.comparingLong(MenuItemSalesSummaryDto::getQuantity).reversed())
-                .toList();
-
-        List<ReportItemDto> topAllTime = soldAtLeastOnce.stream()
                 .limit(TOP_N)
-                .map(item -> new ReportItemDto(
-                        item.getItemId(), item.getItemName(), item.getCategoryName(),
-                        item.getQuantity(), item.getRevenue()))
                 .toList();
+    }
 
-        List<MenuItemSalesSummaryDto> deadStock = allActiveItems.stream()
-                .filter(item -> item.getQuantity() == 0)
-                .sorted(Comparator.comparing(MenuItemSalesSummaryDto::getItemName))
-                .toList();
-
-        List<MenuItemSalesSummaryDto> slowMovers = soldAtLeastOnce.stream()
+    public List<MenuItemSalesSummaryDto> getSlowMovers(String period) {
+        return fetchSummary(period).stream()
+                .filter(item -> item.getQuantity() > 0)
                 .sorted(Comparator.comparingLong(MenuItemSalesSummaryDto::getQuantity))
                 .limit(SLOW_MOVER_N)
                 .toList();
-
-        BigDecimal revenueThisMonth = billRepository.getRevenueForRange(monthStart, todayEnd);
-        BigDecimal revenueAllTime = billRepository.getTotalRevenueAllTime();
-
-        String monthLabel = today.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + today.getYear();
-
-        return new ReportDto(
-                topThisMonth, topAllTime, deadStock, slowMovers,
-                revenueThisMonth, revenueAllTime,
-                allActiveItems.size(), deadStock.size(), monthLabel);
     }
 
-    private ReportItemDto toReportItem(Object[] row) {
-        return new ReportItemDto(
-                ((Number) row[0]).longValue(),
-                (String) row[1],
-                (String) row[2],
-                ((Number) row[3]).longValue(),
-                (BigDecimal) row[4]);
+    public List<MenuItemSalesSummaryDto> getNotSold(String period) {
+        return fetchSummary(period).stream()
+                .filter(item -> item.getQuantity() == 0)
+                .sorted(Comparator.comparing(MenuItemSalesSummaryDto::getItemName))
+                .toList();
+    }
+
+    private List<MenuItemSalesSummaryDto> fetchSummary(String period) {
+        LocalDateTime from = null;
+        LocalDateTime to = null;
+        if (!ALL_TIME.equalsIgnoreCase(period)) {
+            YearMonth ym = YearMonth.parse(period);
+            from = ym.atDay(1).atStartOfDay();
+            to = ym.plusMonths(1).atDay(1).atStartOfDay();
+        }
+        return menuItemRepository.findActiveItemsSalesSummary(from, to).stream()
+                .map(this::toSalesSummary)
+                .toList();
+    }
+
+    private String monthLabel(YearMonth ym) {
+        return ym.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + ym.getYear();
     }
 
     private MenuItemSalesSummaryDto toSalesSummary(Object[] row) {
