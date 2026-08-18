@@ -2,13 +2,11 @@ package in.bulletbeats.domain.dashboard;
 
 import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.CafeTable;
-import in.bulletbeats.domain.billing.repository.BillItemRepository;
 import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.repository.CafeTableRepository;
 import in.bulletbeats.domain.dashboard.dto.DailyRevenueDto;
 import in.bulletbeats.domain.dashboard.dto.DashboardStatsDto;
 import in.bulletbeats.domain.dashboard.dto.TableStatusDto;
-import in.bulletbeats.domain.dashboard.dto.TopItemDto;
 import in.bulletbeats.domain.inventory.repository.PurchaseOrderRepository;
 import in.bulletbeats.domain.inventory.repository.ReplenishmentRequestRepository;
 import in.bulletbeats.domain.inventory.service.InventoryService;
@@ -36,7 +34,6 @@ import java.util.Map;
 public class DashboardService {
 
     private final BillRepository billRepository;
-    private final BillItemRepository billItemRepository;
     private final CafeTableRepository cafeTableRepository;
     private final InventoryService inventoryService;
     private final ReplenishmentRequestRepository replenishmentRequestRepository;
@@ -150,15 +147,6 @@ public class DashboardService {
         BigDecimal tiffinMonthlyRevenue = tiffinService.calculateTotalMonthlyTiffinRevenue();
         long tiffinActiveCount = tiffinService.countActiveSubscriptions();
 
-        // Top items this month
-        List<Object[]> rawTop = billItemRepository.findTopItemsForRange(monthStart, todayEnd, 5);
-        List<TopItemDto> topItems = rawTop.stream()
-                .map(row -> new TopItemDto(
-                        (String) row[0],
-                        ((Number) row[1]).longValue(),
-                        (BigDecimal) row[2]))
-                .toList();
-
         // Daily revenue for the past up to 30 days
         LocalDate rangeStart = today.minusDays(29);
         List<Object[]> rawDaily = billRepository.getDailyRevenueForRange(rangeStart.atStartOfDay(), todayEnd);
@@ -228,7 +216,7 @@ public class DashboardService {
                 vsLastMonthAmount.signum() >= 0,
                 vsLastYearAmount, vsLastYearPercent,
                 vsLastYearAmount.signum() >= 0,
-                topItems, dailyRevenue,
+                dailyRevenue,
                 lowStockCount, pendingReplenishmentCount,
                 thisMonthBarWidth, lastMonthBarWidth,
                 thisYearBarWidth, lastYearBarWidth,

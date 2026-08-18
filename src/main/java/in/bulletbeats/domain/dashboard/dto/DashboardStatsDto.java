@@ -32,9 +32,6 @@ public class DashboardStatsDto {
     private final BigDecimal vsLastYearPercent;
     private final boolean vsLastYearPositive;
 
-    // Top selling items this month (Manager/Admin only)
-    private final List<TopItemDto> topItemsThisMonth;
-
     // Daily revenue for the past up to 30 days (Manager/Admin only)
     private final List<DailyRevenueDto> dailyRevenue;
 
@@ -97,7 +94,6 @@ public class DashboardStatsDto {
             BigDecimal vsLastYearAmount,
             BigDecimal vsLastYearPercent,
             boolean vsLastYearPositive,
-            List<TopItemDto> topItemsThisMonth,
             List<DailyRevenueDto> dailyRevenue,
             long lowStockCount,
             long pendingReplenishmentCount,
@@ -133,7 +129,6 @@ public class DashboardStatsDto {
                 .vsLastYearAmount(vsLastYearAmount)
                 .vsLastYearPercent(vsLastYearPercent)
                 .vsLastYearPositive(vsLastYearPositive)
-                .topItemsThisMonth(topItemsThisMonth)
                 .dailyRevenue(dailyRevenue)
                 .lowStockCount(lowStockCount)
                 .pendingReplenishmentCount(pendingReplenishmentCount)

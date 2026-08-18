@@ -357,57 +357,123 @@
 
     </div><!-- /Row 3 -->
 
-    <!-- ── Row 4: Top 5 Items This Month ─────────────────────────── -->
-    <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
+    <!-- ── Row 4: Top Items — by Orders / by Revenue ────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
 
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="font-heading text-2xl text-ivory tracking-widest">Top Items This Month</h2>
-        <a href="/reports"
-           class="text-sand text-xs hover:text-ivory transition-colors">
-          View Reports →
-        </a>
-      </div>
+      <!-- Top Items by Orders (quantity) -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-6">
 
-      <!-- Empty state -->
-      <div th:if="${#lists.isEmpty(stats.topItemsThisMonth)}"
-           class="py-8 text-center text-sand/50 text-sm">
-        No sales recorded this month yet.
-      </div>
+        <div class="flex items-center justify-between mb-1 gap-4">
+          <h2 class="font-heading text-2xl text-ivory tracking-widest">Top Items — Orders</h2>
+          <select name="period"
+                  hx-get="/dashboard/top-quantity" hx-target="#top-quantity-results"
+                  hx-trigger="change" hx-swap="outerHTML"
+                  class="bg-elevated text-ivory text-sm rounded-lg border border-elevated/80 px-3 py-1.5
+                         focus:outline-none focus:ring-1 focus:ring-accent">
+            <option th:each="opt : ${periodOptions}"
+                    th:value="${opt.value}"
+                    th:text="${opt.label}"
+                    th:selected="${opt.value == topByQuantityPeriod}">
+            </option>
+          </select>
+        </div>
+        <a href="/reports" class="text-sand text-xs hover:text-ivory transition-colors">View full reports →</a>
 
-      <!-- Top items table -->
-      <table th:unless="${#lists.isEmpty(stats.topItemsThisMonth)}" class="w-full">
-        <thead>
-          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
-            <th class="pb-3 text-left w-12">Rank</th>
-            <th class="pb-3 text-left">Item</th>
-            <th class="pb-3 text-right">Qty This Month</th>
-            <th class="pb-3 text-right">Revenue</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr th:each="item, iterStat : ${stats.topItemsThisMonth}"
-              class="border-b border-elevated/30 last:border-0">
-            <td class="py-3 pr-4">
-              <span class="font-heading text-xl"
-                    th:with="rank=${iterStat.count}"
-                    th:classappend="${rank == 1} ? 'text-amber-400' : (${rank == 2} ? 'text-slate-300' : (${rank == 3} ? 'text-amber-700' : 'text-sand/50'))"
-                    th:text="${iterStat.count}">
-              </span>
-            </td>
-            <td class="py-3">
-              <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
-            </td>
-            <td class="py-3 text-right">
-              <span class="font-heading text-2xl text-accent" th:text="${item.quantity}"></span>
-            </td>
-            <td class="py-3 text-right">
-              <span class="text-ivory text-sm"
-                    th:text="'₹' + ${#numbers.formatDecimal(item.revenue, 1, 'COMMA', 2, 'POINT')}">
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <div id="top-quantity-results" th:fragment="topByQuantityResults" class="mt-4">
+          <div th:if="${#lists.isEmpty(topByQuantity)}" class="py-8 text-center text-sand/50 text-sm">
+            No sales recorded for this period.
+          </div>
+          <table th:unless="${#lists.isEmpty(topByQuantity)}" class="w-full">
+            <thead>
+              <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+                <th class="pb-3 text-left w-12">Rank</th>
+                <th class="pb-3 text-left">Item</th>
+                <th class="pb-3 text-right">Qty Sold</th>
+                <th class="pb-3 text-right">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="item, iterStat : ${topByQuantity}" class="border-b border-elevated/30 last:border-0">
+                <td class="py-3 pr-4">
+                  <span class="font-heading text-xl"
+                        th:with="rank=${iterStat.count}"
+                        th:classappend="${rank == 1} ? 'text-amber-400' : (${rank == 2} ? 'text-slate-300' : (${rank == 3} ? 'text-amber-700' : 'text-sand/50'))"
+                        th:text="${iterStat.count}">
+                  </span>
+                </td>
+                <td class="py-3">
+                  <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
+                </td>
+                <td class="py-3 text-right">
+                  <span class="font-heading text-2xl text-accent" th:text="${item.quantity}"></span>
+                </td>
+                <td class="py-3 text-right">
+                  <span class="text-ivory text-sm"
+                        th:text="'₹' + ${#numbers.formatDecimal(item.revenue, 1, 'COMMA', 2, 'POINT')}">
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /Top Items by Orders -->
+
+      <!-- Top Items by Revenue -->
+      <div class="bg-surface rounded-2xl border border-elevated/60 p-6">
+
+        <div class="flex items-center justify-between mb-5 gap-4">
+          <h2 class="font-heading text-2xl text-ivory tracking-widest">Top Items — Revenue</h2>
+          <select name="period"
+                  hx-get="/dashboard/top-revenue" hx-target="#top-revenue-results"
+                  hx-trigger="change" hx-swap="outerHTML"
+                  class="bg-elevated text-ivory text-sm rounded-lg border border-elevated/80 px-3 py-1.5
+                         focus:outline-none focus:ring-1 focus:ring-accent">
+            <option th:each="opt : ${periodOptions}"
+                    th:value="${opt.value}"
+                    th:text="${opt.label}"
+                    th:selected="${opt.value == topByRevenuePeriod}">
+            </option>
+          </select>
+        </div>
+
+        <div id="top-revenue-results" th:fragment="topByRevenueResults">
+          <div th:if="${#lists.isEmpty(topByRevenue)}" class="py-8 text-center text-sand/50 text-sm">
+            No sales recorded for this period.
+          </div>
+          <table th:unless="${#lists.isEmpty(topByRevenue)}" class="w-full">
+            <thead>
+              <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+                <th class="pb-3 text-left w-12">Rank</th>
+                <th class="pb-3 text-left">Item</th>
+                <th class="pb-3 text-right">Revenue</th>
+                <th class="pb-3 text-right">Qty Sold</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="item, iterStat : ${topByRevenue}" class="border-b border-elevated/30 last:border-0">
+                <td class="py-3 pr-4">
+                  <span class="font-heading text-xl"
+                        th:with="rank=${iterStat.count}"
+                        th:classappend="${rank == 1} ? 'text-amber-400' : (${rank == 2} ? 'text-slate-300' : (${rank == 3} ? 'text-amber-700' : 'text-sand/50'))"
+                        th:text="${iterStat.count}">
+                  </span>
+                </td>
+                <td class="py-3">
+                  <span class="text-ivory text-sm font-medium" th:text="${item.itemName}"></span>
+                </td>
+                <td class="py-3 text-right">
+                  <span class="font-heading text-2xl text-accent"
+                        th:text="'₹' + ${#numbers.formatDecimal(item.revenue, 1, 'COMMA', 2, 'POINT')}">
+                  </span>
+                </td>
+                <td class="py-3 text-right">
+                  <span class="text-ivory text-sm" th:text="${item.quantity}"></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /Top Items by Revenue -->
 
     </div><!-- /Row 4 -->
 

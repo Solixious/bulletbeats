@@ -64,10 +64,22 @@ public class ReportService {
     }
 
     public List<MenuItemSalesSummaryDto> getTopSellers(String period) {
+        return getTopSellers(period, TOP_N);
+    }
+
+    public List<MenuItemSalesSummaryDto> getTopSellers(String period, int limit) {
         return fetchSummary(period).stream()
                 .filter(item -> item.getQuantity() > 0)
                 .sorted(Comparator.comparingLong(MenuItemSalesSummaryDto::getQuantity).reversed())
-                .limit(TOP_N)
+                .limit(limit)
+                .toList();
+    }
+
+    public List<MenuItemSalesSummaryDto> getTopByRevenue(String period, int limit) {
+        return fetchSummary(period).stream()
+                .filter(item -> item.getRevenue().signum() > 0)
+                .sorted(Comparator.comparing(MenuItemSalesSummaryDto::getRevenue).reversed())
+                .limit(limit)
                 .toList();
     }
 
