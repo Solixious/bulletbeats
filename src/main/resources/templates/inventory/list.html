@@ -28,6 +28,12 @@
         Suppliers
       </a>
       <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+         href="/inventory/units"
+         class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                hover:border-ivory/40 hover:text-ivory transition-colors">
+        Units
+      </a>
+      <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
          href="/inventory/new"
          class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
                 font-heading tracking-widest text-sm

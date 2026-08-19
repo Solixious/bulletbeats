@@ -6,6 +6,7 @@ import in.bulletbeats.domain.inventory.dto.UpdateGroceryItemDto;
 import in.bulletbeats.domain.inventory.entity.GroceryItem;
 import in.bulletbeats.domain.inventory.service.InventoryService;
 import in.bulletbeats.domain.inventory.service.SupplierService;
+import in.bulletbeats.domain.inventory.service.UnitService;
 import in.bulletbeats.domain.shared.enums.MovementType;
 import in.bulletbeats.domain.shared.exception.GroceryItemInUseException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
@@ -31,6 +32,7 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
     private final SupplierService supplierService;
+    private final UnitService unitService;
     private final UserService userService;
 
     private Long currentUserId(Authentication auth) {
@@ -50,6 +52,7 @@ public class InventoryController {
     public String newForm(Model model) {
         model.addAttribute("dto", new CreateGroceryItemDto());
         model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
+        model.addAttribute("units", unitService.getAllUnits());
         model.addAttribute("mode", "create");
         return "inventory/form";
     }
@@ -60,6 +63,7 @@ public class InventoryController {
                          BindingResult result, Model model) {
         if (result.hasErrors()) {
             model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
+            model.addAttribute("units", unitService.getAllUnits());
             model.addAttribute("mode", "create");
             return "inventory/form";
         }
@@ -69,7 +73,9 @@ public class InventoryController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        model.addAttribute("item", inventoryService.getItemById(id));
+        GroceryItem item = inventoryService.getItemById(id);
+        model.addAttribute("item", item);
+        model.addAttribute("costPerMinorUnit", inventoryService.computeCostPerMinorUnit(item));
         model.addAttribute("movementTypes", MovementType.values());
         model.addAttribute("dto", new StockAdjustmentDto());
         return "inventory/detail";
@@ -93,6 +99,7 @@ public class InventoryController {
         model.addAttribute("item", item);
         model.addAttribute("dto", dto);
         model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
+        model.addAttribute("units", unitService.getAllUnits());
         model.addAttribute("mode", "edit");
         return "inventory/form";
     }
@@ -105,6 +112,7 @@ public class InventoryController {
         if (result.hasErrors()) {
             model.addAttribute("item", inventoryService.getItemById(id));
             model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
+            model.addAttribute("units", unitService.getAllUnits());
             model.addAttribute("mode", "edit");
             return "inventory/form";
         }
@@ -122,12 +130,6 @@ public class InventoryController {
             ra.addFlashAttribute("deleteError", e.getMessage());
             return "redirect:/inventory";
         }
-    }
-
-    @GetMapping("/units/suggest")
-    public String suggestUnits(@RequestParam(defaultValue = "") String q, Model model) {
-        model.addAttribute("units", inventoryService.suggestUnits(q));
-        return "inventory/fragments/unit-suggestions :: suggestions";
     }
 
     @GetMapping("/{id}/adjust-form")

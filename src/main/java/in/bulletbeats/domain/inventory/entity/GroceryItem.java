@@ -1,6 +1,5 @@
 package in.bulletbeats.domain.inventory.entity;
 
-import in.bulletbeats.domain.inventory.util.UnitConversions;
 import in.bulletbeats.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -71,18 +70,5 @@ public class GroceryItem extends BaseEntity {
             return null;
         }
         return packCost.divide(packQuantity, 4, RoundingMode.HALF_UP);
-    }
-
-    /** Cost per minor unit (e.g. per gram), derived live. Null if not computable from packUnit/minorUnit. */
-    public BigDecimal getCostPerMinorUnit() {
-        BigDecimal costPerUnit = getCostPerUnit();
-        if (costPerUnit == null || minorUnit == null || minorUnit.isBlank()) {
-            return null;
-        }
-        BigDecimal factor = UnitConversions.factor(packUnit, minorUnit);
-        if (factor == null || factor.compareTo(BigDecimal.ZERO) <= 0) {
-            return null;
-        }
-        return costPerUnit.divide(factor, 4, RoundingMode.HALF_UP);
     }
 }

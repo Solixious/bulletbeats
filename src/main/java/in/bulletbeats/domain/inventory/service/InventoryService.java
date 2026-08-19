@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -50,6 +51,7 @@ public class InventoryService {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final DishRepository dishRepository;
     private final ComboRepository comboRepository;
+    private final UnitService unitService;
 
     @Lazy
     @Autowired
@@ -81,8 +83,12 @@ public class InventoryService {
                 .toList();
     }
 
-    public List<String> suggestUnits(String prefix) {
-        return groceryItemRepository.findDistinctUnitsByPrefix(prefix == null ? "" : prefix.toLowerCase());
+    public BigDecimal computeCostPerMinorUnit(GroceryItem item) {
+        BigDecimal costPerUnit = item.getCostPerUnit();
+        if (costPerUnit == null || item.getMinorUnit() == null) return null;
+        BigDecimal factor = unitService.conversionFactor(item.getPackUnit(), item.getMinorUnit());
+        if (factor == null || factor.compareTo(BigDecimal.ZERO) <= 0) return null;
+        return costPerUnit.divide(factor, 4, RoundingMode.HALF_UP);
     }
 
     @Transactional

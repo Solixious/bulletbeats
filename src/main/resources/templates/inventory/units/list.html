@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Units & Conversions — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-4xl mx-auto">
+
+  <div class="flex flex-wrap items-start justify-between gap-y-3 mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Units &amp; Conversions</h1>
+      <p class="text-sand text-sm mt-0.5">Units available on inventory items, and how they convert into each other</p>
+    </div>
+    <a href="/inventory"
+       class="text-xs px-3 py-1.5 border border-sand/30 text-sand rounded
+              hover:border-ivory/40 hover:text-ivory transition-colors">
+      ← Inventory
+    </a>
+  </div>
+
+  <!-- Flash messages -->
+  <div th:if="${param.created}" class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Unit added.
+  </div>
+  <div th:if="${param.unitDeleted}" class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Unit deleted.
+  </div>
+  <div th:if="${param.conversionCreated}" class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Conversion added.
+  </div>
+  <div th:if="${param.conversionDeleted}" class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Conversion deleted.
+  </div>
+  <div th:if="${unitError}" class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/40 text-red-400 text-sm">
+    <span th:text="${unitError}"></span>
+  </div>
+  <div th:if="${conversionError}" class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/40 text-red-400 text-sm">
+    <span th:text="${conversionError}"></span>
+  </div>
+
+  <!-- ── Units section ─────────────────────────────────────────────── -->
+  <section class="mb-10">
+    <h2 class="font-heading text-xl text-ivory tracking-wide mb-1">Units</h2>
+    <p class="text-sand text-xs mb-4">
+      The unit list used everywhere inventory items pick a unit (e.g. kg, g, litre, piece)
+    </p>
+
+    <div class="bg-surface rounded-xl border border-elevated/60 p-4 mb-4">
+      <form th:action="@{/inventory/units/new}" method="post" class="flex items-end gap-3">
+        <div class="flex-1 max-w-xs">
+          <label for="unitName" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">New Unit</label>
+          <input id="unitName" name="name" type="text" required
+                 class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                        placeholder-sand/40 outline-none border border-elevated
+                        focus:border-accent focus:shadow-neon-sm transition-all duration-200"
+                 placeholder="e.g. kg"/>
+        </div>
+        <button type="submit"
+                class="px-4 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200">
+          ADD
+        </button>
+      </form>
+    </div>
+
+    <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+      <div th:if="${#lists.isEmpty(units)}" class="py-10 text-center text-sand text-sm">
+        No units yet. Add one above.
+      </div>
+      <table th:unless="${#lists.isEmpty(units)}" class="w-full text-left">
+        <thead>
+          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+            <th class="px-4 py-3 font-medium">Name</th>
+            <th class="px-4 py-3 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="u : ${units}" class="border-b border-elevated/40 last:border-0 hover:bg-elevated/20 transition-colors">
+            <td class="px-4 py-3 text-ivory text-sm font-mono" th:text="${u.name}"></td>
+            <td class="px-4 py-3">
+              <form th:action="@{/inventory/units/{id}/delete(id=${u.id})}" method="post"
+                    onsubmit="return bbConfirm(this, 'Delete unit &quot;' + this.dataset.name + '&quot;?')"
+                    th:attr="data-name=${u.name}">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-red-500/30 text-red-400
+                               hover:border-red-400/60 hover:bg-red-500/10 transition-colors">
+                  Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Conversions section ───────────────────────────────────────── -->
+  <section>
+    <h2 class="font-heading text-xl text-ivory tracking-wide mb-1">Conversions</h2>
+    <p class="text-sand text-xs mb-4">
+      Define how a unit relates to another, e.g. 1 kg = 1000 g. Used to show cost-per-minor-unit on items.
+    </p>
+
+    <div class="bg-surface rounded-xl border border-elevated/60 p-4 mb-4">
+      <form th:action="@{/inventory/units/conversions/new}" method="post"
+            class="flex flex-wrap items-end gap-3">
+        <div>
+          <label for="fromUnitId" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">1 ×</label>
+          <select id="fromUnitId" name="fromUnitId" required
+                  class="bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                         transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+            <option value="">Unit…</option>
+            <option th:each="u : ${units}" th:value="${u.id}" th:text="${u.name}">unit</option>
+          </select>
+        </div>
+        <div>
+          <label for="factor" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Equals</label>
+          <input id="factor" name="factor" type="number" step="0.000001" min="0.000001" required
+                 class="w-28 bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                        placeholder-sand/40 outline-none border border-elevated
+                        focus:border-accent focus:shadow-neon-sm transition-all duration-200"
+                 placeholder="1000"/>
+        </div>
+        <div>
+          <label for="toUnitId" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">×</label>
+          <select id="toUnitId" name="toUnitId" required
+                  class="bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                         transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+            <option value="">Unit…</option>
+            <option th:each="u : ${units}" th:value="${u.id}" th:text="${u.name}">unit</option>
+          </select>
+        </div>
+        <button type="submit"
+                class="px-4 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200">
+          ADD
+        </button>
+      </form>
+      <p class="mt-2 text-sand/50 text-xs">e.g. From = kg, Equals = 1000, To = g means 1 kg = 1000 g</p>
+    </div>
+
+    <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+      <div th:if="${#lists.isEmpty(conversions)}" class="py-10 text-center text-sand text-sm">
+        No conversions yet. Add one above.
+      </div>
+      <table th:unless="${#lists.isEmpty(conversions)}" class="w-full text-left">
+        <thead>
+          <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+            <th class="px-4 py-3 font-medium">Conversion</th>
+            <th class="px-4 py-3 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="c : ${conversions}" class="border-b border-elevated/40 last:border-0 hover:bg-elevated/20 transition-colors">
+            <td class="px-4 py-3 text-ivory text-sm font-mono">
+              1 <span th:text="${c.fromUnit.name}"></span> =
+              <span th:text="${#numbers.formatDecimal(c.factor, 1, 6)}"></span>
+              <span th:text="${c.toUnit.name}"></span>
+            </td>
+            <td class="px-4 py-3">
+              <form th:action="@{/inventory/units/conversions/{id}/delete(id=${c.id})}" method="post"
+                    onsubmit="return bbConfirm(this, 'Delete this conversion?')">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-red-500/30 text-red-400
+                               hover:border-red-400/60 hover:bg-red-500/10 transition-colors">
+                  Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

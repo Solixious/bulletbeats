@@ -22,10 +22,9 @@ public interface GroceryItemRepository extends JpaRepository<GroceryItem, Long> 
     @Query("SELECT g FROM GroceryItem g WHERE g.isActive = true AND g.quantityInStock <= g.minThreshold")
     List<GroceryItem> findLowStockItems();
 
-    @Query("SELECT DISTINCT lower(g.unit) FROM GroceryItem g " +
-           "WHERE lower(g.unit) LIKE lower(:prefix) || '%' " +
-           "ORDER BY lower(g.unit)")
-    List<String> findDistinctUnitsByPrefix(@Param("prefix") String prefix);
+    @Query("SELECT CASE WHEN COUNT(g) > 0 THEN true ELSE false END FROM GroceryItem g " +
+           "WHERE lower(g.unit) = lower(:name) OR lower(g.packUnit) = lower(:name) OR lower(g.minorUnit) = lower(:name)")
+    boolean existsByAnyUnitField(@Param("name") String name);
 
     boolean existsByNameIgnoreCase(String name);
 

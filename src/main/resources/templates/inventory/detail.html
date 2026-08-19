@@ -83,7 +83,7 @@
         <div>
           <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Cost / <span th:text="${item.minorUnit ?: 'minor unit'}"></span></p>
           <p class="font-mono text-ivory text-sm"
-             th:text="${item.costPerMinorUnit != null} ? ('₹' + ${#numbers.formatDecimal(item.costPerMinorUnit, 1, 4)}) : '—'"></p>
+             th:text="${costPerMinorUnit != null} ? ('₹' + ${#numbers.formatDecimal(costPerMinorUnit, 1, 4)}) : '—'"></p>
         </div>
       </div>
 

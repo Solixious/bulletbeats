@@ -43,22 +43,21 @@
            class="mt-1.5 text-red-400 text-xs"></p>
       </div>
 
-      <!-- Unit with HTMX autocomplete -->
-      <div class="relative">
+      <!-- Unit -->
+      <div>
         <label for="unit" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Unit</label>
-        <input id="unit" type="text" th:field="*{unit}" required
-               hx-get="/inventory/units/suggest"
-               hx-trigger="keyup changed delay:300ms"
-               hx-target="#unit-suggestions"
-               hx-include="[name='unit']"
-               autocomplete="off"
-               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
-                      placeholder-sand/40 outline-none transition-all duration-200"
-               th:classappend="*{#fields.hasErrors('unit')}
-                               ? 'border border-red-500/70'
-                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
-               placeholder="e.g. litre"/>
-        <div id="unit-suggestions" class="relative"></div>
+        <select id="unit" th:field="*{unit}" required
+                class="w-full bg-elevated border rounded-lg px-4 py-2.5 text-ivory text-sm
+                       outline-none transition-all duration-200 cursor-pointer"
+                th:classappend="*{#fields.hasErrors('unit')}
+                                ? 'border-red-500/70'
+                                : 'border-elevated focus:border-accent focus:shadow-neon-sm'">
+          <option value="">Select a unit…</option>
+          <option th:each="u : ${units}" th:value="${u.name}" th:text="${u.name}">unit</option>
+        </select>
+        <p class="mt-1 text-sand/50 text-xs">
+          Don't see the unit you need? <a href="/inventory/units" class="text-accent hover:underline">Add it here</a>.
+        </p>
         <p th:if="*{#fields.hasErrors('unit')}" th:errors="*{unit}"
            class="mt-1.5 text-red-400 text-xs"></p>
       </div>
@@ -173,13 +172,15 @@
               <label for="packUnit" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
                 Unit of Quantity
               </label>
-              <input id="packUnit" type="text" th:field="*{packUnit}"
-                     class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
-                            placeholder-sand/40 outline-none transition-all duration-200"
-                     th:classappend="*{#fields.hasErrors('packUnit')}
-                                     ? 'border border-red-500/70'
-                                     : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
-                     placeholder="e.g. kg"/>
+              <select id="packUnit" th:field="*{packUnit}"
+                      class="w-full bg-elevated border rounded-lg px-4 py-2.5 text-ivory text-sm
+                             outline-none transition-all duration-200 cursor-pointer"
+                      th:classappend="*{#fields.hasErrors('packUnit')}
+                                      ? 'border-red-500/70'
+                                      : 'border-elevated focus:border-accent focus:shadow-neon-sm'">
+                <option value="">—</option>
+                <option th:each="u : ${units}" th:value="${u.name}" th:text="${u.name}">unit</option>
+              </select>
               <p th:if="*{#fields.hasErrors('packUnit')}" th:errors="*{packUnit}"
                  class="mt-1.5 text-red-400 text-xs"></p>
             </div>
@@ -189,14 +190,19 @@
               <label for="minorUnit" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
                 Minor Unit
               </label>
-              <input id="minorUnit" type="text" th:field="*{minorUnit}"
-                     class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
-                            placeholder-sand/40 outline-none transition-all duration-200"
-                     th:classappend="*{#fields.hasErrors('minorUnit')}
-                                     ? 'border border-red-500/70'
-                                     : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
-                     placeholder="e.g. gram"/>
-              <p class="mt-1 text-sand/50 text-xs">e.g. gram for kg, ml for litre</p>
+              <select id="minorUnit" th:field="*{minorUnit}"
+                      class="w-full bg-elevated border rounded-lg px-4 py-2.5 text-ivory text-sm
+                             outline-none transition-all duration-200 cursor-pointer"
+                      th:classappend="*{#fields.hasErrors('minorUnit')}
+                                      ? 'border-red-500/70'
+                                      : 'border-elevated focus:border-accent focus:shadow-neon-sm'">
+                <option value="">—</option>
+                <option th:each="u : ${units}" th:value="${u.name}" th:text="${u.name}">unit</option>
+              </select>
+              <p class="mt-1 text-sand/50 text-xs">
+                e.g. gram for kg. Needs a matching
+                <a href="/inventory/units" class="text-accent hover:underline">conversion</a> to show cost/minor unit.
+              </p>
               <p th:if="*{#fields.hasErrors('minorUnit')}" th:errors="*{minorUnit}"
                  class="mt-1.5 text-red-400 text-xs"></p>
             </div>
@@ -219,21 +225,6 @@
 
     </form>
   </div>
-
-  <script>
-    (function () {
-      function dismissSuggestions(target) {
-        var input = document.getElementById('unit');
-        var box   = document.getElementById('unit-suggestions');
-        if (!box) return;
-        if (input && input.contains(target)) return;
-        if (box.contains(target)) return;
-        box.innerHTML = '';
-      }
-      document.addEventListener('click',      function (e) { dismissSuggestions(e.target); });
-      document.addEventListener('touchstart', function (e) { dismissSuggestions(e.target); }, { passive: true });
-    })();
-  </script>
 
 </main>
 </body>
