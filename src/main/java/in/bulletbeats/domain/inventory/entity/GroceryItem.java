@@ -1,10 +1,12 @@
 package in.bulletbeats.domain.inventory.entity;
 
+import in.bulletbeats.domain.inventory.util.UnitConversions;
 import in.bulletbeats.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Entity
 @Table(name = "grocery_items")
@@ -34,6 +36,21 @@ public class GroceryItem extends BaseEntity {
     @JoinColumn(name = "default_supplier_id")
     private Supplier defaultSupplier;
 
+    @Column(length = 100)
+    private String brand;
+
+    @Column(name = "pack_cost", precision = 12, scale = 2)
+    private BigDecimal packCost;
+
+    @Column(name = "pack_quantity", precision = 12, scale = 3)
+    private BigDecimal packQuantity;
+
+    @Column(name = "pack_unit", length = 30)
+    private String packUnit;
+
+    @Column(name = "minor_unit", length = 30)
+    private String minorUnit;
+
     @Column(nullable = false)
     private boolean isActive;
 
@@ -46,5 +63,26 @@ public class GroceryItem extends BaseEntity {
     public boolean isLowStock() {
         return quantityInStock != null && minThreshold != null
                 && quantityInStock.compareTo(minThreshold) <= 0;
+    }
+
+    /** Cost per pack unit (e.g. per kg), derived live from packCost/packQuantity. Null if not set. */
+    public BigDecimal getCostPerUnit() {
+        if (packCost == null || packQuantity == null || packQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+        return packCost.divide(packQuantity, 4, RoundingMode.HALF_UP);
+    }
+
+    /** Cost per minor unit (e.g. per gram), derived live. Null if not computable from packUnit/minorUnit. */
+    public BigDecimal getCostPerMinorUnit() {
+        BigDecimal costPerUnit = getCostPerUnit();
+        if (costPerUnit == null || minorUnit == null || minorUnit.isBlank()) {
+            return null;
+        }
+        BigDecimal factor = UnitConversions.factor(packUnit, minorUnit);
+        if (factor == null || factor.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+        return costPerUnit.divide(factor, 4, RoundingMode.HALF_UP);
     }
 }

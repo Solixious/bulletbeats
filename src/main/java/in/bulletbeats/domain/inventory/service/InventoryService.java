@@ -16,7 +16,10 @@ import in.bulletbeats.domain.shared.enums.MovementType;
 import in.bulletbeats.domain.shared.enums.PurchaseOrderStatus;
 import in.bulletbeats.domain.shared.enums.ReplenishmentStatus;
 import in.bulletbeats.domain.shared.exception.DuplicateGroceryItemException;
+import in.bulletbeats.domain.shared.exception.GroceryItemInUseException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
+import in.bulletbeats.domain.menu.repository.ComboRepository;
+import in.bulletbeats.domain.menu.repository.DishRepository;
 import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +48,8 @@ public class InventoryService {
     private final ReplenishmentRequestRepository replenishmentRequestRepository;
     private final SupplierRepository supplierRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
+    private final DishRepository dishRepository;
+    private final ComboRepository comboRepository;
 
     @Lazy
     @Autowired
@@ -93,6 +98,11 @@ public class InventoryService {
                 .minThreshold(dto.getMinThreshold())
                 .reorderQuantity(dto.getReorderQuantity())
                 .defaultSupplier(supplier)
+                .brand(blankToNull(dto.getBrand()))
+                .packCost(dto.getPackCost())
+                .packQuantity(dto.getPackQuantity())
+                .packUnit(lowerBlankToNull(dto.getPackUnit()))
+                .minorUnit(lowerBlankToNull(dto.getMinorUnit()))
                 .isActive(true)
                 .tenantId(1L)
                 .build();
@@ -116,6 +126,11 @@ public class InventoryService {
         item.setMinThreshold(dto.getMinThreshold());
         item.setReorderQuantity(dto.getReorderQuantity());
         item.setDefaultSupplier(supplier);
+        item.setBrand(blankToNull(dto.getBrand()));
+        item.setPackCost(dto.getPackCost());
+        item.setPackQuantity(dto.getPackQuantity());
+        item.setPackUnit(lowerBlankToNull(dto.getPackUnit()));
+        item.setMinorUnit(lowerBlankToNull(dto.getMinorUnit()));
         GroceryItem saved = groceryItemRepository.save(item);
         if (saved.isLowStock()) {
             createReplenishmentRequestIfNeeded(saved);
@@ -257,6 +272,27 @@ public class InventoryService {
                 .tenantId(1L)
                 .build();
         replenishmentRequestRepository.save(request);
+    }
+
+    @Transactional
+    public void deleteItem(Long id) {
+        GroceryItem item = getItemById(id);
+        if (stockMovementRepository.existsByGroceryItemId(id)
+                || replenishmentRequestRepository.existsByGroceryItemId(id)
+                || purchaseOrderRepository.existsPurchaseOrderItemForGroceryItem(id)
+                || dishRepository.existsByIngredientsGroceryItemId(id)
+                || comboRepository.existsByIngredientsGroceryItemId(id)) {
+            throw new GroceryItemInUseException(item.getName());
+        }
+        groceryItemRepository.delete(item);
+    }
+
+    private String blankToNull(String value) {
+        return (value == null || value.isBlank()) ? null : value.trim();
+    }
+
+    private String lowerBlankToNull(String value) {
+        return (value == null || value.isBlank()) ? null : value.trim().toLowerCase();
     }
 
     private Supplier resolveSupplier(Long supplierId) {

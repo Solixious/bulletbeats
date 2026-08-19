@@ -39,4 +39,8 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
            "WHERE p.orderedAt >= :start AND p.orderedAt < :end AND p.totalAmount IS NOT NULL")
     BigDecimal sumSpendForRange(@Param("start") LocalDateTime start,
                                 @Param("end") LocalDateTime end);
+
+    @Query("SELECT CASE WHEN COUNT(poi) > 0 THEN true ELSE false END FROM PurchaseOrderItem poi " +
+           "WHERE poi.groceryItem.id = :groceryItemId")
+    boolean existsPurchaseOrderItemForGroceryItem(@Param("groceryItemId") Long groceryItemId);
 }

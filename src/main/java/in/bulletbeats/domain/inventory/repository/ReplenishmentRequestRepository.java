@@ -26,4 +26,6 @@ public interface ReplenishmentRequestRepository extends JpaRepository<Replenishm
     List<ReplenishmentRequest> findByGroceryItemIdOrderByCreatedAtDesc(Long groceryItemId);
 
     long countByStatus(ReplenishmentStatus status);
+
+    boolean existsByGroceryItemId(Long groceryItemId);
 }

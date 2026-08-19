@@ -7,6 +7,7 @@ import in.bulletbeats.domain.inventory.entity.GroceryItem;
 import in.bulletbeats.domain.inventory.service.InventoryService;
 import in.bulletbeats.domain.inventory.service.SupplierService;
 import in.bulletbeats.domain.shared.enums.MovementType;
+import in.bulletbeats.domain.shared.exception.GroceryItemInUseException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.user.entity.User;
 import in.bulletbeats.domain.user.service.UserService;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/inventory")
@@ -83,6 +85,11 @@ public class InventoryController {
         dto.setMinThreshold(item.getMinThreshold());
         dto.setReorderQuantity(item.getReorderQuantity());
         if (item.getDefaultSupplier() != null) dto.setSupplierId(item.getDefaultSupplier().getId());
+        dto.setBrand(item.getBrand());
+        dto.setPackCost(item.getPackCost());
+        dto.setPackQuantity(item.getPackQuantity());
+        dto.setPackUnit(item.getPackUnit());
+        dto.setMinorUnit(item.getMinorUnit());
         model.addAttribute("item", item);
         model.addAttribute("dto", dto);
         model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
@@ -103,6 +110,18 @@ public class InventoryController {
         }
         inventoryService.updateItem(id, dto);
         return "redirect:/inventory/" + id + "?updated";
+    }
+
+    @PostMapping("/{id}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String delete(@PathVariable Long id, RedirectAttributes ra) {
+        try {
+            inventoryService.deleteItem(id);
+            return "redirect:/inventory?deleted";
+        } catch (GroceryItemInUseException e) {
+            ra.addFlashAttribute("deleteError", e.getMessage());
+            return "redirect:/inventory";
+        }
     }
 
     @GetMapping("/units/suggest")

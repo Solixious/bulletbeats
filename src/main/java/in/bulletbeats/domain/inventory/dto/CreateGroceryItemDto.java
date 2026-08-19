@@ -28,4 +28,19 @@ public class CreateGroceryItemDto {
     private BigDecimal reorderQuantity;
 
     private Long supplierId;
+
+    @Size(max = 100)
+    private String brand;
+
+    @DecimalMin("0.0")
+    private BigDecimal packCost;
+
+    @DecimalMin("0.001")
+    private BigDecimal packQuantity;
+
+    @Size(max = 30)
+    private String packUnit;
+
+    @Size(max = 30)
+    private String minorUnit;
 }
