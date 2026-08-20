@@ -71,4 +71,9 @@ public class GroceryItem extends BaseEntity {
         }
         return packCost.divide(packQuantity, 4, RoundingMode.HALF_UP);
     }
+
+    /** Unit that dish/combo recipe quantities are expressed in: the minor unit if configured, else the stock unit. */
+    public String getRecipeUnit() {
+        return minorUnit != null ? minorUnit : unit;
+    }
 }

@@ -134,18 +134,18 @@
           </thead>
           <tbody>
             <tr th:each="ing : ${ingredients}"
+                th:with="sufficient=${ing.groceryItem.quantityInStock.compareTo(requiredInStock.get(ing.id)) >= 0}"
                 class="border-b border-elevated/40 last:border-0 text-sm">
               <td class="px-5 py-2.5 text-ivory" th:text="${ing.groceryItem.name}"></td>
               <td class="px-5 py-2.5 text-sand text-right"
-                  th:text="${ing.quantityRequired} + ' ' + ${ing.groceryItem.unit}"></td>
+                  th:text="${ing.quantityRequired} + ' ' + ${ing.groceryItem.recipeUnit}"></td>
               <td class="px-5 py-2.5 text-right"
-                  th:classappend="${ing.groceryItem.quantityInStock.compareTo(ing.quantityRequired) >= 0}
-                                  ? 'text-emerald-400' : 'text-red-400'"
+                  th:classappend="${sufficient} ? 'text-emerald-400' : 'text-red-400'"
                   th:text="${ing.groceryItem.quantityInStock} + ' ' + ${ing.groceryItem.unit}"></td>
               <td class="px-5 py-2.5 text-right">
-                <span th:if="${ing.groceryItem.quantityInStock.compareTo(ing.quantityRequired) >= 0}"
+                <span th:if="${sufficient}"
                       class="text-xs text-emerald-400">✓</span>
-                <span th:unless="${ing.groceryItem.quantityInStock.compareTo(ing.quantityRequired) >= 0}"
+                <span th:unless="${sufficient}"
                       class="text-xs text-red-400">✗ Low</span>
               </td>
             </tr>

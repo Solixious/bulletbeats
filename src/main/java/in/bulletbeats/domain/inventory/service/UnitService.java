@@ -2,12 +2,14 @@ package in.bulletbeats.domain.inventory.service;
 
 import in.bulletbeats.domain.inventory.dto.UnitConversionDto;
 import in.bulletbeats.domain.inventory.dto.UnitDto;
+import in.bulletbeats.domain.inventory.entity.GroceryItem;
 import in.bulletbeats.domain.inventory.entity.Unit;
 import in.bulletbeats.domain.inventory.entity.UnitConversion;
 import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
 import in.bulletbeats.domain.inventory.repository.UnitConversionRepository;
 import in.bulletbeats.domain.inventory.repository.UnitRepository;
 import in.bulletbeats.domain.shared.exception.DuplicateUnitConversionException;
+import in.bulletbeats.domain.shared.exception.MissingUnitConversionException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import in.bulletbeats.domain.shared.exception.UnitAlreadyExistsException;
 import in.bulletbeats.domain.shared.exception.UnitInUseException;
@@ -105,5 +107,29 @@ public class UnitService {
                 .or(() -> unitConversionRepository.findByUnitNames(toUnitName, fromUnitName)
                         .map(uc -> BigDecimal.ONE.divide(uc.getFactor(), 8, RoundingMode.HALF_UP)))
                 .orElse(null);
+    }
+
+    /**
+     * Converts a quantity from fromUnitName to toUnitName.
+     * Throws MissingUnitConversionException if no conversion path is defined for the pair.
+     */
+    public BigDecimal convert(BigDecimal quantity, String fromUnitName, String toUnitName) {
+        BigDecimal factor = conversionFactor(fromUnitName, toUnitName);
+        if (factor == null) {
+            throw new MissingUnitConversionException(fromUnitName, toUnitName);
+        }
+        return quantity.multiply(factor);
+    }
+
+    /**
+     * Converts a recipe quantity (expressed in the grocery item's recipe/minor unit) into its stock unit.
+     * No-op if the recipe unit and stock unit are the same.
+     */
+    public BigDecimal toStockUnit(GroceryItem item, BigDecimal recipeQuantity) {
+        String recipeUnit = item.getRecipeUnit();
+        if (recipeUnit.equalsIgnoreCase(item.getUnit())) {
+            return recipeQuantity;
+        }
+        return convert(recipeQuantity, recipeUnit, item.getUnit());
     }
 }

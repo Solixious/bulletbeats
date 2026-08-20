@@ -1,10 +1,12 @@
 package in.bulletbeats.domain.menu;
 
 import in.bulletbeats.domain.inventory.service.InventoryService;
+import in.bulletbeats.domain.inventory.service.UnitService;
 import in.bulletbeats.domain.menu.dto.ComboIngredientDto;
 import in.bulletbeats.domain.menu.dto.CreateComboDto;
 import in.bulletbeats.domain.menu.dto.UpdateComboDto;
 import in.bulletbeats.domain.menu.entity.Combo;
+import in.bulletbeats.domain.menu.entity.ComboIngredient;
 import in.bulletbeats.domain.menu.service.ComboService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,8 +16,11 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin/combos")
@@ -25,6 +30,7 @@ public class ComboController {
 
     private final ComboService comboService;
     private final InventoryService inventoryService;
+    private final UnitService unitService;
 
     @GetMapping
     public String list(Model model) {
@@ -56,8 +62,18 @@ public class ComboController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        model.addAttribute("combo", comboService.getById(id));
+        Combo combo = comboService.getById(id);
+        model.addAttribute("combo", combo);
+        model.addAttribute("requiredInStock", requiredInStock(combo.getIngredients()));
         return "menu/combos/detail";
+    }
+
+    private Map<Long, BigDecimal> requiredInStock(List<ComboIngredient> ingredients) {
+        Map<Long, BigDecimal> result = new HashMap<>();
+        for (ComboIngredient ing : ingredients) {
+            result.put(ing.getId(), unitService.toStockUnit(ing.getGroceryItem(), ing.getQuantityRequired()));
+        }
+        return result;
     }
 
     @GetMapping("/{id}/edit")

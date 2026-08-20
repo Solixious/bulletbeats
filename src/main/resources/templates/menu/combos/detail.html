@@ -69,11 +69,11 @@
               <td colspan="4" class="px-4 py-4 text-sand text-center">No ingredients defined.</td>
             </tr>
             <tr th:each="ing : ${combo.ingredients}"
-                th:with="sufficient=${ing.groceryItem.quantityInStock.compareTo(ing.quantityRequired) >= 0}"
+                th:with="sufficient=${ing.groceryItem.quantityInStock.compareTo(requiredInStock.get(ing.id)) >= 0}"
                 class="border-b border-elevated/30 last:border-0">
               <td class="px-4 py-2.5 text-ivory" th:text="${ing.groceryItem.name}"></td>
               <td class="px-4 py-2.5 font-mono text-sand"
-                  th:text="${#numbers.formatDecimal(ing.quantityRequired,1,3)} + ' ' + ${ing.groceryItem.unit}"></td>
+                  th:text="${#numbers.formatDecimal(ing.quantityRequired,1,3)} + ' ' + ${ing.groceryItem.recipeUnit}"></td>
               <td class="px-4 py-2.5 font-mono"
                   th:classappend="${sufficient} ? 'text-emerald-400' : 'text-red-400'"
                   th:text="${#numbers.formatDecimal(ing.groceryItem.quantityInStock,1,3)} + ' ' + ${ing.groceryItem.unit}"></td>

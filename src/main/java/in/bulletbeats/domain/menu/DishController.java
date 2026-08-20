@@ -4,8 +4,10 @@ import in.bulletbeats.domain.menu.dto.CreateDishDto;
 import in.bulletbeats.domain.menu.dto.DishIngredientDto;
 import in.bulletbeats.domain.menu.dto.UpdateDishDto;
 import in.bulletbeats.domain.menu.entity.Dish;
+import in.bulletbeats.domain.menu.entity.DishIngredient;
 import in.bulletbeats.domain.menu.service.DishService;
 import in.bulletbeats.domain.inventory.service.InventoryService;
+import in.bulletbeats.domain.inventory.service.UnitService;
 import in.bulletbeats.domain.shared.exception.DishInUseException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -16,8 +18,11 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin/dishes")
@@ -27,6 +32,7 @@ public class DishController {
 
     private final DishService dishService;
     private final InventoryService inventoryService;
+    private final UnitService unitService;
 
     @GetMapping
     public String list(Model model) {
@@ -59,8 +65,18 @@ public class DishController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        model.addAttribute("dish", dishService.getById(id));
+        Dish dish = dishService.getById(id);
+        model.addAttribute("dish", dish);
+        model.addAttribute("requiredInStock", requiredInStock(dish.getIngredients()));
         return "menu/dishes/detail";
+    }
+
+    private Map<Long, BigDecimal> requiredInStock(List<DishIngredient> ingredients) {
+        Map<Long, BigDecimal> result = new HashMap<>();
+        for (DishIngredient ing : ingredients) {
+            result.put(ing.getId(), unitService.toStockUnit(ing.getGroceryItem(), ing.getQuantityRequired()));
+        }
+        return result;
     }
 
     @GetMapping("/{id}/edit")

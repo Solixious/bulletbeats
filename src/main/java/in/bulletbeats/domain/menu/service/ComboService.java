@@ -2,6 +2,7 @@ package in.bulletbeats.domain.menu.service;
 
 import in.bulletbeats.domain.inventory.entity.GroceryItem;
 import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
+import in.bulletbeats.domain.inventory.service.UnitService;
 import in.bulletbeats.domain.menu.dto.ComboIngredientDto;
 import in.bulletbeats.domain.menu.dto.CreateComboDto;
 import in.bulletbeats.domain.menu.dto.UpdateComboDto;
@@ -11,6 +12,7 @@ import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.repository.ComboRepository;
 import in.bulletbeats.domain.menu.repository.MenuItemRepository;
 import in.bulletbeats.domain.shared.exception.ComboInUseException;
+import in.bulletbeats.domain.shared.exception.MissingUnitConversionException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class ComboService {
     private final ComboRepository comboRepository;
     private final GroceryItemRepository groceryItemRepository;
     private final MenuItemRepository menuItemRepository;
+    private final UnitService unitService;
 
     public List<Combo> getAll() {
         return comboRepository.findByIsActiveTrueOrderByNameAsc();
@@ -80,6 +83,11 @@ public class ComboService {
         GroceryItem groceryItem = groceryItemRepository.findById(dto.getGroceryItemId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Grocery item not found with id: " + dto.getGroceryItemId()));
+        String recipeUnit = groceryItem.getRecipeUnit();
+        if (!recipeUnit.equalsIgnoreCase(groceryItem.getUnit())
+                && unitService.conversionFactor(recipeUnit, groceryItem.getUnit()) == null) {
+            throw new MissingUnitConversionException(recipeUnit, groceryItem.getUnit());
+        }
         return ComboIngredient.builder()
                 .combo(combo)
                 .groceryItem(groceryItem)

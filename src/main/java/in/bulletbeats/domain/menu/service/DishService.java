@@ -2,6 +2,7 @@ package in.bulletbeats.domain.menu.service;
 
 import in.bulletbeats.domain.inventory.entity.GroceryItem;
 import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
+import in.bulletbeats.domain.inventory.service.UnitService;
 import in.bulletbeats.domain.menu.dto.CreateDishDto;
 import in.bulletbeats.domain.menu.dto.DishIngredientDto;
 import in.bulletbeats.domain.menu.dto.UpdateDishDto;
@@ -11,6 +12,7 @@ import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.repository.DishRepository;
 import in.bulletbeats.domain.menu.repository.MenuItemRepository;
 import in.bulletbeats.domain.shared.exception.DishInUseException;
+import in.bulletbeats.domain.shared.exception.MissingUnitConversionException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -28,6 +30,7 @@ public class DishService {
     private final DishRepository dishRepository;
     private final GroceryItemRepository groceryItemRepository;
     private final MenuItemRepository menuItemRepository;
+    private final UnitService unitService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -115,6 +118,11 @@ public class DishService {
         GroceryItem groceryItem = groceryItemRepository.findById(dto.getGroceryItemId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Grocery item not found with id: " + dto.getGroceryItemId()));
+        String recipeUnit = groceryItem.getRecipeUnit();
+        if (!recipeUnit.equalsIgnoreCase(groceryItem.getUnit())
+                && unitService.conversionFactor(recipeUnit, groceryItem.getUnit()) == null) {
+            throw new MissingUnitConversionException(recipeUnit, groceryItem.getUnit());
+        }
         return DishIngredient.builder()
                 .dish(dish)
                 .groceryItem(groceryItem)

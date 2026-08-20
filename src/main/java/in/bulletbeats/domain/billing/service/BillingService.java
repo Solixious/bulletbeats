@@ -24,6 +24,7 @@ import in.bulletbeats.domain.crm.service.LoyaltyService;
 import in.bulletbeats.domain.inventory.entity.GroceryItem;
 import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
 import in.bulletbeats.domain.inventory.service.InventoryService;
+import in.bulletbeats.domain.inventory.service.UnitService;
 import in.bulletbeats.domain.menu.dto.CategoryNode;
 import in.bulletbeats.domain.menu.entity.ComboIngredient;
 import in.bulletbeats.domain.menu.entity.DishIngredient;
@@ -95,6 +96,7 @@ public class BillingService {
     private final MenuService menuService;
     private final CategoryService categoryService;
     private final InventoryService inventoryService;
+    private final UnitService unitService;
     private final GroceryItemRepository groceryItemRepository;
     private final AppConfigService appConfigService;
     private final ActivityLogService activityLogService;
@@ -900,19 +902,25 @@ public class BillingService {
             MenuItem menuItem = billItem.getMenuItem();
             if (menuItem.getDish() != null) {
                 for (DishIngredient ing : menuItem.getDish().getIngredients()) {
-                    BigDecimal qty = ing.getQuantityRequired()
+                    GroceryItem item = ing.getGroceryItem();
+                    BigDecimal qty = toStockQuantity(item, ing.getQuantityRequired())
                             .multiply(BigDecimal.valueOf(billItem.getQuantity()));
-                    required.merge(ing.getGroceryItem().getId(), qty, BigDecimal::add);
+                    required.merge(item.getId(), qty, BigDecimal::add);
                 }
             } else if (menuItem.getCombo() != null) {
                 for (ComboIngredient ing : menuItem.getCombo().getIngredients()) {
-                    BigDecimal qty = ing.getQuantityRequired()
+                    GroceryItem item = ing.getGroceryItem();
+                    BigDecimal qty = toStockQuantity(item, ing.getQuantityRequired())
                             .multiply(BigDecimal.valueOf(billItem.getQuantity()));
-                    required.merge(ing.getGroceryItem().getId(), qty, BigDecimal::add);
+                    required.merge(item.getId(), qty, BigDecimal::add);
                 }
             }
         }
         return required;
+    }
+
+    private BigDecimal toStockQuantity(GroceryItem item, BigDecimal recipeQuantity) {
+        return unitService.toStockUnit(item, recipeQuantity).setScale(3, RoundingMode.HALF_UP);
     }
 
     private void validateStock(Map<Long, BigDecimal> required) {

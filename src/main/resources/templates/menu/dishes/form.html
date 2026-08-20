@@ -108,7 +108,7 @@
         <div class="bg-elevated/40 rounded-lg overflow-hidden border border-elevated/60 mb-3">
           <div class="grid grid-cols-[1fr_160px_36px] gap-0 px-3 py-2 border-b border-elevated/60">
             <span class="text-sand text-xs uppercase tracking-widest">Item</span>
-            <span class="text-sand text-xs uppercase tracking-widest">Quantity</span>
+            <span class="text-sand text-xs uppercase tracking-widest">Qty (minor unit)</span>
             <span></span>
           </div>
           <div id="ingredients-list">
@@ -121,7 +121,7 @@
                 <option value="">Select item…</option>
                 <option th:each="gi : ${groceryItems}"
                         th:value="${gi.id}"
-                        th:text="${gi.name + ' (' + gi.unit + ')'}"
+                        th:text="${gi.name + ' (' + (gi.minorUnit ?: gi.unit) + ')'}"
                         th:selected="${gi.id == ing.groceryItemId}">Item</option>
               </select>
               <input type="number" step="0.001" min="0.001" required

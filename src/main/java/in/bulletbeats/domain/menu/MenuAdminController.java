@@ -142,6 +142,7 @@ public class MenuAdminController {
     public String detail(@PathVariable Long id, Model model) {
         model.addAttribute("item", menuService.getItemById(id));
         model.addAttribute("ingredients", menuService.getIngredients(id));
+        model.addAttribute("requiredInStock", menuService.getRequiredInStock(id));
         model.addAttribute("priceHistory", menuService.getPriceHistory(id));
         model.addAttribute("availabilityLog", menuService.getAvailabilityLog(id));
         model.addAttribute("usernameMap", userService.getUsernameMap());
