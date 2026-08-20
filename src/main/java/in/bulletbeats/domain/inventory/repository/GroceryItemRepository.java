@@ -19,7 +19,7 @@ public interface GroceryItemRepository extends JpaRepository<GroceryItem, Long> 
     @Query("SELECT g FROM GroceryItem g LEFT JOIN FETCH g.defaultSupplier WHERE g.id = :id")
     Optional<GroceryItem> findByIdWithSupplier(@Param("id") Long id);
 
-    @Query("SELECT g FROM GroceryItem g WHERE g.isActive = true AND g.quantityInStock <= g.minThreshold")
+    @Query("SELECT g FROM GroceryItem g WHERE g.isActive = true AND g.quantityInStock < g.minThreshold")
     List<GroceryItem> findLowStockItems();
 
     @Query("SELECT CASE WHEN COUNT(g) > 0 THEN true ELSE false END FROM GroceryItem g " +
