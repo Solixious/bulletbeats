@@ -61,7 +61,7 @@ public class GroceryItem extends BaseEntity {
 
     public boolean isLowStock() {
         return quantityInStock != null && minThreshold != null
-                && quantityInStock.compareTo(minThreshold) <= 0;
+                && quantityInStock.compareTo(minThreshold) < 0;
     }
 
     /** Cost per pack unit (e.g. per kg), derived live from packCost/packQuantity. Null if not set. */
