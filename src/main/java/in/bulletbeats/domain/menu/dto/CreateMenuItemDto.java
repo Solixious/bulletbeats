@@ -8,6 +8,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Data
 public class CreateMenuItemDto {
@@ -33,6 +35,9 @@ public class CreateMenuItemDto {
     private String quantityLabel;
 
     private int displayOrder;
+
+    /** Optional per-platform price override, keyed by online platform id; blank/absent means "use base price". */
+    private Map<Long, String> platformPrices = new LinkedHashMap<>();
 
     @AssertTrue(message = "Exactly one of dish or combo must be selected")
     public boolean isDishOrComboSelected() {

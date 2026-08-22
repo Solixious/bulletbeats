@@ -121,7 +121,7 @@
               <!-- Online Order -->
               <span th:if="${b.orderType != null and b.orderType.name() == 'ONLINE_ORDER'}"
                     class="px-2 py-0.5 text-xs border rounded-full text-orange-400 border-orange-400/40 bg-orange-400/10"
-                    th:text="${b.onlineOrderPlatform != null ? b.onlineOrderPlatform.displayName : 'Online'}">
+                    th:text="${b.onlinePlatform != null ? b.onlinePlatform.name : 'Online'}">
               </span>
               <!-- Direct Delivery -->
               <span th:if="${b.orderType != null and b.orderType.name() == 'DIRECT_DELIVERY'}"

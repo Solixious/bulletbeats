@@ -6,6 +6,8 @@ import in.bulletbeats.domain.menu.dto.CreateMenuItemDto;
 import in.bulletbeats.domain.menu.dto.UpdateMenuItemDto;
 import in.bulletbeats.domain.menu.entity.*;
 import in.bulletbeats.domain.menu.repository.*;
+import in.bulletbeats.domain.platform.entity.OnlinePlatform;
+import in.bulletbeats.domain.platform.service.OnlinePlatformService;
 import in.bulletbeats.domain.shared.exception.InvalidMenuItemException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,8 @@ public class MenuService {
     private final ImageStorageService imageStorageService;
     private final CategoryService categoryService;
     private final UnitService unitService;
+    private final MenuItemPlatformPriceRepository menuItemPlatformPriceRepository;
+    private final OnlinePlatformService onlinePlatformService;
 
     public List<MenuItem> getAllItems() {
         return menuItemRepository.findByIsActiveTrueOrderByCategoryDisplayOrderAscDisplayOrderAscNameAsc();
@@ -174,7 +178,9 @@ public class MenuService {
                 .isActive(true)
                 .tenantId(1L)
                 .build();
-        return menuItemRepository.save(item);
+        MenuItem saved = menuItemRepository.save(item);
+        syncPlatformPrices(saved, dto.getPlatformPrices());
+        return saved;
     }
 
     @Transactional
@@ -213,7 +219,72 @@ public class MenuService {
         item.setPrice(dto.getPrice());
         item.setQuantityLabel(dto.getQuantityLabel());
         item.setDisplayOrder(dto.getDisplayOrder());
-        return menuItemRepository.save(item);
+        MenuItem saved = menuItemRepository.save(item);
+        syncPlatformPrices(saved, dto.getPlatformPrices());
+        return saved;
+    }
+
+    /**
+     * Resolves the price to charge for {@code item} when sold via {@code platform}: the
+     * platform-specific override if one is configured, otherwise the base menu price.
+     * {@code platform} may be null (non-online-order bills), in which case the base price
+     * is always used.
+     */
+    public BigDecimal resolvePrice(MenuItem item, OnlinePlatform platform) {
+        if (platform == null) {
+            return item.getPrice();
+        }
+        return menuItemPlatformPriceRepository.findByMenuItemIdAndPlatformId(item.getId(), platform.getId())
+                .map(MenuItemPlatformPrice::getPrice)
+                .orElse(item.getPrice());
+    }
+
+    public Map<Long, String> getPlatformPricesAsStrings(Long menuItemId) {
+        return menuItemPlatformPriceRepository.findByMenuItemId(menuItemId).stream()
+                .collect(Collectors.toMap(
+                        p -> p.getPlatform().getId(),
+                        p -> p.getPrice().toPlainString()));
+    }
+
+    private void syncPlatformPrices(MenuItem item, Map<Long, String> rawPrices) {
+        if (rawPrices == null) {
+            return;
+        }
+        for (Map.Entry<Long, String> entry : rawPrices.entrySet()) {
+            Long platformId = entry.getKey();
+            String raw = entry.getValue() == null ? null : entry.getValue().trim();
+            Optional<MenuItemPlatformPrice> existing =
+                    menuItemPlatformPriceRepository.findByMenuItemIdAndPlatformId(item.getId(), platformId);
+
+            if (raw == null || raw.isEmpty()) {
+                existing.ifPresent(menuItemPlatformPriceRepository::delete);
+                continue;
+            }
+
+            BigDecimal price;
+            try {
+                price = new BigDecimal(raw);
+            } catch (NumberFormatException e) {
+                continue;
+            }
+
+            if (existing.isPresent()) {
+                existing.get().setPrice(price);
+                menuItemPlatformPriceRepository.save(existing.get());
+            } else {
+                OnlinePlatform platform;
+                try {
+                    platform = onlinePlatformService.getById(platformId);
+                } catch (ResourceNotFoundException e) {
+                    continue;
+                }
+                menuItemPlatformPriceRepository.save(MenuItemPlatformPrice.builder()
+                        .menuItem(item)
+                        .platform(platform)
+                        .price(price)
+                        .build());
+            }
+        }
     }
 
     private void applyDescription(Dish dish, Combo combo, String description) {

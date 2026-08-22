@@ -5,8 +5,8 @@ import in.bulletbeats.domain.offers.entity.Offer;
 import in.bulletbeats.domain.offers.entity.OfferCode;
 import in.bulletbeats.domain.shared.BaseEntity;
 import in.bulletbeats.domain.shared.enums.BillStatus;
+import in.bulletbeats.domain.platform.entity.OnlinePlatform;
 import in.bulletbeats.domain.shared.enums.DiscountType;
-import in.bulletbeats.domain.shared.enums.OnlineOrderPlatform;
 import in.bulletbeats.domain.shared.enums.OrderType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,9 +33,9 @@ public class Bill extends BaseEntity {
     @Builder.Default
     private OrderType orderType = OrderType.DINE_IN;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private OnlineOrderPlatform onlineOrderPlatform;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "online_platform_id")
+    private OnlinePlatform onlinePlatform;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cafe_table_id")

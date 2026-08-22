@@ -39,6 +39,7 @@ import in.bulletbeats.domain.offers.repository.OfferRedemptionRepository;
 import in.bulletbeats.domain.offers.repository.OfferRepository;
 import in.bulletbeats.domain.offers.service.OfferEligibilityService;
 import in.bulletbeats.domain.offers.service.OfferPricingService;
+import in.bulletbeats.domain.platform.service.OnlinePlatformService;
 import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.DiscountType;
@@ -107,6 +108,7 @@ public class BillingService {
     private final OfferRedemptionRepository offerRedemptionRepository;
     private final OfferEligibilityService offerEligibilityService;
     private final OfferPricingService offerPricingService;
+    private final OnlinePlatformService onlinePlatformService;
 
     public List<Bill> getActiveBills() {
         return billRepository.findActiveBills(TERMINAL);
@@ -231,8 +233,8 @@ public class BillingService {
                 .cafeTable(table)
                 .customer(customer);
 
-        if (orderType == OrderType.ONLINE_ORDER && dto.getOnlineOrderPlatform() != null) {
-            builder.onlineOrderPlatform(dto.getOnlineOrderPlatform());
+        if (orderType == OrderType.ONLINE_ORDER && dto.getOnlinePlatformId() != null) {
+            builder.onlinePlatform(onlinePlatformService.getById(dto.getOnlinePlatformId()));
         }
 
         Bill bill = builder.build();
@@ -275,13 +277,14 @@ public class BillingService {
             item.setQuantity(item.getQuantity() + dto.getQuantity());
             item.recalculate();
         } else {
+            BigDecimal unitPrice = menuService.resolvePrice(menuItem, bill.getOnlinePlatform());
             BillItem newItem = BillItem.builder()
                     .bill(bill)
                     .menuItem(menuItem)
                     .itemName(menuItem.getName())
-                    .unitPrice(menuItem.getPrice())
+                    .unitPrice(unitPrice)
                     .quantity(dto.getQuantity())
-                    .lineTotal(menuItem.getPrice().multiply(BigDecimal.valueOf(dto.getQuantity())))
+                    .lineTotal(unitPrice.multiply(BigDecimal.valueOf(dto.getQuantity())))
                     .build();
             bill.getItems().add(newItem);
         }

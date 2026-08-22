@@ -9,6 +9,7 @@ import in.bulletbeats.domain.menu.service.CategoryService;
 import in.bulletbeats.domain.menu.service.ComboService;
 import in.bulletbeats.domain.menu.service.DishService;
 import in.bulletbeats.domain.menu.service.MenuService;
+import in.bulletbeats.domain.platform.service.OnlinePlatformService;
 import in.bulletbeats.domain.shared.exception.ImageStorageException;
 import in.bulletbeats.domain.user.entity.User;
 import in.bulletbeats.domain.user.service.UserService;
@@ -40,6 +41,7 @@ public class MenuAdminController {
     private final DishService dishService;
     private final ComboService comboService;
     private final UserService userService;
+    private final OnlinePlatformService onlinePlatformService;
 
     private Long currentUserId(Authentication auth) {
         return ((User) auth.getPrincipal()).getId();
@@ -108,6 +110,7 @@ public class MenuAdminController {
         model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
         model.addAttribute("dishes", dishService.getAll());
         model.addAttribute("combos", comboService.getAll());
+        model.addAttribute("platforms", onlinePlatformService.listActive());
         model.addAttribute("mode", "create");
         return "menu/admin/form";
     }
@@ -122,6 +125,7 @@ public class MenuAdminController {
             model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
             model.addAttribute("dishes", dishService.getAll());
             model.addAttribute("combos", comboService.getAll());
+            model.addAttribute("platforms", onlinePlatformService.listActive());
             model.addAttribute("mode", "create");
             return "menu/admin/form";
         }
@@ -132,6 +136,7 @@ public class MenuAdminController {
             model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
             model.addAttribute("dishes", dishService.getAll());
             model.addAttribute("combos", comboService.getAll());
+            model.addAttribute("platforms", onlinePlatformService.listActive());
             model.addAttribute("mode", "create");
             return "menu/admin/form";
         }
@@ -178,11 +183,13 @@ public class MenuAdminController {
         dto.setPrice(item.getPrice());
         dto.setQuantityLabel(item.getQuantityLabel());
         dto.setDisplayOrder(item.getDisplayOrder());
+        dto.setPlatformPrices(menuService.getPlatformPricesAsStrings(id));
         model.addAttribute("dto", dto);
         model.addAttribute("item", item);
         model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
         model.addAttribute("dishes", dishService.getAll());
         model.addAttribute("combos", comboService.getAll());
+        model.addAttribute("platforms", onlinePlatformService.listActive());
         model.addAttribute("mode", "edit");
         return "menu/admin/form";
     }
@@ -199,6 +206,7 @@ public class MenuAdminController {
             model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
             model.addAttribute("dishes", dishService.getAll());
             model.addAttribute("combos", comboService.getAll());
+            model.addAttribute("platforms", onlinePlatformService.listActive());
             model.addAttribute("mode", "edit");
             return "menu/admin/form";
         }
@@ -210,6 +218,7 @@ public class MenuAdminController {
             model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
             model.addAttribute("dishes", dishService.getAll());
             model.addAttribute("combos", comboService.getAll());
+            model.addAttribute("platforms", onlinePlatformService.listActive());
             model.addAttribute("mode", "edit");
             return "menu/admin/form";
         }

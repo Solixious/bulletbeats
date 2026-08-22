@@ -152,6 +152,32 @@
            class="mt-1.5 text-red-400 text-xs"></p>
       </div>
 
+      <!-- Platform Pricing -->
+      <div th:if="${!platforms.isEmpty()}">
+        <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Platform Pricing <span class="text-sand/40 normal-case">(optional)</span>
+        </label>
+        <p class="text-sand/60 text-xs mb-2.5">
+          Set a different price for orders placed via a specific platform. Leave blank to use the base price above.
+        </p>
+        <div class="space-y-2.5">
+          <div th:each="platform : ${platforms}">
+            <label th:for="${'platformPrice' + platform.id}"
+                   class="block text-sand/70 text-xs mb-1" th:text="${platform.name} + ' Price (₹)'"></label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sand text-sm">₹</span>
+              <input type="number" step="0.01" min="0"
+                     th:id="${'platformPrice' + platform.id}"
+                     th:field="*{platformPrices[__${platform.id}__]}"
+                     class="w-full bg-elevated rounded-lg pl-8 pr-4 py-2.5 text-ivory text-sm
+                            placeholder-sand/40 outline-none transition-all duration-200
+                            border border-elevated focus:border-accent focus:shadow-neon-sm"
+                     placeholder="Same as base price"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Quantity Label -->
       <div>
         <label for="quantityLabel" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">

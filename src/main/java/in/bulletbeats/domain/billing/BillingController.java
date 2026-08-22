@@ -12,8 +12,8 @@ import in.bulletbeats.domain.billing.dto.TableTransferResult;
 import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.CafeTable;
 import in.bulletbeats.domain.billing.service.BillingService;
+import in.bulletbeats.domain.platform.service.OnlinePlatformService;
 import in.bulletbeats.domain.shared.enums.BillStatus;
-import in.bulletbeats.domain.shared.enums.OnlineOrderPlatform;
 import in.bulletbeats.domain.shared.enums.OrderType;
 import in.bulletbeats.domain.billing.service.CafeTableService;
 import in.bulletbeats.domain.crm.service.CustomerService;
@@ -62,6 +62,7 @@ public class BillingController {
     private final AppConfigService appConfigService;
     private final FeedbackService feedbackService;
     private final OfferEligibilityService offerEligibilityService;
+    private final OnlinePlatformService onlinePlatformService;
 
     // ── List ─────────────────────────────────────────────────────────────
 
@@ -101,7 +102,7 @@ public class BillingController {
         model.addAttribute("activeBillsByTable", billingService.getActiveBillCountByTable());
         model.addAttribute("dto", new CreateBillDto());
         model.addAttribute("orderTypes", OrderType.values());
-        model.addAttribute("platforms", OnlineOrderPlatform.values());
+        model.addAttribute("platforms", onlinePlatformService.listActive());
         model.addAttribute("isAdmin", isAdmin(auth));
         return "billing/new";
     }
@@ -120,7 +121,7 @@ public class BillingController {
             model.addAttribute("tables", cafeTableService.getAllActive());
             model.addAttribute("activeBillsByTable", billingService.getActiveBillCountByTable());
             model.addAttribute("orderTypes", OrderType.values());
-            model.addAttribute("platforms", OnlineOrderPlatform.values());
+            model.addAttribute("platforms", onlinePlatformService.listActive());
             model.addAttribute("isAdmin", isAdmin);
             return "billing/new";
         }

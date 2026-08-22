@@ -229,6 +229,11 @@
              class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
             <span class="text-base">🛵</span> Delivery QR
           </a>
+          <a href="/admin/platforms"
+             th:classappend="${uri.startsWith('/admin/platforms')} ? ${activeClass} : ${inactiveClass}"
+             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+            <span class="text-base">🛒</span> Online Platforms
+          </a>
           <a href="/admin/settings"
              th:classappend="${uri.startsWith('/admin/settings')} ? ${activeClass} : ${inactiveClass}"
              class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">

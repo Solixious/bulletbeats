@@ -21,7 +21,7 @@
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
     <input type="hidden" id="orderType" name="orderType" th:field="*{orderType}"/>
     <input type="hidden" id="cafeTableId" name="cafeTableId" th:field="*{cafeTableId}"/>
-    <input type="hidden" id="onlineOrderPlatform" name="onlineOrderPlatform" th:field="*{onlineOrderPlatform}"/>
+    <input type="hidden" id="onlinePlatformId" name="onlinePlatformId" th:field="*{onlinePlatformId}"/>
     <input type="hidden" id="customerPhone" name="customerPhone" th:field="*{customerPhone}"/>
     <input type="hidden" id="customerName" name="customerName" th:field="*{customerName}"/>
 
@@ -152,22 +152,18 @@
     <!-- Step 2b: Platform selection (ONLINE_ORDER only) -->
     <div id="platform-section" class="hidden bg-surface rounded-xl border border-elevated/60 p-5">
       <p class="text-sand text-xs uppercase tracking-widest mb-4">Step 2 — Platform</p>
-      <div class="flex gap-3">
-        <button type="button" data-platform="ZOMATO"
-                onclick="selectPlatform('ZOMATO')"
+      <div class="flex gap-3 flex-wrap">
+        <button type="button" th:each="platform : ${platforms}"
+                th:onclick="'selectPlatform(' + ${platform.id} + ', this)'"
                 class="platform-card flex-1 p-4 rounded-lg border border-elevated/60
-                       hover:border-red-400/40 transition-all duration-150 cursor-pointer
+                       hover:border-accent/40 transition-all duration-150 cursor-pointer
                        bg-elevated/30 hover:bg-elevated/60 focus:outline-none text-center">
-          <p class="text-ivory text-sm font-medium">Zomato</p>
-        </button>
-        <button type="button" data-platform="SWIGGY"
-                onclick="selectPlatform('SWIGGY')"
-                class="platform-card flex-1 p-4 rounded-lg border border-elevated/60
-                       hover:border-orange-400/40 transition-all duration-150 cursor-pointer
-                       bg-elevated/30 hover:bg-elevated/60 focus:outline-none text-center">
-          <p class="text-ivory text-sm font-medium">Swiggy</p>
+          <p class="text-ivory text-sm font-medium" th:text="${platform.name}">Platform</p>
         </button>
       </div>
+      <p th:if="${platforms.isEmpty()}" class="text-sand/60 text-xs">
+        No online platforms configured yet — add one in Online Platform Management.
+      </p>
       <div id="selected-platform-display" class="hidden mt-3 flex items-center gap-2">
         <span class="text-accent text-sm">✓ Platform:</span>
         <span id="selected-platform-name" class="text-ivory text-sm font-medium"></span>
@@ -301,24 +297,20 @@ function clearTable() {
   if (banner) banner.classList.add('hidden');
 }
 
-function selectPlatform(platform) {
-  document.getElementById('onlineOrderPlatform').value = platform;
+function selectPlatform(platformId, el) {
+  document.getElementById('onlinePlatformId').value = platformId;
   document.querySelectorAll('.platform-card').forEach(function(card) {
     card.classList.remove('ring-2', 'ring-accent', 'border-accent');
     card.classList.add('border-elevated/60');
   });
-  var selected = document.querySelector('[data-platform="' + platform + '"]');
-  if (selected) {
-    selected.classList.remove('border-elevated/60');
-    selected.classList.add('ring-2', 'ring-accent', 'border-accent');
-  }
-  var label = platform === 'ZOMATO' ? 'Zomato' : 'Swiggy';
-  document.getElementById('selected-platform-name').textContent = label;
+  el.classList.remove('border-elevated/60');
+  el.classList.add('ring-2', 'ring-accent', 'border-accent');
+  document.getElementById('selected-platform-name').textContent = el.textContent.trim();
   document.getElementById('selected-platform-display').classList.remove('hidden');
 }
 
 function clearPlatform() {
-  document.getElementById('onlineOrderPlatform').value = '';
+  document.getElementById('onlinePlatformId').value = '';
   document.querySelectorAll('.platform-card').forEach(function(card) {
     card.classList.remove('ring-2', 'ring-accent', 'border-accent');
     card.classList.add('border-elevated/60');

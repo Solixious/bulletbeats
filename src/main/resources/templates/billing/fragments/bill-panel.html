@@ -45,7 +45,7 @@
       </span>
       <span th:if="${bill.orderType != null and bill.orderType.name() == 'ONLINE_ORDER'}"
             class="px-2 py-0.5 text-xs border rounded-full text-orange-400 border-orange-400/40 bg-orange-400/10"
-            th:text="${bill.onlineOrderPlatform != null ? bill.onlineOrderPlatform.displayName : 'Online Order'}">
+            th:text="${bill.onlinePlatform != null ? bill.onlinePlatform.name : 'Online Order'}">
       </span>
       <span th:if="${bill.orderType != null and bill.orderType.name() == 'DIRECT_DELIVERY'}"
             class="px-2 py-0.5 text-xs border rounded-full text-purple-400 border-purple-400/40 bg-purple-400/10">
