@@ -2,6 +2,7 @@ package in.bulletbeats.domain.billing.repository;
 
 import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.shared.enums.BillStatus;
+import in.bulletbeats.domain.shared.enums.OrderType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,6 +30,9 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
 
     List<Bill> findByCafeTableIdAndStatusNotInOrderByCreatedAtDesc(
             Long tableId, Collection<BillStatus> excludedStatuses);
+
+    Optional<Bill> findFirstByCustomerIdAndOrderTypeAndStatusAndCreatedAtAfterOrderByCreatedAtDesc(
+            Long customerId, OrderType orderType, BillStatus status, LocalDateTime after);
 
     long countByCafeTableIdAndStatusNotIn(Long tableId, Collection<BillStatus> excludedStatuses);
 

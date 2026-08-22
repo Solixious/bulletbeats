@@ -147,9 +147,13 @@
     var savedName    = localStorage.getItem(KEY_NAME)    || '';
     var savedAddress = localStorage.getItem(KEY_ADDRESS) || '';
     var autoTimer    = null;
+    var submitted    = false;
 
     function submitSaved() {
+      if (submitted) return;
+      submitted = true;
       clearTimeout(autoTimer);
+      document.getElementById('btn-continue-wb').disabled = true;
       document.getElementById('phone-input').value   = savedPhone;
       document.getElementById('name-input').value    = savedName;
       document.getElementById('address-input').value = savedAddress;
@@ -169,6 +173,8 @@
     }
 
     function submitForm() {
+      if (submitted) return;
+
       var name    = document.getElementById('form-name').value.trim();
       var phone   = document.getElementById('form-phone').value.trim();
       var address = document.getElementById('form-address').value.trim();
@@ -177,6 +183,9 @@
         alert('Please fill in your name, phone number, and delivery address.');
         return;
       }
+
+      submitted = true;
+      document.getElementById('btn-continue-form').disabled = true;
 
       localStorage.setItem(KEY_PHONE,   phone);
       localStorage.setItem(KEY_NAME,    name);

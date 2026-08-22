@@ -59,6 +59,7 @@ public class DeliveryOrderService {
     private static final Long SYSTEM_USER_ID = 0L;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DISPLAY_TIME_FMT = DateTimeFormatter.ofPattern("h:mm a");
+    private static final long DUPLICATE_ORDER_WINDOW_SECONDS = 30;
 
     private final BillRepository billRepository;
     private final BillItemRepository billItemRepository;
@@ -88,6 +89,16 @@ public class DeliveryOrderService {
 
         boolean isReturningCustomer = customerService.existsByPhone(phone.trim());
         Customer customer = customerService.findOrCreateByPhone(phone.trim(), name.trim(), SYSTEM_USER_ID);
+
+        // Guards against duplicate bills from double-tapped/double-submitted start requests
+        // (e.g. the landing page's welcome-back auto-submit racing a manual "Continue" click).
+        Optional<Bill> recentDraft = billRepository
+                .findFirstByCustomerIdAndOrderTypeAndStatusAndCreatedAtAfterOrderByCreatedAtDesc(
+                        customer.getId(), OrderType.DIRECT_DELIVERY, BillStatus.DRAFT,
+                        java.time.LocalDateTime.now().minusSeconds(DUPLICATE_ORDER_WINDOW_SECONDS));
+        if (recentDraft.isPresent()) {
+            return new DeliveryStartResult(recentDraft.get(), customer, isReturningCustomer);
+        }
 
         String billNumber = billNumberService.generateBillNumber();
         Bill bill = Bill.builder()
