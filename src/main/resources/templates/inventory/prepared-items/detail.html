@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${item.name} + ' — Prepared Items'">Prepared Item — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-6xl mx-auto">
+
+  <a href="/admin/prepared-items"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Prepared Items
+  </a>
+
+  <div th:if="${param.updated}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Item updated.
+  </div>
+  <div th:if="${param.prepared}"
+       class="mb-5 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Batch prepared — stock updated.
+  </div>
+  <div th:if="${deleteError}"
+       class="mb-5 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/40 text-red-400 text-sm"
+       th:text="${deleteError}">
+  </div>
+  <div th:if="${prepareError}"
+       class="mb-5 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/40 text-red-400 text-sm"
+       th:text="${prepareError}">
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+    <!-- Left: item info -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-6 space-y-5">
+
+      <div class="flex items-start justify-between">
+        <div>
+          <h1 class="font-heading text-3xl text-ivory tracking-wide" th:text="${item.name}">Name</h1>
+          <p class="text-sand text-sm mt-0.5" th:text="${item.description} ?: ''"></p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <a th:href="@{/admin/prepared-items/{id}/edit(id=${item.id})}"
+             class="text-xs px-3 py-1.5 rounded border border-sand/30 text-sand
+                    hover:border-ivory/40 hover:text-ivory transition-colors">
+            Edit
+          </a>
+          <form sec:authorize="hasRole('ADMIN')"
+                th:action="@{/admin/prepared-items/{id}/delete(id=${item.id})}" method="post"
+                onsubmit="return bbConfirm(this, 'Delete this prepared item? This cannot be undone.')">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit"
+                    class="text-xs px-3 py-1.5 rounded border border-red-500/30 text-red-400
+                           hover:border-red-400/60 hover:bg-red-500/10 transition-colors">
+              Delete
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 pt-2 border-t border-elevated/40">
+        <div>
+          <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Prep Time</p>
+          <p class="text-ivory text-sm"
+             th:text="${item.prepTimeMinutes != null} ? ${item.prepTimeMinutes} + ' min' : '—'"></p>
+        </div>
+        <div>
+          <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Batch Yield</p>
+          <p class="font-mono text-ivory text-sm"
+             th:text="${#numbers.formatDecimal(item.batchYieldQuantity,1,3)} + ' ' + ${item.unit}"></p>
+        </div>
+        <div>
+          <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Cost / Batch</p>
+          <p class="font-mono text-ivory text-sm"
+             th:text="${costPerBatch != null} ? ('₹' + ${#numbers.formatDecimal(costPerBatch, 1, 2)}) : '—'"></p>
+        </div>
+        <div>
+          <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Cost / <span th:text="${item.unit}"></span></p>
+          <p class="font-mono text-ivory text-sm"
+             th:text="${costPerUnit != null} ? ('₹' + ${#numbers.formatDecimal(costPerUnit, 1, 4)}) : '—'"></p>
+        </div>
+      </div>
+
+      <!-- Stock -->
+      <div class="pt-2 border-t border-elevated/40">
+        <p class="text-sand text-xs uppercase tracking-widest mb-2">Current Stock</p>
+        <div class="flex items-end gap-3 mb-1">
+          <span class="font-heading leading-none"
+                style="font-size:3.5rem"
+                th:classappend="${item.lowStock} ? 'text-red-400' : 'text-emerald-400'"
+                th:text="${#numbers.formatDecimal(item.quantityInStock, 1, 3)}">0.000</span>
+          <span class="text-sand text-base mb-2" th:text="${item.unit}">unit</span>
+        </div>
+        <span th:if="${item.lowStock}"
+              class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs border rounded-full
+                     text-amber-400 border-amber-400/40 bg-amber-400/10">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Low Stock
+        </span>
+        <span th:unless="${item.lowStock}"
+              class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs border rounded-full
+                     text-emerald-400 border-emerald-400/40 bg-emerald-400/10">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> OK
+        </span>
+      </div>
+
+      <!-- Prep recipe -->
+      <div class="pt-2 border-t border-elevated/40">
+        <p class="text-sand text-xs uppercase tracking-widest mb-2">Prep Recipe (per batch)</p>
+        <div class="rounded-lg overflow-hidden border border-elevated/60">
+          <table class="w-full text-left text-sm">
+            <tbody>
+              <tr th:if="${#lists.isEmpty(item.ingredients)}">
+                <td class="px-3 py-3 text-sand text-center">No ingredients defined.</td>
+              </tr>
+              <tr th:each="ing : ${item.ingredients}" class="border-b border-elevated/30 last:border-0">
+                <td class="px-3 py-2 text-ivory" th:text="${ing.groceryItem.name}"></td>
+                <td class="px-3 py-2 font-mono text-sand text-right"
+                    th:text="${#numbers.formatDecimal(ing.quantityRequired,1,3)} + ' ' + ${ing.groceryItem.recipeUnit}"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right: actions -->
+    <div class="space-y-6">
+
+      <!-- Prepare a batch -->
+      <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+        <h2 class="font-heading text-xl text-ivory tracking-wide mb-1">Prepare a Batch</h2>
+        <p class="text-sand text-xs mb-5">Consumes inventory items per the recipe and adds yield to stock</p>
+
+        <form th:action="@{/admin/prepared-items/{id}/prepare(id=${item.id})}"
+              th:object="${prepareDto}" method="post" class="space-y-4">
+
+          <div>
+            <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+              Batches <span class="text-sand/40 normal-case">(1 batch = <span th:text="${#numbers.formatDecimal(item.batchYieldQuantity,1,3)} + ' ' + item.unit"></span>)</span>
+            </label>
+            <input type="number" th:field="*{batches}" step="0.001" min="0.001" required
+                   class="w-full bg-elevated border border-elevated focus:border-accent
+                          rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                          outline-none transition-all duration-200 focus:shadow-neon-sm"
+                   placeholder="1.000"/>
+          </div>
+
+          <div>
+            <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Notes</label>
+            <textarea th:field="*{notes}" rows="2"
+                      class="w-full bg-elevated border border-elevated focus:border-accent
+                             rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                             outline-none transition-all duration-200 focus:shadow-neon-sm resize-none"
+                      placeholder="Optional"></textarea>
+          </div>
+
+          <button type="submit"
+                  class="w-full px-4 py-2.5 rounded-lg bg-accent text-base font-heading
+                         tracking-widest text-sm hover:shadow-neon hover:brightness-110
+                         transition-all duration-200">
+            PREPARE BATCH
+          </button>
+        </form>
+      </div>
+
+      <!-- Adjust stock -->
+      <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+        <h2 class="font-heading text-xl text-ivory tracking-wide mb-1">Adjust Stock</h2>
+        <p class="text-sand text-xs mb-5">Record inbound, outbound, adjustment or wastage directly</p>
+
+        <form th:action="@{/admin/prepared-items/{id}/adjust(id=${item.id})}"
+              th:object="${adjustDto}" method="post" class="space-y-4">
+
+          <div>
+            <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Movement Type</label>
+            <select th:field="*{movementType}"
+                    class="w-full bg-elevated border border-elevated focus:border-accent
+                           rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                           transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+              <option th:each="type : ${movementTypes}" th:value="${type}" th:text="${type.displayName}">Type</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+              Quantity (<span th:text="${item.unit}"></span>)
+            </label>
+            <input type="number" th:field="*{quantity}" step="0.001" min="0.001" required
+                   class="w-full bg-elevated border border-elevated focus:border-accent
+                          rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                          outline-none transition-all duration-200 focus:shadow-neon-sm"
+                   placeholder="0.000"/>
+          </div>
+
+          <div>
+            <label class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Notes</label>
+            <textarea th:field="*{notes}" rows="2"
+                      class="w-full bg-elevated border border-elevated focus:border-accent
+                             rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                             outline-none transition-all duration-200 focus:shadow-neon-sm resize-none"
+                      placeholder="Optional reason or reference"></textarea>
+          </div>
+
+          <button type="submit"
+                  class="w-full px-4 py-2.5 rounded-lg bg-elevated border border-sand/30 text-ivory text-sm
+                         hover:border-ivory/40 transition-all duration-200">
+            APPLY ADJUSTMENT
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Movement history -->
+  <div class="bg-surface rounded-xl border border-elevated/60 overflow-hidden">
+    <div class="px-5 py-4 border-b border-elevated/60">
+      <h2 class="font-heading text-xl text-ivory tracking-wide">Movement History</h2>
+    </div>
+    <div class="p-4"
+         th:attr="hx-get='/admin/prepared-items/' + ${item.id} + '/movements'"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="innerHTML">
+      <p class="text-sand text-sm text-center py-4">Loading movements…</p>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

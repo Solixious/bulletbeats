@@ -1,13 +1,14 @@
 package in.bulletbeats.domain.menu;
 
 import in.bulletbeats.domain.inventory.service.InventoryService;
-import in.bulletbeats.domain.inventory.service.UnitService;
+import in.bulletbeats.domain.inventory.service.PreparedItemService;
 import in.bulletbeats.domain.menu.dto.ComboIngredientDto;
 import in.bulletbeats.domain.menu.dto.CreateComboDto;
 import in.bulletbeats.domain.menu.dto.UpdateComboDto;
 import in.bulletbeats.domain.menu.entity.Combo;
 import in.bulletbeats.domain.menu.entity.ComboIngredient;
 import in.bulletbeats.domain.menu.service.ComboService;
+import in.bulletbeats.domain.menu.service.IngredientAggregationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,7 +31,8 @@ public class ComboController {
 
     private final ComboService comboService;
     private final InventoryService inventoryService;
-    private final UnitService unitService;
+    private final PreparedItemService preparedItemService;
+    private final IngredientAggregationService ingredientAggregationService;
 
     @GetMapping
     public String list(Model model) {
@@ -44,6 +46,7 @@ public class ComboController {
         dto.setIngredients(new ArrayList<>(List.of(new ComboIngredientDto())));
         model.addAttribute("dto", dto);
         model.addAttribute("groceryItems", inventoryService.getAllItems());
+        model.addAttribute("preparedItems", preparedItemService.getAll());
         model.addAttribute("mode", "create");
         return "menu/combos/form";
     }
@@ -53,6 +56,7 @@ public class ComboController {
                          BindingResult result, Model model) {
         if (result.hasErrors()) {
             model.addAttribute("groceryItems", inventoryService.getAllItems());
+            model.addAttribute("preparedItems", preparedItemService.getAll());
             model.addAttribute("mode", "create");
             return "menu/combos/form";
         }
@@ -65,13 +69,14 @@ public class ComboController {
         Combo combo = comboService.getById(id);
         model.addAttribute("combo", combo);
         model.addAttribute("requiredInStock", requiredInStock(combo.getIngredients()));
+        model.addAttribute("estimatedCost", comboService.computeCost(combo));
         return "menu/combos/detail";
     }
 
     private Map<Long, BigDecimal> requiredInStock(List<ComboIngredient> ingredients) {
         Map<Long, BigDecimal> result = new HashMap<>();
         for (ComboIngredient ing : ingredients) {
-            result.put(ing.getId(), unitService.toStockUnit(ing.getGroceryItem(), ing.getQuantityRequired()));
+            result.put(ing.getId(), ingredientAggregationService.requiredInStock(ing));
         }
         return result;
     }
@@ -85,7 +90,11 @@ public class ComboController {
         dto.setIngredients(combo.getIngredients().stream()
                 .map(ing -> {
                     ComboIngredientDto d = new ComboIngredientDto();
-                    d.setGroceryItemId(ing.getGroceryItem().getId());
+                    if (ing.getGroceryItem() != null) {
+                        d.setGroceryItemId(ing.getGroceryItem().getId());
+                    } else {
+                        d.setPreparedItemId(ing.getPreparedItem().getId());
+                    }
                     d.setQuantityRequired(ing.getQuantityRequired());
                     return d;
                 })
@@ -93,6 +102,7 @@ public class ComboController {
         model.addAttribute("dto", dto);
         model.addAttribute("combo", combo);
         model.addAttribute("groceryItems", inventoryService.getAllItems());
+        model.addAttribute("preparedItems", preparedItemService.getAll());
         model.addAttribute("mode", "edit");
         return "menu/combos/form";
     }
@@ -104,6 +114,7 @@ public class ComboController {
         if (result.hasErrors()) {
             model.addAttribute("combo", comboService.getById(id));
             model.addAttribute("groceryItems", inventoryService.getAllItems());
+            model.addAttribute("preparedItems", preparedItemService.getAll());
             model.addAttribute("mode", "edit");
             return "menu/combos/form";
         }
@@ -120,6 +131,7 @@ public class ComboController {
     @GetMapping("/ingredient-row")
     public String ingredientRow(@RequestParam int index, Model model) {
         model.addAttribute("groceryItems", inventoryService.getAllItems());
+        model.addAttribute("preparedItems", preparedItemService.getAll());
         model.addAttribute("index", index);
         return "menu/combos/fragments/ingredient-row :: ingredient-row";
     }

@@ -8,6 +8,7 @@ import in.bulletbeats.domain.inventory.entity.ReplenishmentRequest;
 import in.bulletbeats.domain.inventory.entity.StockMovement;
 import in.bulletbeats.domain.inventory.entity.Supplier;
 import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
+import in.bulletbeats.domain.inventory.repository.PreparedItemRepository;
 import in.bulletbeats.domain.inventory.repository.PurchaseOrderRepository;
 import in.bulletbeats.domain.inventory.repository.ReplenishmentRequestRepository;
 import in.bulletbeats.domain.inventory.repository.StockMovementRepository;
@@ -34,6 +35,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -51,6 +53,7 @@ public class InventoryService {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final DishRepository dishRepository;
     private final ComboRepository comboRepository;
+    private final PreparedItemRepository preparedItemRepository;
     private final UnitService unitService;
 
     @Lazy
@@ -89,6 +92,39 @@ public class InventoryService {
         BigDecimal factor = unitService.conversionFactor(item.getPackUnit(), item.getMinorUnit());
         if (factor == null || factor.compareTo(BigDecimal.ZERO) <= 0) return null;
         return costPerUnit.divide(factor, 4, RoundingMode.HALF_UP);
+    }
+
+    /** Cost per the item's recipe unit (its minor unit if configured, else its stock unit). Null if not computable. */
+    public BigDecimal computeCostPerRecipeUnit(GroceryItem item) {
+        BigDecimal costPerUnit = item.getCostPerUnit();
+        if (costPerUnit == null) return null;
+        BigDecimal factor = unitService.conversionFactor(item.getPackUnit(), item.getRecipeUnit());
+        if (factor == null || factor.compareTo(BigDecimal.ZERO) <= 0) return null;
+        return costPerUnit.divide(factor, 4, RoundingMode.HALF_UP);
+    }
+
+    /** Shortage messages for any required grocery item (by id, in stock unit) whose stock falls short. */
+    public List<String> findShortages(Map<Long, BigDecimal> required) {
+        if (required.isEmpty()) return List.of();
+        Map<Long, GroceryItem> byId = groceryItemRepository.findAllById(required.keySet())
+                .stream().collect(java.util.stream.Collectors.toMap(GroceryItem::getId, g -> g));
+        List<String> shortages = new java.util.ArrayList<>();
+        for (Map.Entry<Long, BigDecimal> entry : required.entrySet()) {
+            GroceryItem item = byId.get(entry.getKey());
+            if (item.getQuantityInStock().compareTo(entry.getValue()) < 0) {
+                shortages.add(item.getName() + ": need " + entry.getValue()
+                        + " " + item.getUnit() + ", have " + item.getQuantityInStock());
+            }
+        }
+        return shortages;
+    }
+
+    /** Validates that current stock covers every required grocery item quantity (by id, in stock unit). */
+    public void validateStock(Map<Long, BigDecimal> required) {
+        List<String> shortages = findShortages(required);
+        if (!shortages.isEmpty()) {
+            throw new InsufficientStockException(shortages);
+        }
     }
 
     @Transactional
@@ -287,7 +323,8 @@ public class InventoryService {
                 || replenishmentRequestRepository.existsByGroceryItemId(id)
                 || purchaseOrderRepository.existsPurchaseOrderItemForGroceryItem(id)
                 || dishRepository.existsByIngredientsGroceryItemId(id)
-                || comboRepository.existsByIngredientsGroceryItemId(id)) {
+                || comboRepository.existsByIngredientsGroceryItemId(id)
+                || preparedItemRepository.existsByIngredientsGroceryItemId(id)) {
             throw new GroceryItemInUseException(item.getName());
         }
         groceryItemRepository.delete(item);

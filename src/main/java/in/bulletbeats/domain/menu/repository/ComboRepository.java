@@ -14,4 +14,8 @@ public interface ComboRepository extends JpaRepository<Combo, Long> {
     @Query("SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END FROM Combo c JOIN c.ingredients i " +
            "WHERE i.groceryItem.id = :groceryItemId")
     boolean existsByIngredientsGroceryItemId(@Param("groceryItemId") Long groceryItemId);
+
+    @Query("SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END FROM Combo c JOIN c.ingredients i " +
+           "WHERE i.preparedItem.id = :preparedItemId")
+    boolean existsByIngredientsPreparedItemId(@Param("preparedItemId") Long preparedItemId);
 }

@@ -1,6 +1,5 @@
 package in.bulletbeats.domain.menu.service;
 
-import in.bulletbeats.domain.inventory.service.UnitService;
 import in.bulletbeats.domain.menu.dto.CategoryNode;
 import in.bulletbeats.domain.menu.dto.CreateMenuItemDto;
 import in.bulletbeats.domain.menu.dto.UpdateMenuItemDto;
@@ -38,9 +37,9 @@ public class MenuService {
     private final MenuItemAvailabilityLogRepository availabilityLogRepository;
     private final ImageStorageService imageStorageService;
     private final CategoryService categoryService;
-    private final UnitService unitService;
     private final MenuItemPlatformPriceRepository menuItemPlatformPriceRepository;
     private final OnlinePlatformService onlinePlatformService;
+    private final IngredientAggregationService ingredientAggregationService;
 
     public List<MenuItem> getAllItems() {
         return menuItemRepository.findByIsActiveTrueOrderByCategoryDisplayOrderAscDisplayOrderAscNameAsc();
@@ -428,11 +427,11 @@ public class MenuService {
         Map<Long, BigDecimal> result = new HashMap<>();
         if (item.getDish() != null) {
             for (DishIngredient ing : item.getDish().getIngredients()) {
-                result.put(ing.getId(), unitService.toStockUnit(ing.getGroceryItem(), ing.getQuantityRequired()));
+                result.put(ing.getId(), ingredientAggregationService.requiredInStock(ing));
             }
         } else if (item.getCombo() != null) {
             for (ComboIngredient ing : item.getCombo().getIngredients()) {
-                result.put(ing.getId(), unitService.toStockUnit(ing.getGroceryItem(), ing.getQuantityRequired()));
+                result.put(ing.getId(), ingredientAggregationService.requiredInStock(ing));
             }
         }
         return result;
@@ -447,15 +446,9 @@ public class MenuService {
     }
 
     private boolean computeIngredientAvailability(MenuItem item) {
-        if (item.getDish() != null) {
-            return item.getDish().getIngredients().stream().allMatch(ing ->
-                    ing.getGroceryItem().getQuantityInStock().compareTo(
-                            unitService.toStockUnit(ing.getGroceryItem(), ing.getQuantityRequired())) >= 0);
-        } else if (item.getCombo() != null) {
-            return item.getCombo().getIngredients().stream().allMatch(ing ->
-                    ing.getGroceryItem().getQuantityInStock().compareTo(
-                            unitService.toStockUnit(ing.getGroceryItem(), ing.getQuantityRequired())) >= 0);
+        if (item.getDish() == null && item.getCombo() == null) {
+            return true;
         }
-        return true;
+        return ingredientAggregationService.hasSufficientStock(item);
     }
 }

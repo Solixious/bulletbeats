@@ -21,15 +21,10 @@ import in.bulletbeats.domain.billing.repository.PaymentRepository;
 import in.bulletbeats.domain.crm.entity.Customer;
 import in.bulletbeats.domain.crm.service.CustomerService;
 import in.bulletbeats.domain.crm.service.LoyaltyService;
-import in.bulletbeats.domain.inventory.entity.GroceryItem;
-import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
-import in.bulletbeats.domain.inventory.service.InventoryService;
-import in.bulletbeats.domain.inventory.service.UnitService;
 import in.bulletbeats.domain.menu.dto.CategoryNode;
-import in.bulletbeats.domain.menu.entity.ComboIngredient;
-import in.bulletbeats.domain.menu.entity.DishIngredient;
 import in.bulletbeats.domain.menu.entity.MenuItem;
 import in.bulletbeats.domain.menu.service.CategoryService;
+import in.bulletbeats.domain.menu.service.IngredientAggregationService;
 import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.offers.entity.Offer;
 import in.bulletbeats.domain.offers.entity.OfferCode;
@@ -43,11 +38,9 @@ import in.bulletbeats.domain.platform.service.OnlinePlatformService;
 import in.bulletbeats.domain.shared.enums.ActorType;
 import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.enums.DiscountType;
-import in.bulletbeats.domain.shared.enums.MovementType;
 import in.bulletbeats.domain.shared.enums.OrderType;
 import in.bulletbeats.domain.shared.exception.BillNotEditableException;
 import in.bulletbeats.domain.shared.exception.EmptyBillException;
-import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.OfferException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import in.bulletbeats.domain.shared.exception.StudentDiscountException;
@@ -72,7 +65,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -96,9 +88,7 @@ public class BillingService {
     private final LoyaltyService loyaltyService;
     private final MenuService menuService;
     private final CategoryService categoryService;
-    private final InventoryService inventoryService;
-    private final UnitService unitService;
-    private final GroceryItemRepository groceryItemRepository;
+    private final IngredientAggregationService ingredientAggregationService;
     private final AppConfigService appConfigService;
     private final ActivityLogService activityLogService;
     private final UserService userService;
@@ -403,12 +393,9 @@ public class BillingService {
             throw new EmptyBillException();
         }
 
-        Map<Long, BigDecimal> required = aggregateIngredients(bill);
-        validateStock(required);
-
-        for (Map.Entry<Long, BigDecimal> entry : required.entrySet()) {
-            inventoryService.deductStock(entry.getKey(), entry.getValue(), bill.getId(), userId);
-        }
+        IngredientAggregationService.Requirements required = aggregateIngredients(bill);
+        ingredientAggregationService.validateStock(required);
+        ingredientAggregationService.deduct(required, bill.getId(), userId);
 
         bill.setStatus(BillStatus.CONFIRMED);
         bill.setConfirmedAt(java.time.LocalDateTime.now());
@@ -899,63 +886,19 @@ public class BillingService {
         bill.setTotalAmount(totalAmount);
     }
 
-    private Map<Long, BigDecimal> aggregateIngredients(Bill bill) {
-        Map<Long, BigDecimal> required = new HashMap<>();
+    private IngredientAggregationService.Requirements aggregateIngredients(Bill bill) {
+        IngredientAggregationService.Requirements required = new IngredientAggregationService.Requirements();
         for (BillItem billItem : bill.getItems()) {
-            MenuItem menuItem = billItem.getMenuItem();
-            if (menuItem.getDish() != null) {
-                for (DishIngredient ing : menuItem.getDish().getIngredients()) {
-                    GroceryItem item = ing.getGroceryItem();
-                    BigDecimal qty = toStockQuantity(item, ing.getQuantityRequired())
-                            .multiply(BigDecimal.valueOf(billItem.getQuantity()));
-                    required.merge(item.getId(), qty, BigDecimal::add);
-                }
-            } else if (menuItem.getCombo() != null) {
-                for (ComboIngredient ing : menuItem.getCombo().getIngredients()) {
-                    GroceryItem item = ing.getGroceryItem();
-                    BigDecimal qty = toStockQuantity(item, ing.getQuantityRequired())
-                            .multiply(BigDecimal.valueOf(billItem.getQuantity()));
-                    required.merge(item.getId(), qty, BigDecimal::add);
-                }
-            }
+            ingredientAggregationService.aggregateForItem(billItem.getMenuItem(), billItem.getQuantity())
+                    .mergeInto(required);
         }
         return required;
     }
 
-    private BigDecimal toStockQuantity(GroceryItem item, BigDecimal recipeQuantity) {
-        return unitService.toStockUnit(item, recipeQuantity).setScale(3, RoundingMode.HALF_UP);
-    }
-
-    private void validateStock(Map<Long, BigDecimal> required) {
-        if (required.isEmpty()) return;
-        Map<Long, GroceryItem> byId = groceryItemRepository.findAllById(required.keySet())
-                .stream().collect(Collectors.toMap(GroceryItem::getId, g -> g));
-        List<String> shortages = new ArrayList<>();
-        for (Map.Entry<Long, BigDecimal> entry : required.entrySet()) {
-            GroceryItem item = byId.get(entry.getKey());
-            if (item.getQuantityInStock().compareTo(entry.getValue()) < 0) {
-                shortages.add(item.getName() + ": need " + entry.getValue()
-                        + " " + item.getUnit() + ", have " + item.getQuantityInStock());
-            }
-        }
-        if (!shortages.isEmpty()) {
-            throw new InsufficientStockException(shortages);
-        }
-    }
-
     private void reverseStock(Bill bill, Long userId) {
-        Map<Long, BigDecimal> required = aggregateIngredients(bill);
-        for (Map.Entry<Long, BigDecimal> entry : required.entrySet()) {
-            GroceryItem item = inventoryService.getItemById(entry.getKey());
-            inventoryService.recordMovement(
-                    item,
-                    MovementType.INBOUND,
-                    entry.getValue(),
-                    "BILL_REVERSAL",
-                    bill.getId(),
-                    "Reversal for cancelled bill " + bill.getBillNumber(),
-                    userId);
-        }
+        IngredientAggregationService.Requirements required = aggregateIngredients(bill);
+        ingredientAggregationService.reverse(required, "BILL_REVERSAL", bill.getId(),
+                "Reversal for cancelled bill " + bill.getBillNumber(), userId);
     }
 
     private void checkAndFreeTable(Long tableId) {

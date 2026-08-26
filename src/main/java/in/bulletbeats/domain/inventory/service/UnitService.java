@@ -2,7 +2,6 @@ package in.bulletbeats.domain.inventory.service;
 
 import in.bulletbeats.domain.inventory.dto.UnitConversionDto;
 import in.bulletbeats.domain.inventory.dto.UnitDto;
-import in.bulletbeats.domain.inventory.entity.GroceryItem;
 import in.bulletbeats.domain.inventory.entity.Unit;
 import in.bulletbeats.domain.inventory.entity.UnitConversion;
 import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
@@ -122,14 +121,14 @@ public class UnitService {
     }
 
     /**
-     * Converts a recipe quantity (expressed in the grocery item's recipe/minor unit) into its stock unit.
-     * No-op if the recipe unit and stock unit are the same.
+     * Converts a recipe quantity (expressed in recipeUnit) into stockUnit.
+     * No-op if the two units are the same. Shared by grocery items and prepared items alike,
+     * since both express recipe usage in a "recipe unit" that may differ from their stock unit.
      */
-    public BigDecimal toStockUnit(GroceryItem item, BigDecimal recipeQuantity) {
-        String recipeUnit = item.getRecipeUnit();
-        if (recipeUnit.equalsIgnoreCase(item.getUnit())) {
+    public BigDecimal toStockUnit(String recipeUnit, String stockUnit, BigDecimal recipeQuantity) {
+        if (recipeUnit.equalsIgnoreCase(stockUnit)) {
             return recipeQuantity;
         }
-        return convert(recipeQuantity, recipeUnit, item.getUnit());
+        return convert(recipeQuantity, recipeUnit, stockUnit);
     }
 }

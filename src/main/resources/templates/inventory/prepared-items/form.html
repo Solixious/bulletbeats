@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title th:text="${mode == 'edit'} ? 'Edit Prepared Item' : 'New Prepared Item'">
+    Prepared Item — Bullet Beats Café
+  </title>
+</head>
+<body>
+<main class="p-6 max-w-3xl mx-auto">
+
+  <a th:href="${mode == 'edit'} ? @{/admin/prepared-items/{id}(id=${item.id})} : '/admin/prepared-items'"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back
+  </a>
+
+  <div class="mb-7">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide"
+        th:text="${mode == 'edit'} ? 'Edit Prepared Item' : 'New Prepared Item'">Prepared Item</h1>
+    <p class="text-sand text-sm mt-0.5"
+       th:text="${mode == 'edit'} ? 'Update the prep recipe and yield' : 'Define a batch-prepped item made from inventory items'"></p>
+  </div>
+
+  <div class="bg-surface rounded-xl border border-elevated/60 p-6">
+    <form id="prepared-item-form"
+          th:action="${mode == 'edit'}
+                    ? @{/admin/prepared-items/{id}/edit(id=${item.id})}
+                    : @{/admin/prepared-items/new}"
+          th:object="${dto}"
+          method="post"
+          class="space-y-6">
+
+      <!-- Name -->
+      <div>
+        <label for="name" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Name</label>
+        <input id="name" type="text" th:field="*{name}" required
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200"
+               th:classappend="*{#fields.hasErrors('name')}
+                               ? 'border border-red-500/70'
+                               : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+               placeholder="e.g. Ginger-Garlic Paste"/>
+        <p th:if="*{#fields.hasErrors('name')}" th:errors="*{name}"
+           class="mt-1.5 text-red-400 text-xs"></p>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label for="description" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Description <span class="text-sand/40 normal-case">(optional)</span>
+        </label>
+        <textarea id="description" th:field="*{description}" rows="2"
+                  class="w-full bg-elevated border border-elevated focus:border-accent
+                         rounded-lg px-4 py-2.5 text-ivory text-sm placeholder-sand/40
+                         outline-none transition-all duration-200 focus:shadow-neon-sm resize-none"
+                  placeholder="Brief description"></textarea>
+      </div>
+
+      <!-- Prep Time -->
+      <div>
+        <label for="prepTimeMinutes" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Prep Time <span class="text-sand/40 normal-case">(minutes, optional)</span>
+        </label>
+        <input id="prepTimeMinutes" type="number" min="0" th:field="*{prepTimeMinutes}"
+               class="w-full bg-elevated border border-elevated focus:border-accent
+                      rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none transition-all duration-200 focus:shadow-neon-sm"
+               placeholder="e.g. 20"/>
+      </div>
+
+      <!-- Unit / Minor unit -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="unit" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Stock Unit
+          </label>
+          <select id="unit" th:field="*{unit}" required
+                  class="w-full bg-elevated border rounded-lg px-4 py-2.5 text-ivory text-sm
+                         outline-none transition-all duration-200 cursor-pointer"
+                  th:classappend="*{#fields.hasErrors('unit')}
+                                  ? 'border-red-500/70'
+                                  : 'border-elevated focus:border-accent focus:shadow-neon-sm'">
+            <option value="">Select a unit…</option>
+            <option th:each="u : ${units}" th:value="${u.name}" th:text="${u.name}">unit</option>
+          </select>
+          <p class="mt-1 text-sand/50 text-xs">Unit this item is stocked and prepared in, e.g. kg</p>
+          <p th:if="*{#fields.hasErrors('unit')}" th:errors="*{unit}"
+             class="mt-1.5 text-red-400 text-xs"></p>
+        </div>
+        <div>
+          <label for="minorUnit" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Recipe Unit <span class="text-sand/40 normal-case">(optional)</span>
+          </label>
+          <select id="minorUnit" th:field="*{minorUnit}"
+                  class="w-full bg-elevated border rounded-lg px-4 py-2.5 text-ivory text-sm
+                         outline-none transition-all duration-200 cursor-pointer"
+                  th:classappend="*{#fields.hasErrors('minorUnit')}
+                                  ? 'border-red-500/70'
+                                  : 'border-elevated focus:border-accent focus:shadow-neon-sm'">
+            <option value="">—</option>
+            <option th:each="u : ${units}" th:value="${u.name}" th:text="${u.name}">unit</option>
+          </select>
+          <p class="mt-1 text-sand/50 text-xs">
+            Unit a dish recipe should use, e.g. gram, if different from the stock unit
+          </p>
+          <p th:if="*{#fields.hasErrors('minorUnit')}" th:errors="*{minorUnit}"
+             class="mt-1.5 text-red-400 text-xs"></p>
+        </div>
+      </div>
+
+      <!-- Batch yield / min threshold -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="batchYieldQuantity" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Batch Yield
+          </label>
+          <input id="batchYieldQuantity" type="number" step="0.001" min="0.001" required
+                 th:field="*{batchYieldQuantity}"
+                 class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                        placeholder-sand/40 outline-none transition-all duration-200"
+                 th:classappend="*{#fields.hasErrors('batchYieldQuantity')}
+                                 ? 'border border-red-500/70'
+                                 : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+                 placeholder="0.000"/>
+          <p class="mt-1 text-sand/50 text-xs">How much one prep run yields, in the stock unit</p>
+          <p th:if="*{#fields.hasErrors('batchYieldQuantity')}" th:errors="*{batchYieldQuantity}"
+             class="mt-1.5 text-red-400 text-xs"></p>
+        </div>
+        <div>
+          <label for="minThreshold" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+            Min Threshold
+          </label>
+          <input id="minThreshold" type="number" step="0.001" min="0" required
+                 th:field="*{minThreshold}"
+                 class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                        placeholder-sand/40 outline-none transition-all duration-200"
+                 th:classappend="*{#fields.hasErrors('minThreshold')}
+                                 ? 'border border-red-500/70'
+                                 : 'border border-elevated focus:border-accent focus:shadow-neon-sm'"
+                 placeholder="0.000"/>
+          <p class="mt-1 text-sand/50 text-xs">Alert triggers when stock falls below this level</p>
+          <p th:if="*{#fields.hasErrors('minThreshold')}" th:errors="*{minThreshold}"
+             class="mt-1.5 text-red-400 text-xs"></p>
+        </div>
+      </div>
+
+      <!-- Prep recipe (grocery items only) -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <label class="text-sand text-xs uppercase tracking-[0.2em]">Prep Recipe</label>
+          <p th:if="*{#fields.hasErrors('ingredients')}"
+             class="text-red-400 text-xs" th:errors="*{ingredients}"></p>
+        </div>
+        <p class="text-sand/60 text-xs mb-2">Inventory items consumed to produce one batch</p>
+
+        <div class="bg-elevated/40 rounded-lg overflow-hidden border border-elevated/60 mb-3">
+          <div class="grid grid-cols-[1fr_160px_36px] gap-0 px-3 py-2 border-b border-elevated/60">
+            <span class="text-sand text-xs uppercase tracking-widest">Item</span>
+            <span class="text-sand text-xs uppercase tracking-widest">Qty (recipe unit)</span>
+            <span></span>
+          </div>
+          <div id="ingredients-list">
+            <div th:each="ing,stat : *{ingredients}" class="ingredient-row grid grid-cols-[1fr_160px_36px] gap-2 px-3 py-2 border-b border-elevated/30 last:border-0 items-center">
+              <select th:name="'ingredients[' + ${stat.index} + '].groceryItemId'"
+                      required
+                      class="bg-elevated border border-elevated/80 focus:border-accent
+                             rounded px-3 py-1.5 text-ivory text-sm outline-none
+                             focus:shadow-neon-sm cursor-pointer transition-all">
+                <option value="">Select item…</option>
+                <option th:each="gi : ${groceryItems}"
+                        th:value="${gi.id}"
+                        th:text="${gi.name + ' (' + (gi.minorUnit ?: gi.unit) + ')'}"
+                        th:selected="${gi.id == ing.groceryItemId}">Item</option>
+              </select>
+              <input type="number" step="0.001" min="0.001" required
+                     th:name="'ingredients[' + ${stat.index} + '].quantityRequired'"
+                     th:value="${ing.quantityRequired}"
+                     class="bg-elevated border border-elevated/80 focus:border-accent
+                            rounded px-3 py-1.5 text-ivory text-sm outline-none
+                            focus:shadow-neon-sm transition-all"
+                     placeholder="0.000"/>
+              <button type="button" onclick="removeRow(this)"
+                      class="text-sand/40 hover:text-red-400 text-xl leading-none transition-colors"
+                      title="Remove">×</button>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" onclick="addIngredientRow()"
+                class="text-xs px-3 py-1.5 rounded border border-accent/40 text-accent
+                       hover:bg-accent/10 transition-colors">
+          + Add Ingredient
+        </button>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-3 pt-2 border-t border-elevated/40">
+        <button type="submit"
+                class="px-6 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                       text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200"
+                th:text="${mode == 'edit'} ? 'UPDATE ITEM' : 'CREATE ITEM'">
+          Submit
+        </button>
+        <a th:href="${mode == 'edit'} ? @{/admin/prepared-items/{id}(id=${item.id})} : '/admin/prepared-items'"
+           class="px-4 py-2.5 text-sand text-sm hover:text-ivory transition-colors">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <script>
+    function addIngredientRow() {
+      var count = document.querySelectorAll('#ingredients-list .ingredient-row').length;
+      htmx.ajax('GET', '/admin/prepared-items/ingredient-row?index=' + count, {
+        target: '#ingredients-list',
+        swap: 'beforeend'
+      });
+    }
+
+    function removeRow(btn) {
+      btn.closest('.ingredient-row').remove();
+    }
+
+    document.getElementById('prepared-item-form').addEventListener('submit', function () {
+      var rows = document.querySelectorAll('#ingredients-list .ingredient-row');
+      rows.forEach(function (row, i) {
+        row.querySelectorAll('[name]').forEach(function (el) {
+          el.name = el.name.replace(/ingredients\[\d+\]/, 'ingredients[' + i + ']');
+        });
+      });
+    });
+  </script>
+
+</main>
+</body>
+</html>

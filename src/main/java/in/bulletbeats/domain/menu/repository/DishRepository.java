@@ -15,4 +15,8 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     @Query("SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END FROM Dish d JOIN d.ingredients i " +
            "WHERE i.groceryItem.id = :groceryItemId")
     boolean existsByIngredientsGroceryItemId(@Param("groceryItemId") Long groceryItemId);
+
+    @Query("SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END FROM Dish d JOIN d.ingredients i " +
+           "WHERE i.preparedItem.id = :preparedItemId")
+    boolean existsByIngredientsPreparedItemId(@Param("preparedItemId") Long preparedItemId);
 }

@@ -134,14 +134,18 @@
           </thead>
           <tbody>
             <tr th:each="ing : ${ingredients}"
-                th:with="sufficient=${ing.groceryItem.quantityInStock.compareTo(requiredInStock.get(ing.id)) >= 0}"
+                th:with="itemName=${ing.groceryItem != null ? ing.groceryItem.name : ing.preparedItem.name},
+                         recipeUnit=${ing.groceryItem != null ? ing.groceryItem.recipeUnit : ing.preparedItem.recipeUnit},
+                         stockQty=${ing.groceryItem != null ? ing.groceryItem.quantityInStock : ing.preparedItem.quantityInStock},
+                         stockUnit=${ing.groceryItem != null ? ing.groceryItem.unit : ing.preparedItem.unit},
+                         sufficient=${stockQty.compareTo(requiredInStock.get(ing.id)) >= 0}"
                 class="border-b border-elevated/40 last:border-0 text-sm">
-              <td class="px-5 py-2.5 text-ivory" th:text="${ing.groceryItem.name}"></td>
+              <td class="px-5 py-2.5 text-ivory" th:text="${itemName}"></td>
               <td class="px-5 py-2.5 text-sand text-right"
-                  th:text="${ing.quantityRequired} + ' ' + ${ing.groceryItem.recipeUnit}"></td>
+                  th:text="${ing.quantityRequired} + ' ' + ${recipeUnit}"></td>
               <td class="px-5 py-2.5 text-right"
                   th:classappend="${sufficient} ? 'text-emerald-400' : 'text-red-400'"
-                  th:text="${ing.groceryItem.quantityInStock} + ' ' + ${ing.groceryItem.unit}"></td>
+                  th:text="${stockQty} + ' ' + ${stockUnit}"></td>
               <td class="px-5 py-2.5 text-right">
                 <span th:if="${sufficient}"
                       class="text-xs text-emerald-400">✓</span>

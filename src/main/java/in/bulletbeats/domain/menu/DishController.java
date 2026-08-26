@@ -6,8 +6,9 @@ import in.bulletbeats.domain.menu.dto.UpdateDishDto;
 import in.bulletbeats.domain.menu.entity.Dish;
 import in.bulletbeats.domain.menu.entity.DishIngredient;
 import in.bulletbeats.domain.menu.service.DishService;
+import in.bulletbeats.domain.menu.service.IngredientAggregationService;
 import in.bulletbeats.domain.inventory.service.InventoryService;
-import in.bulletbeats.domain.inventory.service.UnitService;
+import in.bulletbeats.domain.inventory.service.PreparedItemService;
 import in.bulletbeats.domain.shared.exception.DishInUseException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -32,7 +33,8 @@ public class DishController {
 
     private final DishService dishService;
     private final InventoryService inventoryService;
-    private final UnitService unitService;
+    private final PreparedItemService preparedItemService;
+    private final IngredientAggregationService ingredientAggregationService;
 
     @GetMapping
     public String list(Model model) {
@@ -47,6 +49,7 @@ public class DishController {
         dto.setIngredients(new ArrayList<>(List.of(new DishIngredientDto())));
         model.addAttribute("dto", dto);
         model.addAttribute("groceryItems", inventoryService.getAllItems());
+        model.addAttribute("preparedItems", preparedItemService.getAll());
         model.addAttribute("mode", "create");
         return "menu/dishes/form";
     }
@@ -56,6 +59,7 @@ public class DishController {
                          BindingResult result, Model model) {
         if (result.hasErrors()) {
             model.addAttribute("groceryItems", inventoryService.getAllItems());
+            model.addAttribute("preparedItems", preparedItemService.getAll());
             model.addAttribute("mode", "create");
             return "menu/dishes/form";
         }
@@ -68,13 +72,14 @@ public class DishController {
         Dish dish = dishService.getById(id);
         model.addAttribute("dish", dish);
         model.addAttribute("requiredInStock", requiredInStock(dish.getIngredients()));
+        model.addAttribute("estimatedCost", dishService.computeCost(dish));
         return "menu/dishes/detail";
     }
 
     private Map<Long, BigDecimal> requiredInStock(List<DishIngredient> ingredients) {
         Map<Long, BigDecimal> result = new HashMap<>();
         for (DishIngredient ing : ingredients) {
-            result.put(ing.getId(), unitService.toStockUnit(ing.getGroceryItem(), ing.getQuantityRequired()));
+            result.put(ing.getId(), ingredientAggregationService.requiredInStock(ing));
         }
         return result;
     }
@@ -91,7 +96,11 @@ public class DishController {
         dto.setIngredients(dish.getIngredients().stream()
                 .map(ing -> {
                     DishIngredientDto d = new DishIngredientDto();
-                    d.setGroceryItemId(ing.getGroceryItem().getId());
+                    if (ing.getGroceryItem() != null) {
+                        d.setGroceryItemId(ing.getGroceryItem().getId());
+                    } else {
+                        d.setPreparedItemId(ing.getPreparedItem().getId());
+                    }
                     d.setQuantityRequired(ing.getQuantityRequired());
                     return d;
                 })
@@ -99,6 +108,7 @@ public class DishController {
         model.addAttribute("dto", dto);
         model.addAttribute("dish", dish);
         model.addAttribute("groceryItems", inventoryService.getAllItems());
+        model.addAttribute("preparedItems", preparedItemService.getAll());
         model.addAttribute("mode", "edit");
         return "menu/dishes/form";
     }
@@ -110,6 +120,7 @@ public class DishController {
         if (result.hasErrors()) {
             model.addAttribute("dish", dishService.getById(id));
             model.addAttribute("groceryItems", inventoryService.getAllItems());
+            model.addAttribute("preparedItems", preparedItemService.getAll());
             model.addAttribute("mode", "edit");
             return "menu/dishes/form";
         }
@@ -136,6 +147,7 @@ public class DishController {
     @GetMapping("/ingredient-row")
     public String ingredientRow(@RequestParam int index, Model model) {
         model.addAttribute("groceryItems", inventoryService.getAllItems());
+        model.addAttribute("preparedItems", preparedItemService.getAll());
         model.addAttribute("index", index);
         return "menu/dishes/fragments/ingredient-row :: ingredient-row";
     }
