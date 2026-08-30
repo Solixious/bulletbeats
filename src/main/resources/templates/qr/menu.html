@@ -155,9 +155,54 @@
 
   <!-- ── Category tabs (sticky below topbar) ───────────────────────── -->
   <div id="qr-sticky-header" class="fixed top-14 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
-    <!-- Search -->
-    <div class="px-3 pt-2 pb-1.5">
-      <div class="relative">
+    <!-- Tabs row (default view): pinned search icon + scrollable category tabs -->
+    <div id="qr-tabs-row" class="flex items-center gap-1.5 px-3 py-2">
+      <button type="button" onclick="qrOpenSearch()"
+              class="flex-shrink-0 w-8 h-8 rounded-full border border-elevated/60 text-sand
+                     hover:text-ivory hover:border-accent/40 transition-colors flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+      <div id="qr-cat-scroll" class="cat-tabs overflow-x-auto flex items-center gap-1 flex-1 min-w-0">
+        <!-- "All" tab -->
+        <button id="tab-all"
+                class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold
+                       bg-accent text-base transition-all"
+                th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},billId=${billId},customerName=${customerName},customerId=${customerId})}"
+                hx-target="#menu-grid"
+                hx-swap="innerHTML"
+                onclick="setActiveTab(this)">
+          All
+        </button>
+        <button th:each="dto : ${menuDto.categories}"
+                th:id="'tab-' + ${dto.category.id}"
+                class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm border border-elevated/60
+                       text-sand hover:text-ivory hover:border-accent/40 transition-all"
+                th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},categoryId=${dto.category.id},billId=${billId},customerName=${customerName},customerId=${customerId})}"
+                hx-target="#menu-grid"
+                hx-swap="innerHTML"
+                th:onclick="'setActiveTab(this)'"
+                th:text="${dto.category.name}">
+          Category
+        </button>
+      </div>
+      <!-- Scroll hint: hidden once user reaches the end -->
+      <div id="qr-cat-hint"
+           class="pointer-events-none absolute right-0 top-0 bottom-0 flex items-center justify-end pr-2"
+           style="background: linear-gradient(to right, transparent, #1C1C1C 60%); padding-left: 2.5rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+             fill="none" stroke="#00D4FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+             style="opacity:0.8">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Search row (shown in place of the tabs row while searching) -->
+    <div id="qr-search-row" class="hidden items-center gap-2 px-3 py-2">
+      <div class="relative flex-1 min-w-0">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
              fill="none" stroke="#9A9080" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
              class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -174,39 +219,8 @@
         <button type="button" id="qr-search-clear" onclick="qrClearSearch()"
                 class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-sand hover:text-ivory text-base leading-none">×</button>
       </div>
-    </div>
-    <div id="qr-cat-scroll" class="cat-tabs overflow-x-auto flex items-center gap-1 px-3 py-2">
-      <!-- "All" tab -->
-      <button id="tab-all"
-              class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold
-                     bg-accent text-base transition-all"
-              th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},billId=${billId},customerName=${customerName},customerId=${customerId})}"
-              hx-target="#menu-grid"
-              hx-swap="innerHTML"
-              onclick="setActiveTab(this); qrClearSearchInput()">
-        All
-      </button>
-      <button th:each="dto : ${menuDto.categories}"
-              th:id="'tab-' + ${dto.category.id}"
-              class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm border border-elevated/60
-                     text-sand hover:text-ivory hover:border-accent/40 transition-all"
-              th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},categoryId=${dto.category.id},billId=${billId},customerName=${customerName},customerId=${customerId})}"
-              hx-target="#menu-grid"
-              hx-swap="innerHTML"
-              th:onclick="'setActiveTab(this); qrClearSearchInput()'"
-              th:text="${dto.category.name}">
-        Category
-      </button>
-    </div>
-    <!-- Scroll hint: hidden once user reaches the end -->
-    <div id="qr-cat-hint"
-         class="pointer-events-none absolute right-0 top-0 bottom-0 flex items-center justify-end pr-2"
-         style="background: linear-gradient(to right, transparent, #1C1C1C 60%); padding-left: 2.5rem;">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-           fill="none" stroke="#00D4FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-           style="opacity:0.8">
-        <polyline points="9 18 15 12 9 6"/>
-      </svg>
+      <button type="button" onclick="qrCloseSearch()"
+              class="flex-shrink-0 text-sand hover:text-ivory text-sm font-bold px-1">Cancel</button>
     </div>
   </div>
 
@@ -316,35 +330,45 @@
       sessionStorage.setItem('bb_qr_code',       _qrCode);
     }
 
-    // Search box: toggle the clear (×) button and deselect category tabs while searching
+    // Open the search row in place of the category tabs row (icon tap)
+    function qrOpenSearch() {
+      var tabsRow = document.getElementById('qr-tabs-row');
+      var searchRow = document.getElementById('qr-search-row');
+      if (tabsRow) tabsRow.classList.add('hidden');
+      if (searchRow) { searchRow.classList.remove('hidden'); searchRow.classList.add('flex'); }
+      var input = document.getElementById('qr-search-input');
+      if (input) input.focus();
+    }
+    // Close the search row and go back to category tabs (Cancel button)
+    function qrCloseSearch() {
+      var el = document.getElementById('qr-search-input');
+      var hadValue = el && el.value;
+      if (el) el.value = '';
+      var clearBtn = document.getElementById('qr-search-clear');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      var tabsRow = document.getElementById('qr-tabs-row');
+      var searchRow = document.getElementById('qr-search-row');
+      if (searchRow) { searchRow.classList.add('hidden'); searchRow.classList.remove('flex'); }
+      if (tabsRow) tabsRow.classList.remove('hidden');
+      if (hadValue) {
+        var allTab = document.getElementById('tab-all');
+        if (allTab) setActiveTab(allTab);
+        el.dispatchEvent(new Event('search'));
+      }
+    }
+    // Search box: toggle the clear (×) button
     function qrOnSearchInput(el) {
       var clearBtn = document.getElementById('qr-search-clear');
       if (clearBtn) clearBtn.classList.toggle('hidden', !el.value);
-      if (el.value) {
-        document.querySelectorAll('.cat-tab').forEach(function(t) {
-          t.classList.remove('bg-accent', 'text-base', 'font-bold');
-          t.classList.add('border', 'border-elevated/60', 'text-sand');
-        });
-      } else {
-        var allTab = document.getElementById('tab-all');
-        if (allTab) setActiveTab(allTab);
-      }
     }
-    // Clear the search box without re-triggering a request (used when a category tab is clicked)
-    function qrClearSearchInput() {
-      var el = document.getElementById('qr-search-input');
-      if (!el) return;
-      el.value = '';
-      var clearBtn = document.getElementById('qr-search-clear');
-      if (clearBtn) clearBtn.classList.add('hidden');
-    }
-    // Clear the search box and re-fetch the "All" view (× button)
+    // Clear the search box text but stay in search mode (× button)
     function qrClearSearch() {
       var el = document.getElementById('qr-search-input');
       if (!el) return;
       el.value = '';
       qrOnSearchInput(el);
       el.dispatchEvent(new Event('search'));
+      el.focus();
     }
 
     // Size #menu-grid's top padding to the sticky header's actual rendered height
