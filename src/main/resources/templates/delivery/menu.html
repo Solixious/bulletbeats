@@ -144,7 +144,7 @@
   </header>
 
   <!-- ── Category tabs (sticky below topbar) — hidden once locked ─────── -->
-  <div th:unless="${locked}" class="fixed top-14 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
+  <div th:unless="${locked}" id="delivery-sticky-header" class="fixed top-14 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
     <!-- Search -->
     <div class="px-3 pt-2 pb-1.5">
       <div class="relative">
@@ -199,7 +199,7 @@
   </div>
 
   <!-- ── Menu grid ──────────────────────────────────────────────────── -->
-  <div id="menu-grid" th:class="${locked} ? 'px-4 pt-20 pb-4' : 'px-4 pt-44 pb-4'">
+  <div id="menu-grid" th:class="${locked} ? 'px-4 pt-20 pb-4' : 'px-4 pt-32 pb-4'">
     <!-- Closed banner (delivery hours) -->
     <div th:if="${hoursStatus.closed}"
          class="mb-4 px-4 py-3 rounded-lg bg-amber-500/15 border border-amber-500/30
@@ -329,6 +329,24 @@
       deliveryOnSearchInput(el);
       el.dispatchEvent(new Event('search'));
     }
+
+    // Size #menu-grid's top padding to the sticky header's actual rendered height
+    // (topbar + search + tabs) instead of a hardcoded value, since the search row
+    // changes that height and hardcoding it drifts out of sync easily.
+    // When locked, the sticky header doesn't render at all — leave the CSS-set pt-20 alone.
+    (function() {
+      var sticky = document.getElementById('delivery-sticky-header');
+      if (!sticky) return;
+      function syncMenuGridPadding() {
+        var topbar = document.querySelector('header');
+        var grid = document.getElementById('menu-grid');
+        if (!grid) return;
+        var h = (topbar ? topbar.offsetHeight : 0) + sticky.offsetHeight;
+        grid.style.paddingTop = h + 'px';
+      }
+      syncMenuGridPadding();
+      window.addEventListener('resize', syncMenuGridPadding);
+    })();
 
     function setActiveTab(el) {
       document.querySelectorAll('.cat-tab').forEach(t => {

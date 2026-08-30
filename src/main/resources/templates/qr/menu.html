@@ -154,7 +154,7 @@
   </header>
 
   <!-- ── Category tabs (sticky below topbar) ───────────────────────── -->
-  <div class="fixed top-14 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
+  <div id="qr-sticky-header" class="fixed top-14 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
     <!-- Search -->
     <div class="px-3 pt-2 pb-1.5">
       <div class="relative">
@@ -211,7 +211,7 @@
   </div>
 
   <!-- ── Menu grid ──────────────────────────────────────────────────── -->
-  <div id="menu-grid" class="px-4 pt-44 pb-4">
+  <div id="menu-grid" class="px-4 pt-32 pb-4">
     <th:block th:each="dto : ${menuDto.categories}">
       <div class="mb-6">
         <h3 class="font-heading text-xl text-sand tracking-widest mb-3 uppercase"
@@ -346,6 +346,22 @@
       qrOnSearchInput(el);
       el.dispatchEvent(new Event('search'));
     }
+
+    // Size #menu-grid's top padding to the sticky header's actual rendered height
+    // (topbar + search + tabs) instead of a hardcoded value, since the search row
+    // changes that height and hardcoding it drifts out of sync easily.
+    (function() {
+      function syncMenuGridPadding() {
+        var topbar = document.querySelector('header');
+        var sticky = document.getElementById('qr-sticky-header');
+        var grid = document.getElementById('menu-grid');
+        if (!grid) return;
+        var h = (topbar ? topbar.offsetHeight : 0) + (sticky ? sticky.offsetHeight : 0);
+        grid.style.paddingTop = h + 'px';
+      }
+      syncMenuGridPadding();
+      window.addEventListener('resize', syncMenuGridPadding);
+    })();
 
     // Category tab active state
     function setActiveTab(el) {
