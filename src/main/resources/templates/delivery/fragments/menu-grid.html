@@ -14,7 +14,8 @@
   </div>
 
   <div th:if="${#lists.isEmpty(items) and #lists.isEmpty(subcategoryGroups) and #lists.isEmpty(categories)}"
-       class="py-16 text-center text-sand text-sm">
+       class="py-16 text-center text-sand text-sm"
+       th:text="${searching} ? 'No items match your search.' : 'No items available in this category.'">
     No items available in this category.
   </div>
 

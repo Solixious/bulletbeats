@@ -26,21 +26,31 @@ public class PublicMenuController {
     private final AppConfigService appConfigService;
 
     @GetMapping
-    public String menu(@RequestParam(required = false) Long categoryId, Model model) {
+    public String menu(@RequestParam(required = false) Long categoryId,
+                       @RequestParam(required = false) String q,
+                       Model model) {
         model.addAttribute("categories", categoryService.getAllActive());
-        applyItemsAndTree(categoryId, model);
+        applyItemsAndTree(categoryId, q, model);
         model.addAttribute("selectedCategoryId", categoryId);
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
         return "public/menu";
     }
 
     @GetMapping("/items")
-    public String items(@RequestParam(required = false) Long categoryId, Model model) {
-        applyItemsAndTree(categoryId, model);
+    public String items(@RequestParam(required = false) Long categoryId,
+                        @RequestParam(required = false) String q,
+                        Model model) {
+        applyItemsAndTree(categoryId, q, model);
         return "public/menu :: items-list";
     }
 
-    private void applyItemsAndTree(Long categoryId, Model model) {
+    private void applyItemsAndTree(Long categoryId, String q, Model model) {
+        boolean searching = q != null && !q.isBlank();
+        model.addAttribute("searching", searching);
+        if (searching) {
+            model.addAttribute("items", menuService.searchActiveItemsTreeOrdered(q.trim()));
+            return;
+        }
         if (categoryId == null) {
             model.addAttribute("categoryTree", categoryService.getActiveCategoryTree());
             model.addAttribute("items", menuService.getAllItems());

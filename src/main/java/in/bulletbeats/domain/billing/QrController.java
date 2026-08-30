@@ -210,6 +210,7 @@ public class QrController {
     @GetMapping("/{qrCode}/menu-items")
     public String menuItems(@PathVariable String qrCode,
                             @RequestParam(required = false) Long categoryId,
+                            @RequestParam(required = false) String q,
                             @RequestParam Long billId,
                             @RequestParam(required = false) String customerName,
                             @RequestParam(required = false) Long customerId,
@@ -217,7 +218,10 @@ public class QrController {
         List<MenuItem> items = List.of();
         List<SubcategoryWithItemsDto> subcategoryGroups = List.of();
         List<CategoryWithItemsDto> categories = List.of();
-        if (categoryId == null) {
+        boolean searching = q != null && !q.isBlank();
+        if (searching) {
+            items = menuService.searchActiveItemsTreeOrdered(q.trim());
+        } else if (categoryId == null) {
             categories = qrOrderService.getGroupedMenuItems();
         } else {
             items = menuService.getItemsByCategory(categoryId);
@@ -233,6 +237,7 @@ public class QrController {
         model.addAttribute("items", items);
         model.addAttribute("subcategoryGroups", subcategoryGroups);
         model.addAttribute("categories", categories);
+        model.addAttribute("searching", searching);
         model.addAttribute("bill", bill);
         model.addAttribute("billId", billId);
         model.addAttribute("qrCode", qrCode);

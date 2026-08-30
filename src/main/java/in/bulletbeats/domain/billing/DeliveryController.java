@@ -198,12 +198,16 @@ public class DeliveryController {
     @GetMapping("/{billId}/menu-items")
     public String menuItems(@PathVariable Long billId,
                             @RequestParam(required = false) Long categoryId,
+                            @RequestParam(required = false) String q,
                             @RequestParam(required = false) String customerName,
                             Model model) {
         List<MenuItem> items = List.of();
         List<SubcategoryWithItemsDto> subcategoryGroups = List.of();
         List<CategoryWithItemsDto> categories = List.of();
-        if (categoryId == null) {
+        boolean searching = q != null && !q.isBlank();
+        if (searching) {
+            items = menuService.searchActiveItemsTreeOrdered(q.trim());
+        } else if (categoryId == null) {
             categories = deliveryOrderService.getGroupedMenuItems();
         } else {
             items = menuService.getItemsByCategory(categoryId);
@@ -219,6 +223,7 @@ public class DeliveryController {
         model.addAttribute("items", items);
         model.addAttribute("subcategoryGroups", subcategoryGroups);
         model.addAttribute("categories", categories);
+        model.addAttribute("searching", searching);
         model.addAttribute("bill", bill);
         model.addAttribute("billId", billId);
         model.addAttribute("customerName", customerName);

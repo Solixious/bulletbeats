@@ -31,6 +31,7 @@
   <style>
     .cat-tabs::-webkit-scrollbar { display: none; }
     .cat-tabs { -ms-overflow-style: none; scrollbar-width: none; }
+    input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
   </style>
 </head>
 <body class="bg-base font-body text-ivory min-h-screen">
@@ -63,6 +64,25 @@
       </svg>
     </a>
 
+    <!-- Search -->
+    <div class="relative mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="#9A9080" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+           class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="search" id="pub-search-input" name="q" placeholder="Search menu…" autocomplete="off"
+             class="w-full bg-surface border border-elevated/60 focus:border-accent rounded-full
+                    pl-9 pr-9 py-2 text-sm text-ivory placeholder-sand/50 outline-none transition-colors"
+             hx-get="/public/menu/items"
+             hx-trigger="keyup changed delay:300ms, search"
+             hx-target="#items-list"
+             hx-swap="outerHTML"
+             oninput="pubOnSearchInput(this)"/>
+      <button type="button" id="pub-search-clear" onclick="pubClearSearch()"
+              class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-sand hover:text-ivory text-base leading-none">×</button>
+    </div>
+
     <!-- Category filter -->
     <div th:if="${!#lists.isEmpty(categories)}" class="relative mb-6">
       <div id="pub-cat-scroll" class="cat-tabs overflow-x-auto flex gap-2 pb-0.5">
@@ -72,7 +92,7 @@
                 hx-get="/public/menu/items"
                 hx-target="#items-list"
                 hx-swap="outerHTML"
-                onclick="setActiveTab(this)">All</button>
+                onclick="setActiveTab(this); pubClearSearchInput()">All</button>
         <button th:each="cat : ${categories}"
                 th:id="'tab-' + ${cat.id}"
                 th:text="${cat.name}"
@@ -83,7 +103,7 @@
                                 ? 'bg-accent/20 text-accent border-accent/50'
                                 : 'text-sand border-elevated/60 hover:text-ivory'"
                 class="cat-tab flex-shrink-0 px-4 py-1.5 text-xs rounded-full border transition-colors cursor-pointer"
-                onclick="setActiveTab(this)">Category</button>
+                onclick="setActiveTab(this); pubClearSearchInput()">Category</button>
       </div>
       <!-- Scroll hint: hidden once user reaches the end -->
       <div id="pub-cat-hint"
@@ -100,7 +120,8 @@
     <!-- Item list (fragment target) -->
     <div id="items-list" th:fragment="items-list">
       <div th:if="${#lists.isEmpty(items)}"
-           class="text-center text-sand text-sm py-16">Nothing on the menu right now.</div>
+           class="text-center text-sand text-sm py-16"
+           th:text="${searching} ? 'No items match your search.' : 'Nothing on the menu right now.'">Nothing on the menu right now.</div>
 
       <th:block th:unless="${#lists.isEmpty(items)}">
 
@@ -247,6 +268,36 @@
   </main>
 
   <script>
+    // Search box: toggle the clear (×) button and deselect category tabs while searching
+    function pubOnSearchInput(el) {
+      var clearBtn = document.getElementById('pub-search-clear');
+      if (clearBtn) clearBtn.classList.toggle('hidden', !el.value);
+      if (el.value) {
+        document.querySelectorAll('.cat-tab').forEach(function(t) {
+          t.classList.remove('bg-accent/20', 'text-accent', 'border-accent/50');
+          t.classList.add('text-sand', 'border-elevated/60');
+        });
+      } else {
+        var allTab = document.getElementById('tab-all');
+        if (allTab) setActiveTab(allTab);
+      }
+    }
+    // Clear the search box without re-triggering a request (used when a category tab is clicked)
+    function pubClearSearchInput() {
+      var el = document.getElementById('pub-search-input');
+      if (!el) return;
+      el.value = '';
+      var clearBtn = document.getElementById('pub-search-clear');
+      if (clearBtn) clearBtn.classList.add('hidden');
+    }
+    // Clear the search box and re-fetch the "All" view (× button)
+    function pubClearSearch() {
+      var el = document.getElementById('pub-search-input');
+      if (!el) return;
+      el.value = '';
+      pubOnSearchInput(el);
+      el.dispatchEvent(new Event('search'));
+    }
     function setActiveTab(el) {
       document.querySelectorAll('.cat-tab').forEach(function(t) {
         t.classList.remove('bg-accent/20', 'text-accent', 'border-accent/50');
