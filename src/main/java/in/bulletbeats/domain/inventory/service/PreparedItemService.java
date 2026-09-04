@@ -14,6 +14,7 @@ import in.bulletbeats.domain.inventory.repository.PreparedItemRepository;
 import in.bulletbeats.domain.inventory.repository.PreparedItemStockMovementRepository;
 import in.bulletbeats.domain.menu.repository.ComboRepository;
 import in.bulletbeats.domain.menu.repository.DishRepository;
+import in.bulletbeats.domain.menu.service.MenuService;
 import in.bulletbeats.domain.shared.enums.MovementType;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.MissingUnitConversionException;
@@ -22,6 +23,8 @@ import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -45,6 +48,10 @@ public class PreparedItemService {
     private final UnitService unitService;
     private final DishRepository dishRepository;
     private final ComboRepository comboRepository;
+
+    @Lazy
+    @Autowired
+    private MenuService menuService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -182,6 +189,7 @@ public class PreparedItemService {
                 .createdBy(userId)
                 .build());
 
+        menuService.recomputeAllAutoMode();
         return item;
     }
 
@@ -214,6 +222,7 @@ public class PreparedItemService {
                 .createdBy(userId)
                 .build());
 
+        menuService.recomputeAllAutoMode();
         return item;
     }
 

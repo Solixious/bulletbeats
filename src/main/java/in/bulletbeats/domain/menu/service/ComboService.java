@@ -37,6 +37,7 @@ public class ComboService {
     private final UnitService unitService;
     private final InventoryService inventoryService;
     private final PreparedItemService preparedItemService;
+    private final MenuService menuService;
 
     public List<Combo> getAll() {
         return comboRepository.findByIsActiveTrueOrderByNameAsc();
@@ -59,7 +60,9 @@ public class ComboService {
                 .tenantId(1L)
                 .build();
         dto.getIngredients().forEach(i -> combo.getIngredients().add(buildIngredient(combo, i)));
-        return comboRepository.save(combo);
+        Combo saved = comboRepository.save(combo);
+        recomputeMenuItemAvailability(saved.getId());
+        return saved;
     }
 
     @Transactional
@@ -73,7 +76,16 @@ public class ComboService {
         combo.setDescription(dto.getDescription());
         combo.getIngredients().clear();
         dto.getIngredients().forEach(i -> combo.getIngredients().add(buildIngredient(combo, i)));
-        return comboRepository.save(combo);
+        Combo saved = comboRepository.save(combo);
+        recomputeMenuItemAvailability(saved.getId());
+        return saved;
+    }
+
+    /** Re-checks auto-mode availability for every menu item built on this combo (recipe just changed). */
+    private void recomputeMenuItemAvailability(Long comboId) {
+        for (MenuItem item : menuItemRepository.findByComboId(comboId)) {
+            menuService.recomputeAvailability(item.getId());
+        }
     }
 
     @Transactional

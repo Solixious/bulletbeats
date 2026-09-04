@@ -39,6 +39,7 @@ public class DishService {
     private final UnitService unitService;
     private final InventoryService inventoryService;
     private final PreparedItemService preparedItemService;
+    private final MenuService menuService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -73,7 +74,9 @@ public class DishService {
         if (dto.getIngredients() != null) {
             dto.getIngredients().forEach(i -> dish.getIngredients().add(buildIngredient(dish, i)));
         }
-        return dishRepository.save(dish);
+        Dish saved = dishRepository.save(dish);
+        recomputeMenuItemAvailability(saved.getId());
+        return saved;
     }
 
     @Transactional
@@ -93,7 +96,16 @@ public class DishService {
         if (dto.getIngredients() != null) {
             dto.getIngredients().forEach(i -> dish.getIngredients().add(buildIngredient(dish, i)));
         }
-        return dishRepository.save(dish);
+        Dish saved = dishRepository.save(dish);
+        recomputeMenuItemAvailability(saved.getId());
+        return saved;
+    }
+
+    /** Re-checks auto-mode availability for every menu item built on this dish (recipe just changed). */
+    private void recomputeMenuItemAvailability(Long dishId) {
+        for (MenuItem item : menuItemRepository.findByDishId(dishId)) {
+            menuService.recomputeAvailability(item.getId());
+        }
     }
 
     @Transactional
