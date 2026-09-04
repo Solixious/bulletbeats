@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Waiting Activities — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-3xl mx-auto">
+
+  <div class="mb-6">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide">Waiting Activities</h1>
+    <p class="text-sand text-sm mt-0.5">
+      Games, books, comics &amp; anything else customers can ask for while they wait — shown on the
+      order-confirmed screen after they place an order via QR or delivery.
+    </p>
+  </div>
+
+  <!-- Flash messages -->
+  <div th:if="${param.created}" class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Added.
+  </div>
+  <div th:if="${param.deleted}" class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Deleted.
+  </div>
+  <div th:if="${param.saved}" class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Settings saved.
+  </div>
+  <div th:if="${itemError}" class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/40 text-red-400 text-sm">
+    <span th:text="${itemError}"></span>
+  </div>
+
+  <!-- ── Messages & toggle ─────────────────────────────────────────── -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-5 mb-6">
+    <h2 class="font-heading text-lg text-ivory tracking-wide mb-4">Widget Settings</h2>
+    <form th:action="@{/admin/waiting-activities/settings}" method="post" class="space-y-4">
+
+      <label class="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" name="waitingEnabled" th:checked="${waitingEnabled}"
+               class="mt-0.5 accent-[#00D4FF]"/>
+        <div>
+          <p class="text-ivory text-sm font-medium">Show this widget to customers</p>
+          <p class="text-sand text-xs mt-0.5">Turn off to hide it entirely, even if items are active below.</p>
+        </div>
+      </label>
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Teaser Message</label>
+        <input type="text" name="teaserMessage" th:value="${teaserMessage}" required maxlength="200"
+               class="w-full bg-elevated rounded-lg px-3 py-2 text-ivory text-sm
+                      border border-elevated/60 focus:border-accent outline-none
+                      transition-colors placeholder-sand/40"/>
+        <p class="text-sand text-xs mt-1">Shown on the order-confirmed screen, next to a "See more" button.</p>
+      </div>
+
+      <div>
+        <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Help Message</label>
+        <input type="text" name="helpMessage" th:value="${helpMessage}" required maxlength="200"
+               class="w-full bg-elevated rounded-lg px-3 py-2 text-ivory text-sm
+                      border border-elevated/60 focus:border-accent outline-none
+                      transition-colors placeholder-sand/40"/>
+        <p class="text-sand text-xs mt-1">Shown at the bottom of the full list, inside the "See more" modal.</p>
+      </div>
+
+      <button type="submit"
+              class="px-4 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                     text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        SAVE
+      </button>
+    </form>
+  </div>
+
+  <!-- ── Add item ──────────────────────────────────────────────────── -->
+  <div class="bg-surface rounded-xl border border-elevated/60 p-4 mb-4">
+    <form th:action="@{/admin/waiting-activities/new}" method="post" class="flex flex-wrap items-end gap-3">
+      <div>
+        <label for="category" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Category</label>
+        <select id="category" name="category" required
+                class="bg-elevated border border-elevated focus:border-accent
+                       rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                       transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+          <option th:each="c : ${categories}" th:value="${c}"
+                  th:text="${c.emoji} + ' ' + ${c.displayName}">Games</option>
+        </select>
+      </div>
+      <div class="flex-1 min-w-48">
+        <label for="name" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Name</label>
+        <input id="name" name="name" type="text" required maxlength="100"
+               class="w-full bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      placeholder-sand/40 outline-none border border-elevated
+                      focus:border-accent focus:shadow-neon-sm transition-all duration-200"
+               placeholder="e.g. Rubik's Cube"/>
+      </div>
+      <div>
+        <label for="sortOrder" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">Order</label>
+        <input id="sortOrder" name="sortOrder" type="number" value="0"
+               class="w-20 bg-elevated rounded-lg px-4 py-2.5 text-ivory text-sm
+                      outline-none border border-elevated
+                      focus:border-accent focus:shadow-neon-sm transition-all duration-200"/>
+      </div>
+      <button type="submit"
+              class="px-4 py-2.5 rounded-lg bg-accent text-base font-heading tracking-widest
+                     text-sm hover:shadow-neon hover:brightness-110 transition-all duration-200">
+        ADD
+      </button>
+    </form>
+    <p class="mt-2 text-sand/50 text-xs">Lower "Order" values show first within a category.</p>
+  </div>
+
+  <!-- ── List ──────────────────────────────────────────────────────── -->
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+    <div th:if="${#lists.isEmpty(items)}" class="py-10 text-center text-sand text-sm">
+      Nothing added yet. Add an item above.
+    </div>
+    <table th:unless="${#lists.isEmpty(items)}" class="w-full text-left">
+      <thead>
+        <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
+          <th class="px-4 py-3 font-medium">Category</th>
+          <th class="px-4 py-3 font-medium">Name</th>
+          <th class="px-4 py-3 font-medium">Order</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="item : ${items}"
+            th:classappend="${!item.active} ? 'opacity-50' : ''"
+            class="border-b border-elevated/40 last:border-0 hover:bg-elevated/20 transition-colors">
+          <td class="px-4 py-3 text-sand text-sm" th:text="${item.category.emoji} + ' ' + ${item.category.displayName}"></td>
+          <td class="px-4 py-3 text-ivory text-sm" th:text="${item.name}"></td>
+          <td class="px-4 py-3 text-sand text-sm font-mono" th:text="${item.sortOrder}"></td>
+          <td class="px-4 py-3">
+            <span th:if="${item.active}" class="text-xs px-2 py-0.5 rounded-full bg-emerald-900/30 border border-emerald-700/30 text-emerald-400">Active</span>
+            <span th:unless="${item.active}" class="text-xs px-2 py-0.5 rounded-full bg-elevated border border-sand/20 text-sand">Hidden</span>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <form th:action="@{/admin/waiting-activities/{id}/toggle(id=${item.id})}" method="post">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                               hover:border-ivory/40 hover:text-ivory transition-colors">
+                  <span th:text="${item.active} ? 'Hide' : 'Show'"></span>
+                </button>
+              </form>
+              <form th:action="@{/admin/waiting-activities/{id}/delete(id=${item.id})}" method="post"
+                    onsubmit="return bbConfirm(this, 'Delete &quot;' + this.dataset.name + '&quot;?')"
+                    th:attr="data-name=${item.name}">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded border border-red-500/30 text-red-400
+                               hover:border-red-400/60 hover:bg-red-500/10 transition-colors">
+                  Delete
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+</body>
+</html>

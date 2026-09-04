@@ -18,6 +18,7 @@ import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.exception.BillNotEditableException;
 import in.bulletbeats.domain.shared.exception.InsufficientStockException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
+import in.bulletbeats.domain.waiting.service.WaitingActivityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -40,6 +41,7 @@ public class QrController {
     private final CategoryService categoryService;
     private final ActivityLogService activityLogService;
     private final AppConfigService appConfigService;
+    private final WaitingActivityService waitingActivityService;
 
     // ── Landing ───────────────────────────────────────────────────────────
 
@@ -105,6 +107,8 @@ public class QrController {
         model.addAttribute("locked", bill.getStatus().isTerminal());
         model.addAttribute("promotedItem", bill.getStatus() == BillStatus.DRAFT
                 ? menuService.getPromotedItem().orElse(null) : null);
+        model.addAttribute("waitingGroups", waitingActivityService.getActiveGrouped());
+        model.addAttribute("waitingHelpMessage", waitingActivityService.getHelpMessage());
         return "qr/menu";
     }
 
@@ -268,6 +272,8 @@ public class QrController {
         model.addAttribute("bill", bill);
         model.addAttribute("qrCode", qrCode);
         model.addAttribute("customerName", customerName != null ? customerName : "Guest");
+        model.addAttribute("waitingEnabled", waitingActivityService.isEnabled());
+        model.addAttribute("waitingTeaserMessage", waitingActivityService.getTeaserMessage());
         return "qr/fragments/order-panel :: order-panel";
     }
 }

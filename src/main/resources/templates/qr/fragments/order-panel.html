@@ -167,10 +167,20 @@
       </div>
 
       <!-- CTA: CONFIRMED — can still add items -->
-      <div th:if="${bill.status.name() == 'CONFIRMED'}">
+      <div th:if="${bill.status.name() == 'CONFIRMED'}" class="space-y-2">
         <div class="w-full py-3 rounded-xl border border-amber-400/30 bg-amber-400/10
                     text-amber-400 text-center text-sm font-bold">
           ✓ Sent to Kitchen — You Can Still Add Items
+        </div>
+        <div th:if="${waitingEnabled}"
+             class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-elevated/60 border border-elevated/60">
+          <span class="text-lg flex-shrink-0">🎲</span>
+          <span class="flex-1 text-sand text-xs leading-snug" th:text="${waitingTeaserMessage}">While you wait...</span>
+          <button type="button" onclick="openWaitingModal()"
+                  class="flex-shrink-0 text-xs px-2.5 py-1.5 rounded border border-accent/40 text-accent
+                         hover:bg-accent/10 transition-colors whitespace-nowrap">
+            See more →
+          </button>
         </div>
       </div>
 

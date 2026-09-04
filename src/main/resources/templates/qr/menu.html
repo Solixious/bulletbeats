@@ -316,6 +316,37 @@
     </div>
   </div>
 
+  <!-- ── "While you wait" modal ─────────────────────────────────────── -->
+  <div th:if="${waitingGroups != null and !#lists.isEmpty(waitingGroups)}"
+       id="waiting-modal"
+       class="fixed inset-0 z-[120] bg-black/70 items-center justify-center p-5"
+       style="display:none"
+       onclick="closeWaitingModal(event)">
+    <div class="bg-surface rounded-2xl border border-elevated/60 w-full max-w-sm max-h-[80vh] flex flex-col"
+         onclick="event.stopPropagation()">
+      <div class="px-5 pt-5 pb-3 border-b border-elevated/40 flex items-center justify-between flex-shrink-0">
+        <p class="text-ivory font-heading text-xl tracking-wide">While You Wait</p>
+        <button type="button" onclick="closeWaitingModal()"
+                class="text-sand/60 hover:text-ivory text-2xl leading-none">×</button>
+      </div>
+      <div class="px-5 py-4 overflow-y-auto space-y-5">
+        <div th:each="group : ${waitingGroups}">
+          <p class="text-accent text-xs uppercase tracking-widest mb-2"
+             th:text="${group.category.emoji} + ' ' + ${group.category.displayName}">Games</p>
+          <ul class="space-y-1.5">
+            <li th:each="item : ${group.items}" class="text-ivory text-sm flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-accent/60 flex-shrink-0"></span>
+              <span th:text="${item.name}">Item</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="px-5 py-4 border-t border-elevated/40 flex-shrink-0">
+        <p class="text-sand text-xs text-center" th:text="${waitingHelpMessage}">Ask a staff member for help.</p>
+      </div>
+    </div>
+  </div>
+
   <script th:inline="javascript">
     // Session storage — save session data on first load
     const _billId    = /*[[${bill.id}]]*/ 0;
@@ -529,6 +560,18 @@
       document.getElementById('qty-modal').style.display = 'none';
       _qtyModalForm = null;
       form.requestSubmit();
+    }
+
+    // "While you wait" modal — lives outside #order-panel so it survives the
+    // 5s poll swap that refreshes the order panel while an order is CONFIRMED.
+    function openWaitingModal() {
+      var el = document.getElementById('waiting-modal');
+      if (el) el.style.display = 'flex';
+    }
+    function closeWaitingModal(e) {
+      if (e && e.target !== e.currentTarget) return;
+      var el = document.getElementById('waiting-modal');
+      if (el) el.style.display = 'none';
     }
 
     // Preserve bottom-sheet open state across order-panel HTMX swaps.
