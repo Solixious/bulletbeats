@@ -4,10 +4,12 @@ import in.bulletbeats.domain.inventory.dto.CreateGroceryItemDto;
 import in.bulletbeats.domain.inventory.dto.StockAdjustmentDto;
 import in.bulletbeats.domain.inventory.dto.UpdateGroceryItemDto;
 import in.bulletbeats.domain.inventory.entity.GroceryItem;
+import in.bulletbeats.domain.inventory.entity.InventoryCategory;
 import in.bulletbeats.domain.inventory.entity.ReplenishmentRequest;
 import in.bulletbeats.domain.inventory.entity.StockMovement;
 import in.bulletbeats.domain.inventory.entity.Supplier;
 import in.bulletbeats.domain.inventory.repository.GroceryItemRepository;
+import in.bulletbeats.domain.inventory.repository.InventoryCategoryRepository;
 import in.bulletbeats.domain.inventory.repository.PreparedItemRepository;
 import in.bulletbeats.domain.inventory.repository.PurchaseOrderRepository;
 import in.bulletbeats.domain.inventory.repository.ReplenishmentRequestRepository;
@@ -54,6 +56,7 @@ public class InventoryService {
     private final DishRepository dishRepository;
     private final ComboRepository comboRepository;
     private final PreparedItemRepository preparedItemRepository;
+    private final InventoryCategoryRepository inventoryCategoryRepository;
     private final UnitService unitService;
 
     @Lazy
@@ -133,6 +136,7 @@ public class InventoryService {
             throw new DuplicateGroceryItemException(dto.getName());
         }
         Supplier supplier = resolveSupplier(dto.getSupplierId());
+        InventoryCategory category = resolveCategory(dto.getCategoryId());
         GroceryItem item = GroceryItem.builder()
                 .name(dto.getName())
                 .unit(dto.getUnit().toLowerCase())
@@ -140,6 +144,7 @@ public class InventoryService {
                 .minThreshold(dto.getMinThreshold())
                 .reorderQuantity(dto.getReorderQuantity())
                 .defaultSupplier(supplier)
+                .category(category)
                 .brand(blankToNull(dto.getBrand()))
                 .packCost(dto.getPackCost())
                 .packQuantity(dto.getPackQuantity())
@@ -163,11 +168,13 @@ public class InventoryService {
             throw new DuplicateGroceryItemException(dto.getName());
         }
         Supplier supplier = resolveSupplier(dto.getSupplierId());
+        InventoryCategory category = resolveCategory(dto.getCategoryId());
         item.setName(dto.getName());
         item.setUnit(dto.getUnit().toLowerCase());
         item.setMinThreshold(dto.getMinThreshold());
         item.setReorderQuantity(dto.getReorderQuantity());
         item.setDefaultSupplier(supplier);
+        item.setCategory(category);
         item.setBrand(blankToNull(dto.getBrand()));
         item.setPackCost(dto.getPackCost());
         item.setPackQuantity(dto.getPackQuantity());
@@ -344,5 +351,13 @@ public class InventoryService {
         }
         return supplierRepository.findById(supplierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + supplierId));
+    }
+
+    private InventoryCategory resolveCategory(Long categoryId) {
+        if (categoryId == null) {
+            return null;
+        }
+        return inventoryCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory category not found with id: " + categoryId));
     }
 }

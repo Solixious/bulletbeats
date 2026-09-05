@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Inventory Categories — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-6 max-w-4xl mx-auto">
+
+  <a href="/inventory"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Back to Inventory
+  </a>
+
+  <div class="flex flex-wrap items-start justify-between gap-y-3 mb-6">
+    <div>
+      <h1 class="font-heading text-3xl text-ivory tracking-wide">Inventory Categories</h1>
+      <p class="text-sand text-sm mt-0.5">Drag rows to reorder — changes save automatically</p>
+    </div>
+    <a href="/inventory/categories/new"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
+              font-heading tracking-widest text-sm
+              hover:shadow-neon hover:brightness-110 transition-all duration-200">
+      + ADD CATEGORY
+    </a>
+  </div>
+
+  <div th:if="${param.created}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Category created successfully.
+  </div>
+  <div th:if="${param.updated}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Category updated.
+  </div>
+  <div th:if="${param.deleted}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+    Category deleted.
+  </div>
+  <div th:if="${deleteError}"
+       class="mb-4 px-4 py-3 rounded-lg bg-elevated border border-red-500/40 text-red-400 text-sm"
+       th:text="${deleteError}">
+  </div>
+
+  <div th:if="${#lists.isEmpty(categories)}"
+       class="py-16 text-center text-sand text-sm bg-surface rounded-xl border border-elevated/60">
+    No categories yet. <a href="/inventory/categories/new" class="text-accent hover:underline ml-1">Add one?</a>
+  </div>
+
+  <div id="sortable-categories" th:unless="${#lists.isEmpty(categories)}"
+       class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+    <div th:each="cat : ${categories}"
+         th:data-id="${cat.id}"
+         class="grid grid-cols-[2.5rem_4rem_1fr_5rem_auto] items-center gap-2 px-4 py-3
+                border-b border-elevated/60 last:border-0 hover:bg-elevated/20 transition-colors duration-100">
+
+      <span class="text-sand drag-handle cursor-grab active:cursor-grabbing select-none">⠿</span>
+      <span class="text-sand text-sm font-mono" th:text="${cat.displayOrder}"></span>
+      <span class="text-ivory text-sm font-medium" th:text="${cat.name}">Name</span>
+      <span class="text-ivory text-sm font-mono text-right" th:text="${itemCounts[cat.id]} ?: 0"></span>
+      <span class="flex items-center gap-2 justify-end">
+        <a th:href="@{/inventory/categories/{id}/edit(id=${cat.id})}"
+           class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                  hover:border-ivory/40 hover:text-ivory transition-colors">
+          Edit
+        </a>
+        <form th:action="@{/inventory/categories/{id}/delete(id=${cat.id})}"
+              method="post" class="inline"
+              onsubmit="return bbConfirm(this, 'Delete this category? This cannot be undone.')">
+          <button type="submit"
+                  class="text-xs px-2.5 py-1 rounded border border-red-500/50 text-red-400
+                         hover:border-red-500/80 hover:bg-red-500/10 transition-colors">
+            Delete
+          </button>
+        </form>
+      </span>
+    </div>
+  </div>
+
+  <p th:unless="${#lists.isEmpty(categories)}"
+     class="mt-3 text-sand text-xs text-right"
+     th:text="${#lists.size(categories)} + ' categor' + (${#lists.size(categories)} == 1 ? 'y' : 'ies')">
+  </p>
+
+  <!-- SortableJS — categories page only -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script>
+    var topSortable = document.getElementById('sortable-categories');
+    if (topSortable) {
+      Sortable.create(topSortable, {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: function () {
+          var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+          var csrfToken  = document.querySelector('meta[name="_csrf"]').content;
+          var rows = topSortable.querySelectorAll(':scope > [data-id]');
+          var ids = Array.from(rows).map(function (r) { return r.dataset.id; });
+          fetch('/inventory/categories/reorder', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'HX-Request': 'true',
+              [csrfHeader]: csrfToken
+            },
+            body: ids.map(function (id) { return 'ids=' + encodeURIComponent(id); }).join('&')
+          });
+        }
+      });
+    }
+  </script>
+
+</main>
+</body>
+</html>

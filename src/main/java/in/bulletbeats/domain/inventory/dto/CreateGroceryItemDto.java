@@ -29,6 +29,8 @@ public class CreateGroceryItemDto {
 
     private Long supplierId;
 
+    private Long categoryId;
+
     @Size(max = 100)
     private String brand;
 

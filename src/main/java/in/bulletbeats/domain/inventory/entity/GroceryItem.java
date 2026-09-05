@@ -35,6 +35,10 @@ public class GroceryItem extends BaseEntity {
     @JoinColumn(name = "default_supplier_id")
     private Supplier defaultSupplier;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private InventoryCategory category;
+
     @Column(length = 100)
     private String brand;
 

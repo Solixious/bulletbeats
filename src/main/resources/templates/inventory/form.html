@@ -62,6 +62,25 @@
            class="mt-1.5 text-red-400 text-xs"></p>
       </div>
 
+      <!-- Category -->
+      <div>
+        <label for="categoryId" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">
+          Category <span class="text-sand/40 normal-case">(optional)</span>
+        </label>
+        <select id="categoryId" th:field="*{categoryId}"
+                class="w-full bg-elevated border border-elevated focus:border-accent
+                       rounded-lg px-4 py-2.5 text-ivory text-sm outline-none
+                       transition-all duration-200 focus:shadow-neon-sm cursor-pointer">
+          <option value="">No category</option>
+          <option th:each="c : ${categories}"
+                  th:value="${c.id}"
+                  th:text="${c.name}">Category</option>
+        </select>
+        <p class="mt-1 text-sand/50 text-xs">
+          Don't see the category you need? <a href="/inventory/categories" class="text-accent hover:underline">Add it here</a>.
+        </p>
+      </div>
+
       <!-- Min threshold -->
       <div>
         <label for="minThreshold" class="block text-sand text-xs uppercase tracking-[0.2em] mb-1.5">

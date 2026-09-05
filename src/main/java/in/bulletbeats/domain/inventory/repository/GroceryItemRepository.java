@@ -11,12 +11,12 @@ import java.util.Optional;
 
 public interface GroceryItemRepository extends JpaRepository<GroceryItem, Long> {
 
-    @Query("SELECT g FROM GroceryItem g LEFT JOIN FETCH g.defaultSupplier WHERE g.isActive = true ORDER BY g.name ASC")
+    @Query("SELECT g FROM GroceryItem g LEFT JOIN FETCH g.defaultSupplier LEFT JOIN FETCH g.category WHERE g.isActive = true ORDER BY g.name ASC")
     List<GroceryItem> findAllActiveWithSupplier();
 
     List<GroceryItem> findByIsActiveTrueOrderByNameAsc();
 
-    @Query("SELECT g FROM GroceryItem g LEFT JOIN FETCH g.defaultSupplier WHERE g.id = :id")
+    @Query("SELECT g FROM GroceryItem g LEFT JOIN FETCH g.defaultSupplier LEFT JOIN FETCH g.category WHERE g.id = :id")
     Optional<GroceryItem> findByIdWithSupplier(@Param("id") Long id);
 
     @Query("SELECT g FROM GroceryItem g WHERE g.isActive = true AND g.quantityInStock < g.minThreshold")
@@ -29,4 +29,8 @@ public interface GroceryItemRepository extends JpaRepository<GroceryItem, Long> 
     boolean existsByNameIgnoreCase(String name);
 
     Optional<GroceryItem> findByNameIgnoreCase(String name);
+
+    boolean existsByCategoryId(Long categoryId);
+
+    long countByCategoryId(Long categoryId);
 }

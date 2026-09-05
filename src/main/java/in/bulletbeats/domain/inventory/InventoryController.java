@@ -4,6 +4,7 @@ import in.bulletbeats.domain.inventory.dto.CreateGroceryItemDto;
 import in.bulletbeats.domain.inventory.dto.StockAdjustmentDto;
 import in.bulletbeats.domain.inventory.dto.UpdateGroceryItemDto;
 import in.bulletbeats.domain.inventory.entity.GroceryItem;
+import in.bulletbeats.domain.inventory.service.InventoryCategoryService;
 import in.bulletbeats.domain.inventory.service.InventoryService;
 import in.bulletbeats.domain.inventory.service.SupplierService;
 import in.bulletbeats.domain.inventory.service.UnitService;
@@ -34,6 +35,7 @@ public class InventoryController {
     private final SupplierService supplierService;
     private final UnitService unitService;
     private final UserService userService;
+    private final InventoryCategoryService inventoryCategoryService;
 
     private Long currentUserId(Authentication auth) {
         return ((User) auth.getPrincipal()).getId();
@@ -53,6 +55,7 @@ public class InventoryController {
         model.addAttribute("dto", new CreateGroceryItemDto());
         model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
         model.addAttribute("units", unitService.getAllUnits());
+        model.addAttribute("categories", inventoryCategoryService.getAll());
         model.addAttribute("mode", "create");
         return "inventory/form";
     }
@@ -64,6 +67,7 @@ public class InventoryController {
         if (result.hasErrors()) {
             model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
             model.addAttribute("units", unitService.getAllUnits());
+            model.addAttribute("categories", inventoryCategoryService.getAll());
             model.addAttribute("mode", "create");
             return "inventory/form";
         }
@@ -91,6 +95,7 @@ public class InventoryController {
         dto.setMinThreshold(item.getMinThreshold());
         dto.setReorderQuantity(item.getReorderQuantity());
         if (item.getDefaultSupplier() != null) dto.setSupplierId(item.getDefaultSupplier().getId());
+        if (item.getCategory() != null) dto.setCategoryId(item.getCategory().getId());
         dto.setBrand(item.getBrand());
         dto.setPackCost(item.getPackCost());
         dto.setPackQuantity(item.getPackQuantity());
@@ -100,6 +105,7 @@ public class InventoryController {
         model.addAttribute("dto", dto);
         model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
         model.addAttribute("units", unitService.getAllUnits());
+        model.addAttribute("categories", inventoryCategoryService.getAll());
         model.addAttribute("mode", "edit");
         return "inventory/form";
     }
@@ -113,6 +119,7 @@ public class InventoryController {
             model.addAttribute("item", inventoryService.getItemById(id));
             model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
             model.addAttribute("units", unitService.getAllUnits());
+            model.addAttribute("categories", inventoryCategoryService.getAll());
             model.addAttribute("mode", "edit");
             return "inventory/form";
         }

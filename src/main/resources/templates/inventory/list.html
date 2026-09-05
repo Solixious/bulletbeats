@@ -34,6 +34,12 @@
         Units
       </a>
       <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+         href="/inventory/categories"
+         class="px-3 py-2 text-xs rounded border border-sand/30 text-sand
+                hover:border-ivory/40 hover:text-ivory transition-colors">
+        Categories
+      </a>
+      <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
          href="/inventory/new"
          class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
                 font-heading tracking-widest text-sm
@@ -97,6 +103,7 @@
       <thead>
         <tr class="border-b border-elevated/60 text-sand text-xs uppercase tracking-widest">
           <th class="px-4 py-3 font-medium">Name</th>
+          <th class="px-4 py-3 font-medium">Category</th>
           <th class="px-4 py-3 font-medium">Unit</th>
           <th class="px-4 py-3 font-medium">Stock</th>
           <th class="px-4 py-3 font-medium">Threshold</th>
@@ -122,6 +129,9 @@
                  class="text-ivory text-sm font-medium hover:text-accent transition-colors"
                  th:text="${item.name}">Item Name</a>
             </td>
+
+            <td class="px-4 py-3 text-sand text-sm"
+                th:text="${item.category != null} ? ${item.category.name} : '—'"></td>
 
             <td class="px-4 py-3 text-sand text-sm font-mono" th:text="${item.unit}"></td>
 
@@ -194,7 +204,7 @@
 
           <!-- Inline adjust panel row -->
           <tr>
-            <td colspan="7" class="p-0">
+            <td colspan="8" class="p-0">
               <div th:id="'adjust-panel-' + ${item.id}"></div>
             </td>
           </tr>

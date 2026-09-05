@@ -55,6 +55,13 @@
         </div>
       </div>
 
+      <!-- Category -->
+      <div>
+        <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Category</p>
+        <p class="text-ivory text-sm"
+           th:text="${item.category != null} ? ${item.category.name} : 'No category'"></p>
+      </div>
+
       <!-- Default Supplier -->
       <div>
         <p class="text-sand text-xs uppercase tracking-widest mb-0.5">Default Supplier</p>
