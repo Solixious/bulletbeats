@@ -32,9 +32,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -65,11 +69,13 @@ public class PreparedItemService {
                 .orElseThrow(() -> new ResourceNotFoundException("Prepared item not found with id: " + id));
     }
 
-    /** Cost of one full batch, from current grocery item costs. Null if any ingredient cost is unknown. */
+    /** Cost of one full batch, from current grocery/prepared item costs (nested prepared items recurse). Null if any ingredient cost is unknown. */
     public BigDecimal computeCostPerBatch(PreparedItem item) {
         BigDecimal total = BigDecimal.ZERO;
         for (PreparedItemIngredient ing : item.getIngredients()) {
-            BigDecimal costPerRecipeUnit = inventoryService.computeCostPerRecipeUnit(ing.getGroceryItem());
+            BigDecimal costPerRecipeUnit = ing.getGroceryItem() != null
+                    ? inventoryService.computeCostPerRecipeUnit(ing.getGroceryItem())
+                    : computeCostPerRecipeUnit(ing.getIngredientPreparedItem());
             if (costPerRecipeUnit == null) return null;
             total = total.add(costPerRecipeUnit.multiply(ing.getQuantityRequired()));
         }
@@ -145,30 +151,49 @@ public class PreparedItemService {
         PreparedItem item = getById(id);
         if (preparedItemStockMovementRepository.existsByPreparedItemId(id)
                 || dishRepository.existsByIngredientsPreparedItemId(id)
-                || comboRepository.existsByIngredientsPreparedItemId(id)) {
+                || comboRepository.existsByIngredientsPreparedItemId(id)
+                || preparedItemRepository.existsByIngredientsIngredientPreparedItemId(id)) {
             throw new PreparedItemInUseException(item.getName());
         }
         preparedItemRepository.delete(item);
     }
 
-    /** Consumes grocery item stock per the prep recipe and adds the resulting yield to this item's stock. */
+    /** Consumes grocery/prepared item stock per the prep recipe and adds the resulting yield to this item's stock. */
     @Transactional
     public PreparedItem prepareBatch(Long id, PrepareBatchDto dto, Long userId) {
         PreparedItem item = getById(id);
         BigDecimal batches = dto.getBatches();
 
-        Map<Long, BigDecimal> required = new HashMap<>();
+        Map<Long, BigDecimal> requiredGrocery = new HashMap<>();
+        Map<Long, BigDecimal> requiredPrepared = new HashMap<>();
         for (PreparedItemIngredient ing : item.getIngredients()) {
-            GroceryItem gi = ing.getGroceryItem();
-            BigDecimal qty = unitService.toStockUnit(gi.getRecipeUnit(), gi.getUnit(),
-                            ing.getQuantityRequired().multiply(batches))
-                    .setScale(3, RoundingMode.HALF_UP);
-            required.merge(gi.getId(), qty, BigDecimal::add);
+            if (ing.getGroceryItem() != null) {
+                GroceryItem gi = ing.getGroceryItem();
+                BigDecimal qty = unitService.toStockUnit(gi.getRecipeUnit(), gi.getUnit(),
+                                ing.getQuantityRequired().multiply(batches))
+                        .setScale(3, RoundingMode.HALF_UP);
+                requiredGrocery.merge(gi.getId(), qty, BigDecimal::add);
+            } else {
+                PreparedItem pi = ing.getIngredientPreparedItem();
+                BigDecimal qty = unitService.toStockUnit(pi.getRecipeUnit(), pi.getUnit(),
+                                ing.getQuantityRequired().multiply(batches))
+                        .setScale(3, RoundingMode.HALF_UP);
+                requiredPrepared.merge(pi.getId(), qty, BigDecimal::add);
+            }
         }
-        inventoryService.validateStock(required);
-        for (Map.Entry<Long, BigDecimal> entry : required.entrySet()) {
+        inventoryService.validateStock(requiredGrocery);
+        List<String> preparedShortages = findShortages(requiredPrepared);
+        if (!preparedShortages.isEmpty()) {
+            throw new InsufficientStockException(preparedShortages);
+        }
+        for (Map.Entry<Long, BigDecimal> entry : requiredGrocery.entrySet()) {
             GroceryItem gi = inventoryService.getItemById(entry.getKey());
             inventoryService.recordMovement(gi, MovementType.OUTBOUND, entry.getValue(),
+                    "PREP_BATCH", item.getId(), "Consumed to prepare " + item.getName(), userId);
+        }
+        for (Map.Entry<Long, BigDecimal> entry : requiredPrepared.entrySet()) {
+            PreparedItem pi = getById(entry.getKey());
+            recordMovement(pi, MovementType.OUTBOUND, entry.getValue(),
                     "PREP_BATCH", item.getId(), "Consumed to prepare " + item.getName(), userId);
         }
 
@@ -280,19 +305,70 @@ public class PreparedItemService {
     }
 
     private PreparedItemIngredient buildIngredient(PreparedItem item, PreparedItemIngredientDto dto) {
-        GroceryItem groceryItem = groceryItemRepository.findById(dto.getGroceryItemId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Grocery item not found with id: " + dto.getGroceryItemId()));
-        String recipeUnit = groceryItem.getRecipeUnit();
-        if (!recipeUnit.equalsIgnoreCase(groceryItem.getUnit())
-                && unitService.conversionFactor(recipeUnit, groceryItem.getUnit()) == null) {
-            throw new MissingUnitConversionException(recipeUnit, groceryItem.getUnit());
+        if (dto.getGroceryItemId() != null && dto.getPreparedItemId() != null) {
+            throw new IllegalArgumentException("Select either an inventory item or a prepared item, not both");
         }
-        return PreparedItemIngredient.builder()
-                .preparedItem(item)
-                .groceryItem(groceryItem)
-                .quantityRequired(dto.getQuantityRequired())
-                .build();
+        if (dto.getGroceryItemId() != null) {
+            GroceryItem groceryItem = groceryItemRepository.findById(dto.getGroceryItemId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Grocery item not found with id: " + dto.getGroceryItemId()));
+            String recipeUnit = groceryItem.getRecipeUnit();
+            if (!recipeUnit.equalsIgnoreCase(groceryItem.getUnit())
+                    && unitService.conversionFactor(recipeUnit, groceryItem.getUnit()) == null) {
+                throw new MissingUnitConversionException(recipeUnit, groceryItem.getUnit());
+            }
+            return PreparedItemIngredient.builder()
+                    .preparedItem(item)
+                    .groceryItem(groceryItem)
+                    .quantityRequired(dto.getQuantityRequired())
+                    .build();
+        }
+        if (dto.getPreparedItemId() != null) {
+            if (item.getId() != null && dto.getPreparedItemId().equals(item.getId())) {
+                throw new IllegalArgumentException("A prepared item can't use itself as an ingredient");
+            }
+            PreparedItem ingredientItem = preparedItemRepository.findById(dto.getPreparedItemId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Prepared item not found with id: " + dto.getPreparedItemId()));
+            if (item.getId() != null) {
+                checkNoCycle(item, ingredientItem);
+            }
+            String recipeUnit = ingredientItem.getRecipeUnit();
+            if (!recipeUnit.equalsIgnoreCase(ingredientItem.getUnit())
+                    && unitService.conversionFactor(recipeUnit, ingredientItem.getUnit()) == null) {
+                throw new MissingUnitConversionException(recipeUnit, ingredientItem.getUnit());
+            }
+            return PreparedItemIngredient.builder()
+                    .preparedItem(item)
+                    .ingredientPreparedItem(ingredientItem)
+                    .quantityRequired(dto.getQuantityRequired())
+                    .build();
+        }
+        throw new IllegalArgumentException("Select an ingredient");
+    }
+
+    /**
+     * Prevents circular recipes: throws if {@code candidate} already depends (directly or
+     * transitively, through its own prepared-item ingredients) on {@code item}.
+     */
+    private void checkNoCycle(PreparedItem item, PreparedItem candidate) {
+        Set<Long> visited = new HashSet<>();
+        Deque<PreparedItem> stack = new ArrayDeque<>();
+        stack.push(candidate);
+        while (!stack.isEmpty()) {
+            PreparedItem current = stack.pop();
+            if (!visited.add(current.getId())) continue;
+            for (PreparedItemIngredient ing : current.getIngredients()) {
+                PreparedItem nested = ing.getIngredientPreparedItem();
+                if (nested == null) continue;
+                if (nested.getId().equals(item.getId())) {
+                    throw new IllegalArgumentException(
+                            "Using \"" + candidate.getName() + "\" here would create a circular reference "
+                                    + "(it already depends on \"" + item.getName() + "\")");
+                }
+                stack.push(nested);
+            }
+        }
     }
 
     private String blankToNull(String value) {

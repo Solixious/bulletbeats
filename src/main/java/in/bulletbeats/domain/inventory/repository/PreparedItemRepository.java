@@ -16,4 +16,8 @@ public interface PreparedItemRepository extends JpaRepository<PreparedItem, Long
     @Query("SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END FROM PreparedItem p JOIN p.ingredients i " +
            "WHERE i.groceryItem.id = :groceryItemId")
     boolean existsByIngredientsGroceryItemId(@Param("groceryItemId") Long groceryItemId);
+
+    @Query("SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END FROM PreparedItem p JOIN p.ingredients i " +
+           "WHERE i.ingredientPreparedItem.id = :preparedItemId")
+    boolean existsByIngredientsIngredientPreparedItemId(@Param("preparedItemId") Long preparedItemId);
 }

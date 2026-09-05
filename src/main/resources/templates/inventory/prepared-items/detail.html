@@ -114,9 +114,10 @@
                 <td class="px-3 py-3 text-sand text-center">No ingredients defined.</td>
               </tr>
               <tr th:each="ing : ${item.ingredients}" class="border-b border-elevated/30 last:border-0">
-                <td class="px-3 py-2 text-ivory" th:text="${ing.groceryItem.name}"></td>
+                <td class="px-3 py-2 text-ivory"
+                    th:text="${ing.groceryItem != null} ? ${ing.groceryItem.name} : ${ing.ingredientPreparedItem.name} + ' (prepared)'"></td>
                 <td class="px-3 py-2 font-mono text-sand text-right"
-                    th:text="${#numbers.formatDecimal(ing.quantityRequired,1,3)} + ' ' + ${ing.groceryItem.recipeUnit}"></td>
+                    th:text="${#numbers.formatDecimal(ing.quantityRequired,1,3)} + ' ' + (${ing.groceryItem != null} ? ${ing.groceryItem.recipeUnit} : ${ing.ingredientPreparedItem.recipeUnit})"></td>
               </tr>
             </tbody>
           </table>
@@ -131,7 +132,7 @@
       <!-- Prepare a batch -->
       <div class="bg-surface rounded-xl border border-elevated/60 p-6">
         <h2 class="font-heading text-xl text-ivory tracking-wide mb-1">Prepare a Batch</h2>
-        <p class="text-sand text-xs mb-5">Consumes inventory items per the recipe and adds yield to stock</p>
+        <p class="text-sand text-xs mb-5">Consumes inventory/prepared items per the recipe and adds yield to stock</p>
 
         <form th:action="@{/admin/prepared-items/{id}/prepare(id=${item.id})}"
               th:object="${prepareDto}" method="post" class="space-y-4">

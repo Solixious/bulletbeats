@@ -23,8 +23,13 @@ public class PreparedItemIngredient {
     private PreparedItem preparedItem;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "grocery_item_id", nullable = false)
+    @JoinColumn(name = "grocery_item_id")
     private GroceryItem groceryItem;
+
+    /** Another prepared item used as an ingredient here, e.g. a filling used inside a frozen dumpling. */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "ingredient_prepared_item_id")
+    private PreparedItem ingredientPreparedItem;
 
     @Column(nullable = false, precision = 10, scale = 3)
     private BigDecimal quantityRequired;

@@ -144,14 +144,14 @@
         </div>
       </div>
 
-      <!-- Prep recipe (grocery items only) -->
+      <!-- Prep recipe -->
       <div>
         <div class="flex items-center justify-between mb-3">
           <label class="text-sand text-xs uppercase tracking-[0.2em]">Prep Recipe</label>
           <p th:if="*{#fields.hasErrors('ingredients')}"
              class="text-red-400 text-xs" th:errors="*{ingredients}"></p>
         </div>
-        <p class="text-sand/60 text-xs mb-2">Inventory items consumed to produce one batch</p>
+        <p class="text-sand/60 text-xs mb-2">Inventory or prepared items consumed to produce one batch</p>
 
         <div class="bg-elevated/40 rounded-lg overflow-hidden border border-elevated/60 mb-3">
           <div class="grid grid-cols-[1fr_160px_36px] gap-0 px-3 py-2 border-b border-elevated/60">
@@ -161,16 +161,24 @@
           </div>
           <div id="ingredients-list">
             <div th:each="ing,stat : *{ingredients}" class="ingredient-row grid grid-cols-[1fr_160px_36px] gap-2 px-3 py-2 border-b border-elevated/30 last:border-0 items-center">
-              <select th:name="'ingredients[' + ${stat.index} + '].groceryItemId'"
+              <select th:name="'ingredients[' + ${stat.index} + '].ingredientRef'"
                       required
                       class="bg-elevated border border-elevated/80 focus:border-accent
                              rounded px-3 py-1.5 text-ivory text-sm outline-none
                              focus:shadow-neon-sm cursor-pointer transition-all">
                 <option value="">Select item…</option>
-                <option th:each="gi : ${groceryItems}"
-                        th:value="${gi.id}"
-                        th:text="${gi.name + ' (' + (gi.minorUnit ?: gi.unit) + ')'}"
-                        th:selected="${gi.id == ing.groceryItemId}">Item</option>
+                <optgroup label="Inventory Items">
+                  <option th:each="gi : ${groceryItems}"
+                          th:value="'GROCERY:' + ${gi.id}"
+                          th:text="${gi.name + ' (' + (gi.minorUnit ?: gi.unit) + ')'}"
+                          th:selected="${('GROCERY:' + gi.id) == ing.ingredientRef}">Item</option>
+                </optgroup>
+                <optgroup label="Prepared Items">
+                  <option th:each="pi : ${preparedItems}"
+                          th:value="'PREPARED:' + ${pi.id}"
+                          th:text="${pi.name + ' (' + (pi.minorUnit ?: pi.unit) + ')'}"
+                          th:selected="${('PREPARED:' + pi.id) == ing.ingredientRef}">Item</option>
+                </optgroup>
               </select>
               <input type="number" step="0.001" min="0.001" required
                      th:name="'ingredients[' + ${stat.index} + '].quantityRequired'"
@@ -210,10 +218,13 @@
     </form>
   </div>
 
-  <script>
+  <script th:inline="javascript">
+    var _currentItemId = /*[[${mode == 'edit'} ? item.id : null]]*/ null;
     function addIngredientRow() {
       var count = document.querySelectorAll('#ingredients-list .ingredient-row').length;
-      htmx.ajax('GET', '/admin/prepared-items/ingredient-row?index=' + count, {
+      var url = '/admin/prepared-items/ingredient-row?index=' + count;
+      if (_currentItemId) url += '&excludeId=' + _currentItemId;
+      htmx.ajax('GET', url, {
         target: '#ingredients-list',
         swap: 'beforeend'
       });

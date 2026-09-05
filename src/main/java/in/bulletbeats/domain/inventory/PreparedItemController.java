@@ -56,6 +56,7 @@ public class PreparedItemController {
         dto.setIngredients(new ArrayList<>(List.of(new PreparedItemIngredientDto())));
         model.addAttribute("dto", dto);
         model.addAttribute("groceryItems", inventoryService.getAllItems());
+        model.addAttribute("preparedItems", preparedItemService.getAll());
         model.addAttribute("units", unitService.getAllUnits());
         model.addAttribute("mode", "create");
         return "inventory/prepared-items/form";
@@ -66,6 +67,7 @@ public class PreparedItemController {
                          BindingResult result, Model model) {
         if (result.hasErrors()) {
             model.addAttribute("groceryItems", inventoryService.getAllItems());
+            model.addAttribute("preparedItems", preparedItemService.getAll());
             model.addAttribute("units", unitService.getAllUnits());
             model.addAttribute("mode", "create");
             return "inventory/prepared-items/form";
@@ -100,7 +102,11 @@ public class PreparedItemController {
         dto.setIngredients(item.getIngredients().stream()
                 .map(ing -> {
                     PreparedItemIngredientDto d = new PreparedItemIngredientDto();
-                    d.setGroceryItemId(ing.getGroceryItem().getId());
+                    if (ing.getGroceryItem() != null) {
+                        d.setGroceryItemId(ing.getGroceryItem().getId());
+                    } else {
+                        d.setPreparedItemId(ing.getIngredientPreparedItem().getId());
+                    }
                     d.setQuantityRequired(ing.getQuantityRequired());
                     return d;
                 })
@@ -108,6 +114,7 @@ public class PreparedItemController {
         model.addAttribute("dto", dto);
         model.addAttribute("item", item);
         model.addAttribute("groceryItems", inventoryService.getAllItems());
+        model.addAttribute("preparedItems", preparedItemsExcluding(id));
         model.addAttribute("units", unitService.getAllUnits());
         model.addAttribute("mode", "edit");
         return "inventory/prepared-items/form";
@@ -120,6 +127,7 @@ public class PreparedItemController {
         if (result.hasErrors()) {
             model.addAttribute("item", preparedItemService.getById(id));
             model.addAttribute("groceryItems", inventoryService.getAllItems());
+            model.addAttribute("preparedItems", preparedItemsExcluding(id));
             model.addAttribute("units", unitService.getAllUnits());
             model.addAttribute("mode", "edit");
             return "inventory/prepared-items/form";
@@ -141,10 +149,23 @@ public class PreparedItemController {
     }
 
     @GetMapping("/ingredient-row")
-    public String ingredientRow(@RequestParam int index, Model model) {
+    public String ingredientRow(@RequestParam int index,
+                                @RequestParam(required = false) Long excludeId,
+                                Model model) {
         model.addAttribute("groceryItems", inventoryService.getAllItems());
+        model.addAttribute("preparedItems", preparedItemsExcluding(excludeId));
         model.addAttribute("index", index);
         return "inventory/prepared-items/fragments/ingredient-row :: ingredient-row";
+    }
+
+    /** Prepared items eligible to be picked as an ingredient — a prepared item can't consume itself. */
+    private List<PreparedItem> preparedItemsExcluding(Long id) {
+        if (id == null) {
+            return preparedItemService.getAll();
+        }
+        return preparedItemService.getAll().stream()
+                .filter(pi -> !pi.getId().equals(id))
+                .toList();
     }
 
     @PostMapping("/{id}/prepare")
