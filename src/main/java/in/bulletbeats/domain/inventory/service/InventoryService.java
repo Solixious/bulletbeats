@@ -94,6 +94,15 @@ public class InventoryService {
                 .toList();
     }
 
+    /** Cost per the item's stock unit (the unit its quantityInStock is tracked in). Null if not computable. */
+    public BigDecimal computeCostPerStockUnit(GroceryItem item) {
+        BigDecimal costPerUnit = item.getCostPerUnit();
+        if (costPerUnit == null) return null;
+        BigDecimal factor = unitService.conversionFactor(item.getPackUnit(), item.getUnit());
+        if (factor == null || factor.compareTo(BigDecimal.ZERO) <= 0) return null;
+        return costPerUnit.divide(factor, 4, RoundingMode.HALF_UP);
+    }
+
     public BigDecimal computeCostPerMinorUnit(GroceryItem item) {
         BigDecimal costPerUnit = item.getCostPerUnit();
         if (costPerUnit == null || item.getMinorUnit() == null) return null;
