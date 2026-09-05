@@ -83,9 +83,14 @@ public class InventoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Grocery item not found with id: " + id));
     }
 
-    public List<GroceryItem> getItemsWithLowStockFlag() {
+    /** Items for the main inventory list: grouped by category (in category display order,
+     *  uncategorized last), alphabetical by name within each group. */
+    public List<GroceryItem> getItemsSortedByCategoryThenName() {
         return groceryItemRepository.findAllActiveWithSupplier().stream()
-                .sorted(Comparator.comparing(GroceryItem::isLowStock).reversed())
+                .sorted(Comparator
+                        .comparing((GroceryItem g) -> g.getCategory() == null)
+                        .thenComparing(g -> g.getCategory() != null ? g.getCategory().getDisplayOrder() : 0)
+                        .thenComparing(g -> g.getName().toLowerCase()))
                 .toList();
     }
 

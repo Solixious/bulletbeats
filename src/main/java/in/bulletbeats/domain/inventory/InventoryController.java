@@ -43,7 +43,7 @@ public class InventoryController {
 
     @GetMapping
     public String list(Model model) {
-        model.addAttribute("items", inventoryService.getItemsWithLowStockFlag());
+        model.addAttribute("items", inventoryService.getItemsSortedByCategoryThenName());
         model.addAttribute("onOrderItemIds", inventoryService.getOnOrderGroceryItemIds());
         model.addAttribute("lowStockCount", inventoryService.getLowStockCount());
         return "inventory/list";
