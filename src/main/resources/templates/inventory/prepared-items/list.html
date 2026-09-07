@@ -15,7 +15,8 @@
         In-house batch-prepped ingredients (e.g. frozen momo, ginger-garlic paste) made from inventory items
       </p>
     </div>
-    <a href="/admin/prepared-items/new"
+    <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+       href="/admin/prepared-items/new"
        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-base
               font-heading tracking-widest text-sm
               hover:shadow-neon hover:brightness-110 transition-all duration-200">
@@ -36,7 +37,8 @@
 
     <div th:if="${#lists.isEmpty(items)}" class="py-16 text-center text-sand text-sm">
       No prepared items yet.
-      <a href="/admin/prepared-items/new" class="text-accent hover:underline ml-1">Add one?</a>
+      <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+         href="/admin/prepared-items/new" class="text-accent hover:underline ml-1">Add one?</a>
     </div>
 
     <table th:unless="${#lists.isEmpty(items)}" class="w-full text-left">
@@ -83,7 +85,8 @@
               <a th:href="@{/admin/prepared-items/{id}(id=${item.id})}"
                  class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
                         hover:border-ivory/40 hover:text-ivory transition-colors">View</a>
-              <a th:href="@{/admin/prepared-items/{id}/edit(id=${item.id})}"
+              <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+                 th:href="@{/admin/prepared-items/{id}/edit(id=${item.id})}"
                  class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
                         hover:border-ivory/40 hover:text-ivory transition-colors">Edit</a>
             </div>

@@ -135,6 +135,12 @@
           </span>
         </a>
 
+        <a href="/admin/prepared-items"
+           th:classappend="${uri.startsWith('/admin/prepared-items')} ? ${activeClass} : ${inactiveClass}"
+           class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
+          <span class="text-base">🥣</span> Prepared Items
+        </a>
+
         <a href="/customers"
            th:classappend="${uri.startsWith('/customers')} ? ${activeClass} : ${inactiveClass}"
            class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
@@ -203,11 +209,6 @@
              th:classappend="${uri.startsWith('/admin/combos')} ? ${activeClass} : ${inactiveClass}"
              class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
             <span class="text-base">🧺</span> Combos
-          </a>
-          <a href="/admin/prepared-items"
-             th:classappend="${uri.startsWith('/admin/prepared-items')} ? ${activeClass} : ${inactiveClass}"
-             class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
-            <span class="text-base">🥣</span> Prepared Items
           </a>
           <a href="/admin/categories"
              th:classappend="${uri.startsWith('/admin/categories')} ? ${activeClass} : ${inactiveClass}"

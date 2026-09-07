@@ -41,7 +41,8 @@
           <p class="text-sand text-sm mt-0.5" th:text="${item.description} ?: ''"></p>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
-          <a th:href="@{/admin/prepared-items/{id}/edit(id=${item.id})}"
+          <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+             th:href="@{/admin/prepared-items/{id}/edit(id=${item.id})}"
              class="text-xs px-3 py-1.5 rounded border border-sand/30 text-sand
                     hover:border-ivory/40 hover:text-ivory transition-colors">
             Edit

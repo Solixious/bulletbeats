@@ -31,7 +31,6 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/admin/prepared-items")
-@PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
 @RequiredArgsConstructor
 public class PreparedItemController {
 
@@ -51,6 +50,7 @@ public class PreparedItemController {
     }
 
     @GetMapping("/new")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public String newForm(Model model) {
         CreatePreparedItemDto dto = new CreatePreparedItemDto();
         dto.setIngredients(new ArrayList<>(List.of(new PreparedItemIngredientDto())));
@@ -63,6 +63,7 @@ public class PreparedItemController {
     }
 
     @PostMapping("/new")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public String create(@Valid @ModelAttribute("dto") CreatePreparedItemDto dto,
                          BindingResult result, Model model) {
         if (result.hasErrors()) {
@@ -89,6 +90,7 @@ public class PreparedItemController {
     }
 
     @GetMapping("/{id}/edit")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public String editForm(@PathVariable Long id, Model model) {
         PreparedItem item = preparedItemService.getById(id);
         UpdatePreparedItemDto dto = new UpdatePreparedItemDto();
@@ -121,6 +123,7 @@ public class PreparedItemController {
     }
 
     @PostMapping("/{id}/edit")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public String update(@PathVariable Long id,
                          @Valid @ModelAttribute("dto") UpdatePreparedItemDto dto,
                          BindingResult result, Model model) {
@@ -149,6 +152,7 @@ public class PreparedItemController {
     }
 
     @GetMapping("/ingredient-row")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public String ingredientRow(@RequestParam int index,
                                 @RequestParam(required = false) Long excludeId,
                                 Model model) {
