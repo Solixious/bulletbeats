@@ -4,7 +4,6 @@ import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.CafeTable;
 import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.repository.CafeTableRepository;
-import in.bulletbeats.domain.crm.repository.CustomerRepository;
 import in.bulletbeats.domain.dashboard.dto.DailyRevenueDto;
 import in.bulletbeats.domain.dashboard.dto.DashboardStatsDto;
 import in.bulletbeats.domain.dashboard.dto.TableStatusDto;
@@ -45,7 +44,6 @@ public class DashboardService {
     private final ReplenishmentRequestRepository replenishmentRequestRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final TiffinService tiffinService;
-    private final CustomerRepository customerRepository;
 
     public DashboardStatsDto buildStats(boolean isManagerOrAdmin) {
         LocalDate today = LocalDate.now();
@@ -207,20 +205,6 @@ public class DashboardService {
                         .setScale(1, RoundingMode.HALF_UP)
                 : null;
 
-        // Customer info source — QR self-entry vs staff/other channels (lifetime totals)
-        long qrEnteredCustomerCount = customerRepository.countByEnteredViaQr(true);
-        long nonQrEnteredCustomerCount = customerRepository.countByEnteredViaQr(false);
-        long totalCustomerCount = qrEnteredCustomerCount + nonQrEnteredCustomerCount;
-        BigDecimal qrEnteredCustomerPercent = totalCustomerCount > 0
-                ? BigDecimal.valueOf(qrEnteredCustomerCount)
-                        .divide(BigDecimal.valueOf(totalCustomerCount), 4, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(100))
-                        .setScale(1, RoundingMode.HALF_UP)
-                : null;
-        BigDecimal nonQrEnteredCustomerPercent = qrEnteredCustomerPercent != null
-                ? BigDecimal.valueOf(100).subtract(qrEnteredCustomerPercent)
-                : null;
-
         // Daily revenue for the past up to 30 days
         LocalDate rangeStart = today.minusDays(29);
         List<Object[]> rawDaily = billRepository.getDailyRevenueForRange(rangeStart.atStartOfDay(), todayEnd);
@@ -303,8 +287,6 @@ public class DashboardService {
                 newCustomersPastWeek, returningCustomersPastWeek,
                 newCustomerRetainedCount, newCustomerRetentionRate,
                 returningCustomerRetainedCount, returningCustomerRetentionRate,
-                qrEnteredCustomerCount, nonQrEnteredCustomerCount,
-                qrEnteredCustomerPercent, nonQrEnteredCustomerPercent,
                 activeBillCount, occupiedCount,
                 tables.size(), tableStatuses);
     }

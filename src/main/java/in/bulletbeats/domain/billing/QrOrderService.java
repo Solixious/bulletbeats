@@ -80,7 +80,7 @@ public class QrOrderService {
         Customer customer = null;
         if (phone != null && !phone.isBlank()) {
             isReturningCustomer = customerService.existsByPhone(phone.trim());
-            customer = customerService.findOrCreateByPhone(phone.trim(), name, SYSTEM_USER_ID, true);
+            customer = customerService.findOrCreateByPhone(phone.trim(), name, SYSTEM_USER_ID);
         }
 
         List<Bill> activeBills = billRepository.findByCafeTableIdAndStatusIn(table.getId(), ACTIVE_STATUSES);

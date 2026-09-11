@@ -70,12 +70,6 @@ public class DashboardStatsDto {
     private final long returningCustomerRetainedCount;
     private final BigDecimal returningCustomerRetentionRate;
 
-    // Customer info source — QR self-entry vs staff/other channels (Manager/Admin only, lifetime totals)
-    private final long qrEnteredCustomerCount;
-    private final long nonQrEnteredCustomerCount;
-    private final BigDecimal qrEnteredCustomerPercent;
-    private final BigDecimal nonQrEnteredCustomerPercent;
-
     // Active operations (all roles)
     private final long activeBillCount;
     private final long occupiedTableCount;
@@ -137,10 +131,6 @@ public class DashboardStatsDto {
             BigDecimal newCustomerRetentionRate,
             long returningCustomerRetainedCount,
             BigDecimal returningCustomerRetentionRate,
-            long qrEnteredCustomerCount,
-            long nonQrEnteredCustomerCount,
-            BigDecimal qrEnteredCustomerPercent,
-            BigDecimal nonQrEnteredCustomerPercent,
             long activeBillCount,
             long occupiedTableCount,
             long totalTableCount,
@@ -185,10 +175,6 @@ public class DashboardStatsDto {
                 .newCustomerRetentionRate(newCustomerRetentionRate)
                 .returningCustomerRetainedCount(returningCustomerRetainedCount)
                 .returningCustomerRetentionRate(returningCustomerRetentionRate)
-                .qrEnteredCustomerCount(qrEnteredCustomerCount)
-                .nonQrEnteredCustomerCount(nonQrEnteredCustomerCount)
-                .qrEnteredCustomerPercent(qrEnteredCustomerPercent)
-                .nonQrEnteredCustomerPercent(nonQrEnteredCustomerPercent)
                 .activeBillCount(activeBillCount)
                 .occupiedTableCount(occupiedTableCount)
                 .totalTableCount(totalTableCount)

@@ -23,16 +23,10 @@ public class CustomerService {
 
     @Transactional
     public Customer findOrCreateByPhone(String phone, String name, Long createdByUserId) {
-        return findOrCreateByPhone(phone, name, createdByUserId, false);
-    }
-
-    @Transactional
-    public Customer findOrCreateByPhone(String phone, String name, Long createdByUserId, boolean enteredViaQr) {
         return customerRepository.findByPhone(phone).orElseGet(() -> {
             Customer newCustomer = Customer.builder()
                     .phone(phone)
                     .name(name)
-                    .enteredViaQr(enteredViaQr)
                     .build();
             return customerRepository.save(newCustomer);
         });
