@@ -68,6 +68,10 @@ public class Customer extends BaseEntity {
     @Builder.Default
     private long tenantId = 1L;
 
+    @Column(name = "entered_via_qr", nullable = false)
+    @Builder.Default
+    private boolean enteredViaQr = false;
+
     public boolean isEligibleForStudentDiscount() {
         return isStudent && name != null && !name.isBlank();
     }

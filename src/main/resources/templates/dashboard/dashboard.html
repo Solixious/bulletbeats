@@ -378,6 +378,40 @@
       </div>
     </div><!-- /Row 2b -->
 
+    <!-- ── Row 2c: Customer info source (QR vs staff/other) ──────── -->
+    <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
+
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-heading text-2xl text-ivory tracking-widest">Customer Info Source</h2>
+        <p class="text-sand text-xs">All-time</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <!-- Entered via QR -->
+        <div class="rounded-xl border border-elevated/60 p-5">
+          <p class="text-sand text-xs uppercase tracking-widest mb-1">Entered Via QR</p>
+          <p class="font-heading text-4xl text-accent tracking-wide" th:text="${stats.qrEnteredCustomerCount}"></p>
+          <p class="text-sand text-xs mt-1" th:if="${stats.qrEnteredCustomerPercent != null}"
+             th:text="${stats.qrEnteredCustomerPercent} + '% of all customers'"></p>
+        </div>
+
+        <!-- Entered by staff / other channels -->
+        <div class="rounded-xl border border-elevated/60 p-5">
+          <p class="text-sand text-xs uppercase tracking-widest mb-1">Entered By Staff / Other</p>
+          <p class="font-heading text-4xl text-ivory tracking-wide" th:text="${stats.nonQrEnteredCustomerCount}"></p>
+          <p class="text-sand text-xs mt-1" th:if="${stats.nonQrEnteredCustomerPercent != null}"
+             th:text="${stats.nonQrEnteredCustomerPercent} + '% of all customers'"></p>
+        </div>
+
+      </div>
+
+      <div th:if="${stats.qrEnteredCustomerPercent != null}" class="mt-4 h-2 rounded-full bg-elevated overflow-hidden">
+        <div class="h-full rounded-full bg-accent transition-all"
+             th:style="'width:' + ${stats.qrEnteredCustomerPercent} + '%'"></div>
+      </div>
+    </div><!-- /Row 2c -->
+
     <!-- ── Row 3: Daily Revenue (past 30 days) ───────────────────── -->
     <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
 

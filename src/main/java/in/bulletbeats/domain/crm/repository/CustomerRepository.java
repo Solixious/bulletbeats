@@ -26,4 +26,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> search(@Param("query") String query);
 
     List<Customer> findAllByOrderByIsVipDescNameAsc();
+
+    long countByEnteredViaQr(boolean enteredViaQr);
 }
