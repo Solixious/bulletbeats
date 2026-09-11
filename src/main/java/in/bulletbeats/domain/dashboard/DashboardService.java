@@ -6,6 +6,7 @@ import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.repository.CafeTableRepository;
 import in.bulletbeats.domain.dashboard.dto.DailyRevenueDto;
 import in.bulletbeats.domain.dashboard.dto.DashboardStatsDto;
+import in.bulletbeats.domain.dashboard.dto.OrderNameStatsDto;
 import in.bulletbeats.domain.dashboard.dto.TableStatusDto;
 import in.bulletbeats.domain.inventory.repository.PurchaseOrderRepository;
 import in.bulletbeats.domain.inventory.repository.ReplenishmentRequestRepository;
@@ -205,6 +206,20 @@ public class DashboardService {
                         .setScale(1, RoundingMode.HALF_UP)
                 : null;
 
+        // Named (has a customer) vs anonymous orders — past week, past month, all-time
+        LocalDateTime last7DaysStart = today.minusDays(6).atStartOfDay();
+        LocalDateTime last30DaysStart = today.minusDays(29).atStartOfDay();
+
+        OrderNameStatsDto namedOrdersLastWeek = buildOrderNameStats(
+                billRepository.countNamedOrdersForRange(last7DaysStart, todayEnd),
+                billRepository.countAnonymousOrdersForRange(last7DaysStart, todayEnd));
+        OrderNameStatsDto namedOrdersLastMonth = buildOrderNameStats(
+                billRepository.countNamedOrdersForRange(last30DaysStart, todayEnd),
+                billRepository.countAnonymousOrdersForRange(last30DaysStart, todayEnd));
+        OrderNameStatsDto namedOrdersAllTime = buildOrderNameStats(
+                billRepository.countNamedOrdersAllTime(),
+                billRepository.countAnonymousOrdersAllTime());
+
         // Daily revenue for the past up to 30 days
         LocalDate rangeStart = today.minusDays(29);
         List<Object[]> rawDaily = billRepository.getDailyRevenueForRange(rangeStart.atStartOfDay(), todayEnd);
@@ -287,7 +302,22 @@ public class DashboardService {
                 newCustomersPastWeek, returningCustomersPastWeek,
                 newCustomerRetainedCount, newCustomerRetentionRate,
                 returningCustomerRetainedCount, returningCustomerRetentionRate,
+                namedOrdersLastWeek, namedOrdersLastMonth, namedOrdersAllTime,
                 activeBillCount, occupiedCount,
                 tables.size(), tableStatuses);
+    }
+
+    private OrderNameStatsDto buildOrderNameStats(long namedCount, long anonymousCount) {
+        long total = namedCount + anonymousCount;
+        BigDecimal namedPercent = null;
+        BigDecimal anonymousPercent = null;
+        if (total > 0) {
+            namedPercent = BigDecimal.valueOf(namedCount)
+                    .divide(BigDecimal.valueOf(total), 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(1, RoundingMode.HALF_UP);
+            anonymousPercent = BigDecimal.valueOf(100).subtract(namedPercent);
+        }
+        return new OrderNameStatsDto(namedCount, anonymousCount, namedPercent, anonymousPercent);
     }
 }

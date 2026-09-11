@@ -378,6 +378,79 @@
       </div>
     </div><!-- /Row 2b -->
 
+    <!-- ── Row 2c: Named vs anonymous orders ──────────────────────── -->
+    <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
+
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-heading text-2xl text-ivory tracking-widest">Named vs Anonymous Orders</h2>
+        <p class="text-sand text-xs">Paid orders with a customer attached vs none</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        <!-- Last 7 days -->
+        <div class="rounded-xl border border-elevated/60 p-5">
+          <p class="text-sand text-xs uppercase tracking-widest mb-3">Last 7 Days</p>
+          <div class="flex items-baseline justify-between mb-1">
+            <span class="text-sand text-xs">Named</span>
+            <span class="font-heading text-2xl text-accent tracking-wide" th:text="${stats.namedOrdersLastWeek.namedOrderCount}"></span>
+          </div>
+          <div class="flex items-baseline justify-between mb-3">
+            <span class="text-sand text-xs">Anonymous</span>
+            <span class="font-heading text-2xl text-ivory tracking-wide" th:text="${stats.namedOrdersLastWeek.anonymousOrderCount}"></span>
+          </div>
+          <div th:if="${stats.namedOrdersLastWeek.namedOrderPercent != null}" class="h-2 rounded-full bg-elevated overflow-hidden">
+            <div class="h-full rounded-full bg-accent transition-all"
+                 th:style="'width:' + ${stats.namedOrdersLastWeek.namedOrderPercent} + '%'"></div>
+          </div>
+          <p class="text-sand text-xs mt-2" th:if="${stats.namedOrdersLastWeek.namedOrderPercent != null}"
+             th:text="${stats.namedOrdersLastWeek.namedOrderPercent} + '% named'"></p>
+          <p class="text-sand text-xs mt-2" th:unless="${stats.namedOrdersLastWeek.namedOrderPercent != null}">No paid orders yet</p>
+        </div>
+
+        <!-- Last 30 days -->
+        <div class="rounded-xl border border-elevated/60 p-5">
+          <p class="text-sand text-xs uppercase tracking-widest mb-3">Last 30 Days</p>
+          <div class="flex items-baseline justify-between mb-1">
+            <span class="text-sand text-xs">Named</span>
+            <span class="font-heading text-2xl text-accent tracking-wide" th:text="${stats.namedOrdersLastMonth.namedOrderCount}"></span>
+          </div>
+          <div class="flex items-baseline justify-between mb-3">
+            <span class="text-sand text-xs">Anonymous</span>
+            <span class="font-heading text-2xl text-ivory tracking-wide" th:text="${stats.namedOrdersLastMonth.anonymousOrderCount}"></span>
+          </div>
+          <div th:if="${stats.namedOrdersLastMonth.namedOrderPercent != null}" class="h-2 rounded-full bg-elevated overflow-hidden">
+            <div class="h-full rounded-full bg-accent transition-all"
+                 th:style="'width:' + ${stats.namedOrdersLastMonth.namedOrderPercent} + '%'"></div>
+          </div>
+          <p class="text-sand text-xs mt-2" th:if="${stats.namedOrdersLastMonth.namedOrderPercent != null}"
+             th:text="${stats.namedOrdersLastMonth.namedOrderPercent} + '% named'"></p>
+          <p class="text-sand text-xs mt-2" th:unless="${stats.namedOrdersLastMonth.namedOrderPercent != null}">No paid orders yet</p>
+        </div>
+
+        <!-- All time -->
+        <div class="rounded-xl border border-elevated/60 p-5">
+          <p class="text-sand text-xs uppercase tracking-widest mb-3">All Time</p>
+          <div class="flex items-baseline justify-between mb-1">
+            <span class="text-sand text-xs">Named</span>
+            <span class="font-heading text-2xl text-accent tracking-wide" th:text="${stats.namedOrdersAllTime.namedOrderCount}"></span>
+          </div>
+          <div class="flex items-baseline justify-between mb-3">
+            <span class="text-sand text-xs">Anonymous</span>
+            <span class="font-heading text-2xl text-ivory tracking-wide" th:text="${stats.namedOrdersAllTime.anonymousOrderCount}"></span>
+          </div>
+          <div th:if="${stats.namedOrdersAllTime.namedOrderPercent != null}" class="h-2 rounded-full bg-elevated overflow-hidden">
+            <div class="h-full rounded-full bg-accent transition-all"
+                 th:style="'width:' + ${stats.namedOrdersAllTime.namedOrderPercent} + '%'"></div>
+          </div>
+          <p class="text-sand text-xs mt-2" th:if="${stats.namedOrdersAllTime.namedOrderPercent != null}"
+             th:text="${stats.namedOrdersAllTime.namedOrderPercent} + '% named'"></p>
+          <p class="text-sand text-xs mt-2" th:unless="${stats.namedOrdersAllTime.namedOrderPercent != null}">No paid orders yet</p>
+        </div>
+
+      </div>
+    </div><!-- /Row 2c -->
+
     <!-- ── Row 3: Daily Revenue (past 30 days) ───────────────────── -->
     <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
 

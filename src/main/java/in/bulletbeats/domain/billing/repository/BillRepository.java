@@ -97,6 +97,32 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
             """)
     long getBillCountForRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    @Query("""
+            SELECT COUNT(b)
+            FROM Bill b
+            WHERE b.status = 'PAID'
+            AND b.customer IS NOT NULL
+            AND b.createdAt >= :from
+            AND b.createdAt < :to
+            """)
+    long countNamedOrdersForRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+            SELECT COUNT(b)
+            FROM Bill b
+            WHERE b.status = 'PAID'
+            AND b.customer IS NULL
+            AND b.createdAt >= :from
+            AND b.createdAt < :to
+            """)
+    long countAnonymousOrdersForRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("SELECT COUNT(b) FROM Bill b WHERE b.status = 'PAID' AND b.customer IS NOT NULL")
+    long countNamedOrdersAllTime();
+
+    @Query("SELECT COUNT(b) FROM Bill b WHERE b.status = 'PAID' AND b.customer IS NULL")
+    long countAnonymousOrdersAllTime();
+
     @Query(value = """
             SELECT
               DATE(b.created_at) AS billDate,

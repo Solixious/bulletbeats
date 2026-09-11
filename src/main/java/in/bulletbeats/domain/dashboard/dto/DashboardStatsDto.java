@@ -70,6 +70,11 @@ public class DashboardStatsDto {
     private final long returningCustomerRetainedCount;
     private final BigDecimal returningCustomerRetentionRate;
 
+    // Named (has a customer) vs anonymous orders (Manager/Admin only)
+    private final OrderNameStatsDto namedOrdersLastWeek;
+    private final OrderNameStatsDto namedOrdersLastMonth;
+    private final OrderNameStatsDto namedOrdersAllTime;
+
     // Active operations (all roles)
     private final long activeBillCount;
     private final long occupiedTableCount;
@@ -131,6 +136,9 @@ public class DashboardStatsDto {
             BigDecimal newCustomerRetentionRate,
             long returningCustomerRetainedCount,
             BigDecimal returningCustomerRetentionRate,
+            OrderNameStatsDto namedOrdersLastWeek,
+            OrderNameStatsDto namedOrdersLastMonth,
+            OrderNameStatsDto namedOrdersAllTime,
             long activeBillCount,
             long occupiedTableCount,
             long totalTableCount,
@@ -175,6 +183,9 @@ public class DashboardStatsDto {
                 .newCustomerRetentionRate(newCustomerRetentionRate)
                 .returningCustomerRetainedCount(returningCustomerRetainedCount)
                 .returningCustomerRetentionRate(returningCustomerRetentionRate)
+                .namedOrdersLastWeek(namedOrdersLastWeek)
+                .namedOrdersLastMonth(namedOrdersLastMonth)
+                .namedOrdersAllTime(namedOrdersAllTime)
                 .activeBillCount(activeBillCount)
                 .occupiedTableCount(occupiedTableCount)
                 .totalTableCount(totalTableCount)
