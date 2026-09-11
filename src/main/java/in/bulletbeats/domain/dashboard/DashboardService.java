@@ -21,11 +21,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -147,6 +152,59 @@ public class DashboardService {
         BigDecimal tiffinMonthlyRevenue = tiffinService.calculateTotalMonthlyTiffinRevenue();
         long tiffinActiveCount = tiffinService.countActiveSubscriptions();
 
+        // Customer retention — past full calendar week (Mon-Sun) vs current week-to-date
+        LocalDate currentWeekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate pastWeekStart = currentWeekStart.minusWeeks(1);
+        LocalDate pastWeekEnd = currentWeekStart.minusDays(1);
+        LocalDateTime currentWeekStartDt = currentWeekStart.atStartOfDay();
+        LocalDateTime pastWeekStartDt = pastWeekStart.atStartOfDay();
+
+        List<Long> pastWeekVisitorIds =
+                billRepository.findDistinctPaidCustomerIdsInRange(pastWeekStartDt, currentWeekStartDt);
+        Set<Long> currentWeekVisitorIds = new HashSet<>(
+                billRepository.findDistinctPaidCustomerIdsInRange(currentWeekStartDt, todayEnd));
+
+        Map<Long, LocalDateTime> firstVisitByCustomer = pastWeekVisitorIds.isEmpty()
+                ? Map.of()
+                : billRepository.findFirstPaidVisitDates(pastWeekVisitorIds).stream()
+                        .collect(Collectors.toMap(row -> (Long) row[0], row -> (LocalDateTime) row[1]));
+
+        long newCustomersPastWeek = 0;
+        long returningCustomersPastWeek = 0;
+        long newCustomerRetainedCount = 0;
+        long returningCustomerRetainedCount = 0;
+
+        for (Long customerId : pastWeekVisitorIds) {
+            LocalDateTime firstVisit = firstVisitByCustomer.get(customerId);
+            boolean wasNew = firstVisit != null && !firstVisit.isBefore(pastWeekStartDt);
+            boolean returnedThisWeek = currentWeekVisitorIds.contains(customerId);
+            if (wasNew) {
+                newCustomersPastWeek++;
+                if (returnedThisWeek) {
+                    newCustomerRetainedCount++;
+                }
+            } else {
+                returningCustomersPastWeek++;
+                if (returnedThisWeek) {
+                    returningCustomerRetainedCount++;
+                }
+            }
+        }
+
+        BigDecimal newCustomerRetentionRate = newCustomersPastWeek > 0
+                ? BigDecimal.valueOf(newCustomerRetainedCount)
+                        .divide(BigDecimal.valueOf(newCustomersPastWeek), 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100))
+                        .setScale(1, RoundingMode.HALF_UP)
+                : null;
+
+        BigDecimal returningCustomerRetentionRate = returningCustomersPastWeek > 0
+                ? BigDecimal.valueOf(returningCustomerRetainedCount)
+                        .divide(BigDecimal.valueOf(returningCustomersPastWeek), 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100))
+                        .setScale(1, RoundingMode.HALF_UP)
+                : null;
+
         // Daily revenue for the past up to 30 days
         LocalDate rangeStart = today.minusDays(29);
         List<Object[]> rawDaily = billRepository.getDailyRevenueForRange(rangeStart.atStartOfDay(), todayEnd);
@@ -225,6 +283,10 @@ public class DashboardService {
                 vsGrocerySpendAmount.signum() > 0,
                 groceryBarThisWidth, groceryBarLastWidth,
                 tiffinMonthlyRevenue, tiffinActiveCount,
+                pastWeekStart, pastWeekEnd, currentWeekStart,
+                newCustomersPastWeek, returningCustomersPastWeek,
+                newCustomerRetainedCount, newCustomerRetentionRate,
+                returningCustomerRetainedCount, returningCustomerRetentionRate,
                 activeBillCount, occupiedCount,
                 tables.size(), tableStatuses);
     }

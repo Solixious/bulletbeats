@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -58,6 +59,17 @@ public class DashboardStatsDto {
     private final BigDecimal tiffinMonthlyRevenue;
     private final long tiffinActiveCount;
 
+    // Customer retention (Manager/Admin only) — based on the past full calendar week (Mon–Sun)
+    private final LocalDate pastWeekStart;
+    private final LocalDate pastWeekEnd;
+    private final LocalDate currentWeekStart;
+    private final long newCustomersPastWeek;
+    private final long returningCustomersPastWeek;
+    private final long newCustomerRetainedCount;
+    private final BigDecimal newCustomerRetentionRate;
+    private final long returningCustomerRetainedCount;
+    private final BigDecimal returningCustomerRetentionRate;
+
     // Active operations (all roles)
     private final long activeBillCount;
     private final long occupiedTableCount;
@@ -110,6 +122,15 @@ public class DashboardStatsDto {
             int groceryBarLastWidth,
             BigDecimal tiffinMonthlyRevenue,
             long tiffinActiveCount,
+            LocalDate pastWeekStart,
+            LocalDate pastWeekEnd,
+            LocalDate currentWeekStart,
+            long newCustomersPastWeek,
+            long returningCustomersPastWeek,
+            long newCustomerRetainedCount,
+            BigDecimal newCustomerRetentionRate,
+            long returningCustomerRetainedCount,
+            BigDecimal returningCustomerRetentionRate,
             long activeBillCount,
             long occupiedTableCount,
             long totalTableCount,
@@ -145,6 +166,15 @@ public class DashboardStatsDto {
                 .groceryBarLastWidth(groceryBarLastWidth)
                 .tiffinMonthlyRevenue(tiffinMonthlyRevenue)
                 .tiffinActiveCount(tiffinActiveCount)
+                .pastWeekStart(pastWeekStart)
+                .pastWeekEnd(pastWeekEnd)
+                .currentWeekStart(currentWeekStart)
+                .newCustomersPastWeek(newCustomersPastWeek)
+                .returningCustomersPastWeek(returningCustomersPastWeek)
+                .newCustomerRetainedCount(newCustomerRetainedCount)
+                .newCustomerRetentionRate(newCustomerRetentionRate)
+                .returningCustomerRetainedCount(returningCustomerRetainedCount)
+                .returningCustomerRetentionRate(returningCustomerRetentionRate)
                 .activeBillCount(activeBillCount)
                 .occupiedTableCount(occupiedTableCount)
                 .totalTableCount(totalTableCount)

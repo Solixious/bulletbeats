@@ -324,6 +324,60 @@
 
     </div><!-- /Row 2 -->
 
+    <!-- ── Row 2b: Customer retention ─────────────────────────────── -->
+    <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
+
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-heading text-2xl text-ivory tracking-widest">Customer Retention</h2>
+        <p class="text-sand text-xs"
+           th:text="${#temporals.format(stats.pastWeekStart, 'd MMM')} + '–' + ${#temporals.format(stats.pastWeekEnd, 'd MMM')} + ' vs this week'"></p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <!-- New customers -->
+        <div class="rounded-xl border border-elevated/60 p-5">
+          <p class="text-sand text-xs uppercase tracking-widest mb-1">New Customers — Last Week</p>
+          <p class="font-heading text-4xl text-accent tracking-wide" th:text="${stats.newCustomersPastWeek}"></p>
+          <div class="mt-4 pt-4 border-t border-elevated/60">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sand text-xs">Retained this week</span>
+              <span th:if="${stats.newCustomerRetentionRate != null}"
+                    class="text-xs font-medium text-emerald-400"
+                    th:text="${stats.newCustomerRetainedCount} + ' / ' + ${stats.newCustomersPastWeek} + ' (' + ${stats.newCustomerRetentionRate} + '%)'">
+              </span>
+              <span th:unless="${stats.newCustomerRetentionRate != null}" class="text-sand text-xs">No new customers last week</span>
+            </div>
+            <div th:if="${stats.newCustomerRetentionRate != null}" class="h-2 rounded-full bg-elevated overflow-hidden">
+              <div class="h-full rounded-full bg-accent transition-all"
+                   th:style="'width:' + ${stats.newCustomerRetentionRate} + '%'"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Returning customers -->
+        <div class="rounded-xl border border-elevated/60 p-5">
+          <p class="text-sand text-xs uppercase tracking-widest mb-1">Returning Customers — Last Week</p>
+          <p class="font-heading text-4xl text-ivory tracking-wide" th:text="${stats.returningCustomersPastWeek}"></p>
+          <div class="mt-4 pt-4 border-t border-elevated/60">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sand text-xs">Retained this week</span>
+              <span th:if="${stats.returningCustomerRetentionRate != null}"
+                    class="text-xs font-medium text-emerald-400"
+                    th:text="${stats.returningCustomerRetainedCount} + ' / ' + ${stats.returningCustomersPastWeek} + ' (' + ${stats.returningCustomerRetentionRate} + '%)'">
+              </span>
+              <span th:unless="${stats.returningCustomerRetentionRate != null}" class="text-sand text-xs">No returning customers last week</span>
+            </div>
+            <div th:if="${stats.returningCustomerRetentionRate != null}" class="h-2 rounded-full bg-elevated overflow-hidden">
+              <div class="h-full rounded-full bg-emerald-400 transition-all"
+                   th:style="'width:' + ${stats.returningCustomerRetentionRate} + '%'"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /Row 2b -->
+
     <!-- ── Row 3: Daily Revenue (past 30 days) ───────────────────── -->
     <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
 

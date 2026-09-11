@@ -151,4 +151,22 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
     @Query("UPDATE Bill b SET b.createdAt = :createdAt WHERE b.id = :id")
     void backdateCreatedAt(@Param("id") Long id, @Param("createdAt") LocalDateTime createdAt);
 
+    @Query("""
+            SELECT DISTINCT b.customer.id
+            FROM Bill b
+            WHERE b.status = 'PAID'
+            AND b.customer IS NOT NULL
+            AND b.createdAt >= :from AND b.createdAt < :to
+            """)
+    List<Long> findDistinctPaidCustomerIdsInRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+            SELECT b.customer.id, MIN(b.createdAt)
+            FROM Bill b
+            WHERE b.status = 'PAID'
+            AND b.customer.id IN :customerIds
+            GROUP BY b.customer.id
+            """)
+    List<Object[]> findFirstPaidVisitDates(@Param("customerIds") Collection<Long> customerIds);
+
 }
