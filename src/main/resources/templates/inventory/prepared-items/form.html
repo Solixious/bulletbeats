@@ -219,7 +219,7 @@
   </div>
 
   <script th:inline="javascript">
-    var _currentItemId = /*[[${mode == 'edit'} ? item.id : null]]*/ null;
+    var _currentItemId = /*[[${mode == 'edit' ? item.id : null}]]*/ null;
     function addIngredientRow() {
       var count = document.querySelectorAll('#ingredients-list .ingredient-row').length;
       var url = '/admin/prepared-items/ingredient-row?index=' + count;
