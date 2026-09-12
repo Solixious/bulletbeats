@@ -25,6 +25,7 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
            "LEFT JOIN FETCH bi.menuItem " +
            "LEFT JOIN FETCH b.cafeTable " +
            "LEFT JOIN FETCH b.customer " +
+           "LEFT JOIN FETCH b.appliedOffer " +
            "WHERE b.id = :id")
     Optional<Bill> findByIdWithItems(@Param("id") Long id);
 
