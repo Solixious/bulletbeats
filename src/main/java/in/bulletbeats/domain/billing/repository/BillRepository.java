@@ -137,6 +137,32 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
             """, nativeQuery = true)
     List<Object[]> getDailyRevenueForRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    @Query(value = """
+            SELECT
+              DATE_TRUNC('week', b.created_at) AS periodStart,
+              SUM(b.total_amount) AS revenue
+            FROM bills b
+            WHERE b.status = 'PAID'
+            AND b.created_at >= :from
+            AND b.created_at < :to
+            GROUP BY DATE_TRUNC('week', b.created_at)
+            ORDER BY periodStart
+            """, nativeQuery = true)
+    List<Object[]> getWeeklyRevenueForRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query(value = """
+            SELECT
+              DATE_TRUNC('month', b.created_at) AS periodStart,
+              SUM(b.total_amount) AS revenue
+            FROM bills b
+            WHERE b.status = 'PAID'
+            AND b.created_at >= :from
+            AND b.created_at < :to
+            GROUP BY DATE_TRUNC('month', b.created_at)
+            ORDER BY periodStart
+            """, nativeQuery = true)
+    List<Object[]> getMonthlyRevenueForRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
     @Query("""
             SELECT COUNT(b)
             FROM Bill b

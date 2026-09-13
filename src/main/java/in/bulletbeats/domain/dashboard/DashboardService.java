@@ -4,9 +4,9 @@ import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.CafeTable;
 import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.repository.CafeTableRepository;
-import in.bulletbeats.domain.dashboard.dto.DailyRevenueDto;
 import in.bulletbeats.domain.dashboard.dto.DashboardStatsDto;
 import in.bulletbeats.domain.dashboard.dto.OrderNameStatsDto;
+import in.bulletbeats.domain.dashboard.dto.RevenueChartPointDto;
 import in.bulletbeats.domain.dashboard.dto.TableStatusDto;
 import in.bulletbeats.domain.inventory.repository.PurchaseOrderRepository;
 import in.bulletbeats.domain.inventory.repository.ReplenishmentRequestRepository;
@@ -25,12 +25,16 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -220,30 +224,6 @@ public class DashboardService {
                 billRepository.countNamedOrdersAllTime(),
                 billRepository.countAnonymousOrdersAllTime());
 
-        // Daily revenue for the past up to 30 days
-        LocalDate rangeStart = today.minusDays(29);
-        List<Object[]> rawDaily = billRepository.getDailyRevenueForRange(rangeStart.atStartOfDay(), todayEnd);
-        Map<LocalDate, BigDecimal> revenueByDate = new LinkedHashMap<>();
-        rawDaily.forEach(row -> {
-            LocalDate date = row[0] instanceof LocalDate d ? d : ((java.sql.Date) row[0]).toLocalDate();
-            revenueByDate.put(date, (BigDecimal) row[1]);
-        });
-
-        BigDecimal dailyRevenueMax = revenueByDate.values().stream()
-                .max(BigDecimal::compareTo)
-                .orElse(BigDecimal.ZERO);
-
-        List<DailyRevenueDto> dailyRevenue = rangeStart.datesUntil(today.plusDays(1))
-                .map(date -> {
-                    BigDecimal revenue = revenueByDate.getOrDefault(date, BigDecimal.ZERO);
-                    int barHeightPercent = dailyRevenueMax.signum() == 0
-                            ? 0
-                            : revenue.divide(dailyRevenueMax, 4, RoundingMode.HALF_UP)
-                                    .multiply(BigDecimal.valueOf(100)).intValue();
-                    return new DailyRevenueDto(date, revenue, barHeightPercent);
-                })
-                .toList();
-
         // Low stock + replenishment
         long lowStockCount = inventoryService.getLowStockCount();
         long pendingReplenishmentCount =
@@ -289,7 +269,6 @@ public class DashboardService {
                 vsLastMonthAmount.signum() >= 0,
                 vsLastYearAmount, vsLastYearPercent,
                 vsLastYearAmount.signum() >= 0,
-                dailyRevenue,
                 lowStockCount, pendingReplenishmentCount,
                 thisMonthBarWidth, lastMonthBarWidth,
                 thisYearBarWidth, lastYearBarWidth,
@@ -319,5 +298,102 @@ public class DashboardService {
             anonymousPercent = BigDecimal.valueOf(100).subtract(namedPercent);
         }
         return new OrderNameStatsDto(namedCount, anonymousCount, namedPercent, anonymousPercent);
+    }
+
+    public enum RevenueGranularity {
+        DAILY, WEEKLY, MONTHLY
+    }
+
+    public List<RevenueChartPointDto> buildRevenueChart(RevenueGranularity granularity) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime todayEnd = today.plusDays(1).atStartOfDay();
+
+        return switch (granularity) {
+            case DAILY -> buildDailyRevenueChart(today, todayEnd);
+            case WEEKLY -> buildWeeklyRevenueChart(today, todayEnd);
+            case MONTHLY -> buildMonthlyRevenueChart(today, todayEnd);
+        };
+    }
+
+    private List<RevenueChartPointDto> buildDailyRevenueChart(LocalDate today, LocalDateTime todayEnd) {
+        LocalDate rangeStart = today.minusDays(29);
+        Map<LocalDate, BigDecimal> revenueByPeriod = new LinkedHashMap<>();
+        billRepository.getDailyRevenueForRange(rangeStart.atStartOfDay(), todayEnd)
+                .forEach(row -> revenueByPeriod.put(toLocalDate(row[0]), (BigDecimal) row[1]));
+
+        List<LocalDate> periods = rangeStart.datesUntil(today.plusDays(1)).toList();
+        DateTimeFormatter shortFmt = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH);
+        DateTimeFormatter fullFmt = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
+        return buildChartPoints(periods, revenueByPeriod,
+                start -> start.format(shortFmt),
+                start -> start.format(fullFmt));
+    }
+
+    private List<RevenueChartPointDto> buildWeeklyRevenueChart(LocalDate today, LocalDateTime todayEnd) {
+        LocalDate currentWeekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate rangeStart = currentWeekStart.minusWeeks(11);
+        Map<LocalDate, BigDecimal> revenueByPeriod = new LinkedHashMap<>();
+        billRepository.getWeeklyRevenueForRange(rangeStart.atStartOfDay(), todayEnd)
+                .forEach(row -> revenueByPeriod.put(toLocalDate(row[0]), (BigDecimal) row[1]));
+
+        List<LocalDate> periods = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            periods.add(rangeStart.plusWeeks(i));
+        }
+
+        DateTimeFormatter shortFmt = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH);
+        DateTimeFormatter fullFmt = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
+        return buildChartPoints(periods, revenueByPeriod,
+                start -> start.format(shortFmt),
+                start -> start.format(fullFmt) + " – " + start.plusDays(6).format(fullFmt));
+    }
+
+    private List<RevenueChartPointDto> buildMonthlyRevenueChart(LocalDate today, LocalDateTime todayEnd) {
+        LocalDate currentMonthStart = today.withDayOfMonth(1);
+        LocalDate rangeStart = currentMonthStart.minusMonths(11);
+        Map<LocalDate, BigDecimal> revenueByPeriod = new LinkedHashMap<>();
+        billRepository.getMonthlyRevenueForRange(rangeStart.atStartOfDay(), todayEnd)
+                .forEach(row -> revenueByPeriod.put(toLocalDate(row[0]), (BigDecimal) row[1]));
+
+        List<LocalDate> periods = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            periods.add(rangeStart.plusMonths(i));
+        }
+
+        DateTimeFormatter shortFmt = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH);
+        DateTimeFormatter fullFmt = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
+        return buildChartPoints(periods, revenueByPeriod,
+                start -> start.format(shortFmt),
+                start -> start.format(fullFmt));
+    }
+
+    private List<RevenueChartPointDto> buildChartPoints(
+            List<LocalDate> periods,
+            Map<LocalDate, BigDecimal> revenueByPeriod,
+            Function<LocalDate, String> labelFn,
+            Function<LocalDate, String> tooltipFn) {
+        BigDecimal max = revenueByPeriod.values().stream()
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+        return periods.stream()
+                .map(start -> {
+                    BigDecimal revenue = revenueByPeriod.getOrDefault(start, BigDecimal.ZERO);
+                    int barHeightPercent = max.signum() == 0
+                            ? 0
+                            : revenue.divide(max, 4, RoundingMode.HALF_UP)
+                                    .multiply(BigDecimal.valueOf(100)).intValue();
+                    return new RevenueChartPointDto(start, revenue, barHeightPercent,
+                            labelFn.apply(start), tooltipFn.apply(start));
+                })
+                .toList();
+    }
+
+    private static LocalDate toLocalDate(Object raw) {
+        if (raw instanceof LocalDate d) return d;
+        if (raw instanceof LocalDateTime dt) return dt.toLocalDate();
+        if (raw instanceof java.sql.Timestamp ts) return ts.toLocalDateTime().toLocalDate();
+        if (raw instanceof java.sql.Date d) return d.toLocalDate();
+        throw new IllegalStateException("Unexpected date type: " + (raw == null ? "null" : raw.getClass()));
     }
 }

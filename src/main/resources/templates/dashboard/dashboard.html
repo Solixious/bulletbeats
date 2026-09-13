@@ -451,37 +451,69 @@
       </div>
     </div><!-- /Row 2c -->
 
-    <!-- ── Row 3: Daily Revenue (past 30 days) ───────────────────── -->
+    <!-- ── Row 3: Revenue Chart (Daily / Weekly / Monthly) ─────────── -->
     <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
+      <div id="revenue-chart-results" th:fragment="revenueChartResults">
 
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="font-heading text-2xl text-ivory tracking-widest">Daily Revenue</h2>
-        <p class="text-sand text-xs">Last 30 days</p>
-      </div>
-
-      <!-- Empty state -->
-      <div th:if="${#lists.isEmpty(stats.dailyRevenue)}"
-           class="py-8 text-center text-sand/50 text-sm">
-        No revenue recorded yet.
-      </div>
-
-      <!-- Bar chart -->
-      <div th:unless="${#lists.isEmpty(stats.dailyRevenue)}"
-           class="flex items-end gap-1 h-40">
-        <div th:each="day : ${stats.dailyRevenue}"
-             class="flex-1 h-full flex items-end"
-             th:title="${#temporals.format(day.date, 'd MMM yyyy')} + ': ₹' + ${#numbers.formatDecimal(day.revenue, 1, 'COMMA', 2, 'POINT')}">
-          <div class="w-full rounded-t-sm bg-accent/70 hover:bg-accent transition-all min-h-[2px]"
-               th:style="'height:' + ${day.barHeightPercent} + '%'"></div>
+        <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <h2 class="font-heading text-2xl text-ivory tracking-widest">Revenue</h2>
+          <div class="flex items-center gap-3">
+            <p class="text-sand text-xs"
+               th:switch="${revenueGranularity}">
+              <span th:case="'WEEKLY'">Last 12 weeks</span>
+              <span th:case="'MONTHLY'">Last 12 months</span>
+              <span th:case="*">Last 30 days</span>
+            </p>
+            <div class="flex gap-1.5">
+              <button type="button"
+                      hx-get="/dashboard/revenue?granularity=DAILY"
+                      hx-target="#revenue-chart-results" hx-swap="outerHTML"
+                      th:classappend="${revenueGranularity == 'DAILY'} ? 'bg-accent text-base border-accent' : 'text-sand border-elevated/60 hover:border-ivory/40 hover:text-ivory'"
+                      class="px-3 py-1.5 text-xs rounded-lg border transition-colors">
+                Daily
+              </button>
+              <button type="button"
+                      hx-get="/dashboard/revenue?granularity=WEEKLY"
+                      hx-target="#revenue-chart-results" hx-swap="outerHTML"
+                      th:classappend="${revenueGranularity == 'WEEKLY'} ? 'bg-accent text-base border-accent' : 'text-sand border-elevated/60 hover:border-ivory/40 hover:text-ivory'"
+                      class="px-3 py-1.5 text-xs rounded-lg border transition-colors">
+                Weekly
+              </button>
+              <button type="button"
+                      hx-get="/dashboard/revenue?granularity=MONTHLY"
+                      hx-target="#revenue-chart-results" hx-swap="outerHTML"
+                      th:classappend="${revenueGranularity == 'MONTHLY'} ? 'bg-accent text-base border-accent' : 'text-sand border-elevated/60 hover:border-ivory/40 hover:text-ivory'"
+                      class="px-3 py-1.5 text-xs rounded-lg border transition-colors">
+                Monthly
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div th:unless="${#lists.isEmpty(stats.dailyRevenue)}"
-           class="flex justify-between text-xs text-sand/50 mt-2">
-        <span th:text="${#temporals.format(stats.dailyRevenue[0].date, 'd MMM')}"></span>
-        <span th:text="${#temporals.format(stats.dailyRevenue[stats.dailyRevenue.size() - 1].date, 'd MMM')}"></span>
-      </div>
+        <!-- Empty state -->
+        <div th:if="${#lists.isEmpty(revenueChart)}"
+             class="py-8 text-center text-sand/50 text-sm">
+          No revenue recorded yet.
+        </div>
 
+        <!-- Bar chart -->
+        <div th:unless="${#lists.isEmpty(revenueChart)}"
+             class="flex items-end gap-1 h-40">
+          <div th:each="point : ${revenueChart}"
+               class="flex-1 h-full flex items-end"
+               th:title="${point.tooltip} + ': ₹' + ${#numbers.formatDecimal(point.revenue, 1, 'COMMA', 2, 'POINT')}">
+            <div class="w-full rounded-t-sm bg-accent/70 hover:bg-accent transition-all min-h-[2px]"
+                 th:style="'height:' + ${point.barHeightPercent} + '%'"></div>
+          </div>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(revenueChart)}"
+             class="flex justify-between text-xs text-sand/50 mt-2">
+          <span th:text="${revenueChart[0].label}"></span>
+          <span th:text="${revenueChart[revenueChart.size() - 1].label}"></span>
+        </div>
+
+      </div>
     </div><!-- /Row 3 -->
 
     <!-- ── Row 4: Top Items — by Orders / by Revenue ────────────────── -->

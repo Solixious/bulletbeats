@@ -51,6 +51,10 @@ public class DashboardController {
 
             model.addAttribute("topByRevenuePeriod", defaultPeriod);
             model.addAttribute("topByRevenue", reportService.getTopByRevenue(defaultPeriod, TOP_N));
+
+            model.addAttribute("revenueGranularity", DashboardService.RevenueGranularity.DAILY.name());
+            model.addAttribute("revenueChart",
+                    dashboardService.buildRevenueChart(DashboardService.RevenueGranularity.DAILY));
         }
 
         return "dashboard/dashboard";
@@ -68,5 +72,19 @@ public class DashboardController {
     public String topByRevenue(@RequestParam(defaultValue = ReportService.ALL_TIME) String period, Model model) {
         model.addAttribute("topByRevenue", reportService.getTopByRevenue(period, TOP_N));
         return "dashboard/dashboard :: topByRevenueResults";
+    }
+
+    @GetMapping("/dashboard/revenue")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public String revenueChart(@RequestParam(defaultValue = "DAILY") String granularity, Model model) {
+        DashboardService.RevenueGranularity resolved;
+        try {
+            resolved = DashboardService.RevenueGranularity.valueOf(granularity.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            resolved = DashboardService.RevenueGranularity.DAILY;
+        }
+        model.addAttribute("revenueGranularity", resolved.name());
+        model.addAttribute("revenueChart", dashboardService.buildRevenueChart(resolved));
+        return "dashboard/dashboard :: revenueChartResults";
     }
 }

@@ -8,8 +8,10 @@ import java.time.LocalDate;
 
 @Data
 @AllArgsConstructor
-public class DailyRevenueDto {
-    private LocalDate date;
+public class RevenueChartPointDto {
+    private LocalDate periodStart;
     private BigDecimal revenue;
     private int barHeightPercent;
+    private String label;
+    private String tooltip;
 }
