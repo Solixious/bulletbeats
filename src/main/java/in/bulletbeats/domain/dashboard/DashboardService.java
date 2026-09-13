@@ -25,6 +25,7 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -394,6 +395,8 @@ public class DashboardService {
         if (raw instanceof LocalDateTime dt) return dt.toLocalDate();
         if (raw instanceof java.sql.Timestamp ts) return ts.toLocalDateTime().toLocalDate();
         if (raw instanceof java.sql.Date d) return d.toLocalDate();
+        if (raw instanceof java.time.Instant instant) return instant.atZone(ZoneId.systemDefault()).toLocalDate();
+        if (raw instanceof java.time.OffsetDateTime odt) return odt.atZoneSameInstant(ZoneId.systemDefault()).toLocalDate();
         throw new IllegalStateException("Unexpected date type: " + (raw == null ? "null" : raw.getClass()));
     }
 }
