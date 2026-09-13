@@ -38,6 +38,11 @@
     };
   </script>
   <style>
+    /* Fallback for browsers that don't support the dvh unit (e.g. older Android
+       Chrome/WebView) — without this, body gets no effective height and its
+       overflow:hidden propagates to the viewport, blocking all page scroll. */
+    body { height: 100vh; }
+
     @media (max-width: 1024px) {
       table {
         display: block;
