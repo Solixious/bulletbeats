@@ -92,6 +92,11 @@ app:
   rate-limit:
     login-max-attempts: 5
     login-lockout-minutes: 15
+  flyway:
+    # One-off escape hatch: set FLYWAY_REPAIR_ON_MIGRATE=true for a single deploy
+    # to clear orphaned/mismatched schema_history rows (e.g. a reverted migration
+    # file), then unset it again. Leaving it on is harmless but unnecessary.
+    repair-on-migrate: ${FLYWAY_REPAIR_ON_MIGRATE:false}
 
 # ── Twilio (Notification Service) ────────────────────────────
 twilio:
