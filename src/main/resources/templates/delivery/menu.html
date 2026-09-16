@@ -159,20 +159,14 @@
         <button id="tab-all"
                 class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold
                        bg-accent text-base transition-all"
-                th:attr="hx-get=@{/order/{id}/menu-items(id=${billId},customerName=${customerName})}"
-                hx-target="#menu-grid"
-                hx-swap="innerHTML"
-                onclick="setActiveTab(this)">
+                onclick="deliverySelectCategory(this, null)">
           All
         </button>
         <button th:each="dto : ${menuDto.categories}"
                 th:id="'tab-' + ${dto.category.id}"
                 class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm border border-elevated/60
                        text-sand hover:text-ivory hover:border-accent/40 transition-all"
-                th:attr="hx-get=@{/order/{id}/menu-items(id=${billId},categoryId=${dto.category.id},customerName=${customerName})}"
-                hx-target="#menu-grid"
-                hx-swap="innerHTML"
-                th:onclick="'setActiveTab(this)'"
+                th:onclick="'deliverySelectCategory(this, ' + ${dto.category.id} + ')'"
                 th:text="${dto.category.name}">
           Category
         </button>
@@ -223,8 +217,8 @@
       </span>
     </div>
     <th:block th:each="dto : ${menuDto.categories}">
-      <div class="mb-6">
-        <h3 class="font-heading text-xl text-sand tracking-widest mb-3 uppercase"
+      <div class="mb-6 menu-cat-section" th:attr="data-category-id=${dto.category.id}">
+        <h3 class="font-heading text-xl text-sand tracking-widest mb-3 uppercase menu-cat-header"
             th:text="${dto.category.name}">Category</h3>
         <div class="space-y-3">
           <th:block th:each="item : ${dto.items}">
@@ -379,6 +373,20 @@
       });
       el.classList.add('bg-accent', 'text-base', 'font-bold');
       el.classList.remove('border', 'border-elevated/60', 'text-sand');
+    }
+
+    // Category tab click: every category's items were already rendered into
+    // #menu-grid on initial page load, so switching tabs is a pure client-side
+    // show/hide — no server round trip needed. (Search still hits the server,
+    // since it can match across categories in ways not already in the DOM.)
+    function deliverySelectCategory(el, categoryId) {
+      setActiveTab(el);
+      document.querySelectorAll('#menu-grid > .menu-cat-section').forEach(function (sec) {
+        var match = (categoryId === null) || (String(sec.dataset.categoryId) === String(categoryId));
+        sec.style.display = match ? '' : 'none';
+        var header = sec.querySelector('.menu-cat-header');
+        if (header) header.style.display = (match && categoryId !== null) ? 'none' : '';
+      });
     }
 
     (function() {

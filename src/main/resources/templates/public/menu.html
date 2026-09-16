@@ -89,21 +89,15 @@
         <button id="tab-all"
                 class="cat-tab flex-shrink-0 px-4 py-1.5 text-xs rounded-full border transition-colors
                        bg-accent/20 text-accent border-accent/50"
-                hx-get="/public/menu/items"
-                hx-target="#items-list"
-                hx-swap="outerHTML"
-                onclick="setActiveTab(this); pubClearSearchInput()">All</button>
+                onclick="pubSelectCategory(this, null)">All</button>
         <button th:each="cat : ${categories}"
                 th:id="'tab-' + ${cat.id}"
                 th:text="${cat.name}"
-                th:attr="hx-get='/public/menu/items?categoryId=' + ${cat.id}"
-                hx-target="#items-list"
-                hx-swap="outerHTML"
                 th:classappend="${selectedCategoryId == cat.id}
                                 ? 'bg-accent/20 text-accent border-accent/50'
                                 : 'text-sand border-elevated/60 hover:text-ivory'"
                 class="cat-tab flex-shrink-0 px-4 py-1.5 text-xs rounded-full border transition-colors cursor-pointer"
-                onclick="setActiveTab(this); pubClearSearchInput()">Category</button>
+                th:onclick="'pubSelectCategory(this, ' + ${cat.id} + ')'">Category</button>
       </div>
       <!-- Scroll hint: hidden once user reaches the end -->
       <div id="pub-cat-hint"
@@ -128,10 +122,12 @@
         <!-- Grouped view with section headers (shown when all items are displayed) -->
         <th:block th:if="${categoryTree != null}">
           <th:block th:each="node : ${categoryTree}">
+          <div class="menu-cat-section"
+               th:attr="data-category-id=${node.category.id},data-has-subs=${!#lists.isEmpty(node.subcategories)}">
             <th:block th:with="catItems=${items.?[category.id == __${node.category.id}__]}">
             <div th:unless="${#lists.isEmpty(catItems)}" class="mb-7">
               <h2 class="font-heading text-lg text-sand tracking-widest uppercase mb-3
-                         border-b border-elevated/40 pb-1"
+                         border-b border-elevated/40 pb-1 menu-cat-header"
                   th:text="${node.category.name}">Category</h2>
               <div class="space-y-2">
                 <div th:each="item : ${catItems}"
@@ -218,6 +214,7 @@
                 </div>
               </div>
             </th:block>
+          </div>
           </th:block>
         </th:block>
 
@@ -305,6 +302,29 @@
       });
       el.classList.add('bg-accent/20', 'text-accent', 'border-accent/50');
       el.classList.remove('text-sand', 'border-elevated/60');
+    }
+
+    // Category tab click: every category's items were already rendered into
+    // #items-list on initial page load, so switching tabs is a pure client-side
+    // show/hide — no server round trip needed. (Search still hits the server,
+    // since it can match across categories in ways not already in the DOM.)
+    function pubSelectCategory(el, categoryId) {
+      setActiveTab(el);
+      pubClearSearchInput();
+      // Search results replace #items-list with flat, ungrouped markup that has no
+      // .menu-cat-section wrappers to toggle — fall back to a real fetch in that case
+      // (and only that case) so category filtering stays correct after a search.
+      if (!document.querySelector('#items-list > .menu-cat-section')) {
+        var url = categoryId === null ? '/public/menu/items' : '/public/menu/items?categoryId=' + categoryId;
+        htmx.ajax('GET', url, { target: '#items-list', swap: 'outerHTML' });
+        return;
+      }
+      document.querySelectorAll('#items-list > .menu-cat-section').forEach(function (sec) {
+        var match = (categoryId === null) || (String(sec.dataset.categoryId) === String(categoryId));
+        sec.style.display = match ? '' : 'none';
+        var header = sec.querySelector('.menu-cat-header');
+        if (header) header.style.display = (match && categoryId !== null && sec.dataset.hasSubs === 'false') ? 'none' : '';
+      });
     }
     (function() {
       var scroll = document.getElementById('pub-cat-scroll');
