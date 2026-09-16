@@ -77,12 +77,13 @@
               <th class="px-4 py-2.5 font-medium">Item</th>
               <th class="px-4 py-2.5 font-medium">Required</th>
               <th class="px-4 py-2.5 font-medium">In Stock</th>
+              <th class="px-4 py-2.5 font-medium">Cost</th>
               <th class="px-4 py-2.5 font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
             <tr th:if="${#lists.isEmpty(dish.ingredients)}">
-              <td colspan="4" class="px-4 py-4 text-sand text-center">No ingredients defined.</td>
+              <td colspan="5" class="px-4 py-4 text-sand text-center">No ingredients defined.</td>
             </tr>
             <tr th:each="ing : ${dish.ingredients}"
                 th:with="itemName=${ing.groceryItem != null ? ing.groceryItem.name : ing.preparedItem.name},
@@ -102,6 +103,8 @@
               <td class="px-4 py-2.5 font-mono"
                   th:classappend="${sufficient} ? 'text-emerald-400' : 'text-red-400'"
                   th:text="${#numbers.formatDecimal(stockQty,1,3)} + ' ' + ${stockUnit}"></td>
+              <td class="px-4 py-2.5 font-mono text-sand"
+                  th:text="${ingredientCosts.get(ing.id) != null} ? ('₹' + ${#numbers.formatDecimal(ingredientCosts.get(ing.id), 1, 2)}) : '—'"></td>
               <td class="px-4 py-2.5">
                 <span th:if="${sufficient}"
                       class="px-2 py-0.5 text-xs border rounded-full uppercase font-bold

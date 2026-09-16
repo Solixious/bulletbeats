@@ -73,6 +73,7 @@ public class DishController {
         model.addAttribute("dish", dish);
         model.addAttribute("requiredInStock", requiredInStock(dish.getIngredients()));
         model.addAttribute("estimatedCost", dishService.computeCost(dish));
+        model.addAttribute("ingredientCosts", dishService.computeIngredientCosts(dish));
         return "menu/dishes/detail";
     }
 
