@@ -72,6 +72,11 @@ public class DashboardStatsDto {
     private final OrderNameStatsDto namedOrdersLastMonth;
     private final OrderNameStatsDto namedOrdersAllTime;
 
+    // Revenue by order type — dine-in / takeaway / online / direct delivery (Manager/Admin only)
+    private final List<OrderTypeRevenueDto> orderTypeRevenueLastWeek;
+    private final List<OrderTypeRevenueDto> orderTypeRevenueLastMonth;
+    private final List<OrderTypeRevenueDto> orderTypeRevenueAllTime;
+
     // Active operations (all roles)
     private final long activeBillCount;
     private final long occupiedTableCount;
@@ -135,6 +140,9 @@ public class DashboardStatsDto {
             OrderNameStatsDto namedOrdersLastWeek,
             OrderNameStatsDto namedOrdersLastMonth,
             OrderNameStatsDto namedOrdersAllTime,
+            List<OrderTypeRevenueDto> orderTypeRevenueLastWeek,
+            List<OrderTypeRevenueDto> orderTypeRevenueLastMonth,
+            List<OrderTypeRevenueDto> orderTypeRevenueAllTime,
             long activeBillCount,
             long occupiedTableCount,
             long totalTableCount,
@@ -181,6 +189,9 @@ public class DashboardStatsDto {
                 .namedOrdersLastWeek(namedOrdersLastWeek)
                 .namedOrdersLastMonth(namedOrdersLastMonth)
                 .namedOrdersAllTime(namedOrdersAllTime)
+                .orderTypeRevenueLastWeek(orderTypeRevenueLastWeek)
+                .orderTypeRevenueLastMonth(orderTypeRevenueLastMonth)
+                .orderTypeRevenueAllTime(orderTypeRevenueAllTime)
                 .activeBillCount(activeBillCount)
                 .occupiedTableCount(occupiedTableCount)
                 .totalTableCount(totalTableCount)

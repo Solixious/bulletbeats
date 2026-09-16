@@ -222,4 +222,22 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
             """)
     List<Object[]> findFirstPaidVisitDates(@Param("customerIds") Collection<Long> customerIds);
 
+    @Query("""
+            SELECT b.orderType, COALESCE(SUM(b.totalAmount), 0)
+            FROM Bill b
+            WHERE b.status = 'PAID'
+            AND b.createdAt >= :from
+            AND b.createdAt < :to
+            GROUP BY b.orderType
+            """)
+    List<Object[]> getRevenueByOrderTypeForRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+            SELECT b.orderType, COALESCE(SUM(b.totalAmount), 0)
+            FROM Bill b
+            WHERE b.status = 'PAID'
+            GROUP BY b.orderType
+            """)
+    List<Object[]> getRevenueByOrderTypeAllTime();
+
 }

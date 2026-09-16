@@ -6,6 +6,7 @@ import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.repository.CafeTableRepository;
 import in.bulletbeats.domain.dashboard.dto.DashboardStatsDto;
 import in.bulletbeats.domain.dashboard.dto.OrderNameStatsDto;
+import in.bulletbeats.domain.dashboard.dto.OrderTypeRevenueDto;
 import in.bulletbeats.domain.dashboard.dto.RevenueChartPointDto;
 import in.bulletbeats.domain.dashboard.dto.TableStatusDto;
 import in.bulletbeats.domain.inventory.repository.PurchaseOrderRepository;
@@ -13,6 +14,7 @@ import in.bulletbeats.domain.inventory.repository.ReplenishmentRequestRepository
 import in.bulletbeats.domain.inventory.service.InventoryService;
 import in.bulletbeats.domain.tiffin.service.TiffinService;
 import in.bulletbeats.domain.shared.enums.BillStatus;
+import in.bulletbeats.domain.shared.enums.OrderType;
 import in.bulletbeats.domain.shared.enums.ReplenishmentStatus;
 import in.bulletbeats.domain.shared.enums.TableStatus;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -225,6 +228,14 @@ public class DashboardService {
                 billRepository.countNamedOrdersAllTime(),
                 billRepository.countAnonymousOrdersAllTime());
 
+        // Revenue by order type (dine-in / takeaway / online / direct delivery) — past week, past month, all-time
+        List<OrderTypeRevenueDto> orderTypeRevenueLastWeek = buildOrderTypeRevenue(
+                billRepository.getRevenueByOrderTypeForRange(last7DaysStart, todayEnd));
+        List<OrderTypeRevenueDto> orderTypeRevenueLastMonth = buildOrderTypeRevenue(
+                billRepository.getRevenueByOrderTypeForRange(last30DaysStart, todayEnd));
+        List<OrderTypeRevenueDto> orderTypeRevenueAllTime = buildOrderTypeRevenue(
+                billRepository.getRevenueByOrderTypeAllTime());
+
         // Low stock + replenishment
         long lowStockCount = inventoryService.getLowStockCount();
         long pendingReplenishmentCount =
@@ -283,8 +294,38 @@ public class DashboardService {
                 newCustomerRetainedCount, newCustomerRetentionRate,
                 returningCustomerRetainedCount, returningCustomerRetentionRate,
                 namedOrdersLastWeek, namedOrdersLastMonth, namedOrdersAllTime,
+                orderTypeRevenueLastWeek, orderTypeRevenueLastMonth, orderTypeRevenueAllTime,
                 activeBillCount, occupiedCount,
                 tables.size(), tableStatuses);
+    }
+
+    private List<OrderTypeRevenueDto> buildOrderTypeRevenue(List<Object[]> rows) {
+        Map<OrderType, BigDecimal> revenueByType = new EnumMap<>(OrderType.class);
+        for (OrderType type : OrderType.values()) {
+            revenueByType.put(type, BigDecimal.ZERO);
+        }
+        for (Object[] row : rows) {
+            revenueByType.put((OrderType) row[0], (BigDecimal) row[1]);
+        }
+
+        BigDecimal total = revenueByType.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal max = revenueByType.values().stream().max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+
+        List<OrderTypeRevenueDto> result = new ArrayList<>();
+        for (OrderType type : OrderType.values()) {
+            BigDecimal revenue = revenueByType.get(type);
+            BigDecimal percent = total.signum() > 0
+                    ? revenue.divide(total, 4, RoundingMode.HALF_UP)
+                            .multiply(BigDecimal.valueOf(100))
+                            .setScale(1, RoundingMode.HALF_UP)
+                    : null;
+            int barWidth = max.signum() > 0
+                    ? revenue.divide(max, 4, RoundingMode.HALF_UP)
+                            .multiply(BigDecimal.valueOf(100)).intValue()
+                    : 0;
+            result.add(new OrderTypeRevenueDto(type, revenue, percent, barWidth));
+        }
+        return result;
     }
 
     private OrderNameStatsDto buildOrderNameStats(long namedCount, long anonymousCount) {

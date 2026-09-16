@@ -451,6 +451,76 @@
       </div>
     </div><!-- /Row 2c -->
 
+    <!-- ── Row 2d: Revenue by order type ───────────────────────────── -->
+    <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
+
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-heading text-2xl text-ivory tracking-widest">Revenue by Order Type</h2>
+        <p class="text-sand text-xs">Paid orders — Dine-In, Takeaway, Online, Direct Delivery</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        <!-- Last 7 days -->
+        <div class="rounded-xl border border-elevated/60 p-5">
+          <p class="text-sand text-xs uppercase tracking-widest mb-3">Last 7 Days</p>
+          <div th:if="${not #lists.isEmpty(stats.orderTypeRevenueLastWeek) and stats.orderTypeRevenueLastWeek[0].percent != null}">
+            <div th:each="row : ${stats.orderTypeRevenueLastWeek}" class="mb-3 last:mb-0">
+              <div class="flex items-baseline justify-between mb-1">
+                <span class="text-sand text-xs" th:text="${row.orderType.displayName}"></span>
+                <span class="font-heading text-lg text-ivory tracking-wide"
+                      th:text="'₹' + ${#numbers.formatDecimal(row.revenue, 1, 'COMMA', 0, 'POINT')}"></span>
+              </div>
+              <div class="h-2 rounded-full bg-elevated overflow-hidden">
+                <div class="h-full rounded-full bg-accent transition-all"
+                     th:style="'width:' + ${row.barWidth} + '%'"></div>
+              </div>
+            </div>
+          </div>
+          <p class="text-sand text-xs" th:if="${#lists.isEmpty(stats.orderTypeRevenueLastWeek) or stats.orderTypeRevenueLastWeek[0].percent == null}">No paid orders yet</p>
+        </div>
+
+        <!-- Last 30 days -->
+        <div class="rounded-xl border border-elevated/60 p-5">
+          <p class="text-sand text-xs uppercase tracking-widest mb-3">Last 30 Days</p>
+          <div th:if="${not #lists.isEmpty(stats.orderTypeRevenueLastMonth) and stats.orderTypeRevenueLastMonth[0].percent != null}">
+            <div th:each="row : ${stats.orderTypeRevenueLastMonth}" class="mb-3 last:mb-0">
+              <div class="flex items-baseline justify-between mb-1">
+                <span class="text-sand text-xs" th:text="${row.orderType.displayName}"></span>
+                <span class="font-heading text-lg text-ivory tracking-wide"
+                      th:text="'₹' + ${#numbers.formatDecimal(row.revenue, 1, 'COMMA', 0, 'POINT')}"></span>
+              </div>
+              <div class="h-2 rounded-full bg-elevated overflow-hidden">
+                <div class="h-full rounded-full bg-accent transition-all"
+                     th:style="'width:' + ${row.barWidth} + '%'"></div>
+              </div>
+            </div>
+          </div>
+          <p class="text-sand text-xs" th:if="${#lists.isEmpty(stats.orderTypeRevenueLastMonth) or stats.orderTypeRevenueLastMonth[0].percent == null}">No paid orders yet</p>
+        </div>
+
+        <!-- All time -->
+        <div class="rounded-xl border border-elevated/60 p-5">
+          <p class="text-sand text-xs uppercase tracking-widest mb-3">All Time</p>
+          <div th:if="${not #lists.isEmpty(stats.orderTypeRevenueAllTime) and stats.orderTypeRevenueAllTime[0].percent != null}">
+            <div th:each="row : ${stats.orderTypeRevenueAllTime}" class="mb-3 last:mb-0">
+              <div class="flex items-baseline justify-between mb-1">
+                <span class="text-sand text-xs" th:text="${row.orderType.displayName}"></span>
+                <span class="font-heading text-lg text-ivory tracking-wide"
+                      th:text="'₹' + ${#numbers.formatDecimal(row.revenue, 1, 'COMMA', 0, 'POINT')}"></span>
+              </div>
+              <div class="h-2 rounded-full bg-elevated overflow-hidden">
+                <div class="h-full rounded-full bg-accent transition-all"
+                     th:style="'width:' + ${row.barWidth} + '%'"></div>
+              </div>
+            </div>
+          </div>
+          <p class="text-sand text-xs" th:if="${#lists.isEmpty(stats.orderTypeRevenueAllTime) or stats.orderTypeRevenueAllTime[0].percent == null}">No paid orders yet</p>
+        </div>
+
+      </div>
+    </div><!-- /Row 2d -->
+
     <!-- ── Row 3: Revenue Chart (Daily / Weekly / Monthly) ─────────── -->
     <div class="bg-surface rounded-2xl border border-elevated/60 p-6 mb-4">
       <div id="revenue-chart-results" th:fragment="revenueChartResults">
