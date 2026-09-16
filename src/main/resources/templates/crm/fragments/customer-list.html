@@ -21,6 +21,7 @@
         <th class="px-4 py-3 font-medium text-right">Total Spend</th>
         <th class="px-4 py-3 font-medium text-right">Points</th>
         <th class="px-4 py-3 font-medium">Joined</th>
+        <th class="px-4 py-3 font-medium">Last Order</th>
         <th class="px-4 py-3 font-medium">Actions</th>
       </tr>
     </thead>
@@ -52,6 +53,9 @@
 
         <td class="px-4 py-3 text-sand text-xs"
             th:text="${c.createdAt != null ? #temporals.format(c.createdAt, 'dd MMM yyyy') : '—'}"></td>
+
+        <td class="px-4 py-3 text-sand text-xs"
+            th:text="${c.lastVisitDate != null ? #temporals.format(c.lastVisitDate, 'dd MMM yyyy') : '—'}"></td>
 
         <td class="px-4 py-3">
           <a th:href="@{/customers/{id}(id=${c.id})}"
