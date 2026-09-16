@@ -25,7 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -138,13 +140,31 @@ public class DishService {
     public BigDecimal computeCost(Dish dish) {
         BigDecimal total = BigDecimal.ZERO;
         for (DishIngredient ing : dish.getIngredients()) {
-            BigDecimal costPerRecipeUnit = ing.getGroceryItem() != null
-                    ? inventoryService.computeCostPerRecipeUnit(ing.getGroceryItem())
-                    : preparedItemService.computeCostPerRecipeUnit(ing.getPreparedItem());
-            if (costPerRecipeUnit == null) return null;
-            total = total.add(costPerRecipeUnit.multiply(ing.getQuantityRequired()));
+            BigDecimal cost = computeIngredientCost(ing);
+            if (cost == null) return null;
+            total = total.add(cost);
         }
         return total.setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /** Cost of each ingredient's required quantity, keyed by ingredient id. Missing entry means cost is unknown. */
+    public Map<Long, BigDecimal> computeIngredientCosts(Dish dish) {
+        Map<Long, BigDecimal> result = new HashMap<>();
+        for (DishIngredient ing : dish.getIngredients()) {
+            BigDecimal cost = computeIngredientCost(ing);
+            if (cost != null) {
+                result.put(ing.getId(), cost.setScale(2, java.math.RoundingMode.HALF_UP));
+            }
+        }
+        return result;
+    }
+
+    private BigDecimal computeIngredientCost(DishIngredient ing) {
+        BigDecimal costPerRecipeUnit = ing.getGroceryItem() != null
+                ? inventoryService.computeCostPerRecipeUnit(ing.getGroceryItem())
+                : preparedItemService.computeCostPerRecipeUnit(ing.getPreparedItem());
+        if (costPerRecipeUnit == null) return null;
+        return costPerRecipeUnit.multiply(ing.getQuantityRequired());
     }
 
     private DishIngredient buildIngredient(Dish dish, DishIngredientDto dto) {
