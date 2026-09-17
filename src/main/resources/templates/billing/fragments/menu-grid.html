@@ -7,29 +7,34 @@
     No items found.
   </div>
 
+  <!-- Populated by client-side search when it finds zero matches -->
+  <div id="billing-search-empty" class="hidden py-12 text-center text-sand text-sm">No items match your search.</div>
+
   <!-- Grouped view ("All" tab): every category, sorted by category then subcategory -->
   <th:block th:each="dto : ${groupedMenu}">
-    <div class="mb-5">
-      <h3 class="font-heading text-sm text-sand tracking-widest uppercase mb-2"
+    <div class="mb-5 menu-cat-section" th:attr="data-category-id=${dto.category.id}">
+      <h3 class="font-heading text-sm text-sand tracking-widest uppercase mb-2 menu-cat-header"
           th:text="${dto.category.name}">Category</h3>
-      <div th:unless="${#lists.isEmpty(dto.items)}" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div th:unless="${#lists.isEmpty(dto.items)}" class="grid grid-cols-2 sm:grid-cols-3 gap-3 menu-items-group">
         <th:block th:each="item : ${dto.items}">
           <th:block th:replace="~{billing/fragments/menu-grid :: menu-item(item=${item},billId=${billId})}"/>
         </th:block>
       </div>
       <th:block th:each="sub : ${dto.subcategories}">
-        <button type="button"
-                class="w-full flex items-center justify-between gap-2 mt-3 mb-2 cursor-pointer select-none"
-                th:attr="onclick=|toggleSubcat(${sub.subcategory.id})|">
-          <h4 class="font-heading text-xs text-sand/80 tracking-widest uppercase"
-              th:text="${sub.subcategory.name}">Subcategory</h4>
-          <span th:id="'subcat-chevron-' + ${sub.subcategory.id}"
-                class="text-sand/60 transition-transform duration-200 text-xs leading-none">▼</span>
-        </button>
-        <div th:id="'subcat-body-' + ${sub.subcategory.id}" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <th:block th:each="item : ${sub.items}">
-            <th:block th:replace="~{billing/fragments/menu-grid :: menu-item(item=${item},billId=${billId})}"/>
-          </th:block>
+        <div class="menu-items-group menu-subcat-section">
+          <button type="button"
+                  class="w-full flex items-center justify-between gap-2 mt-3 mb-2 cursor-pointer select-none menu-subcat-header"
+                  th:attr="onclick=|toggleSubcat(${sub.subcategory.id})|">
+            <h4 class="font-heading text-xs text-sand/80 tracking-widest uppercase"
+                th:text="${sub.subcategory.name}">Subcategory</h4>
+            <span th:id="'subcat-chevron-' + ${sub.subcategory.id}"
+                  class="text-sand/60 transition-transform duration-200 text-xs leading-none">▼</span>
+          </button>
+          <div th:id="'subcat-body-' + ${sub.subcategory.id}" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <th:block th:each="item : ${sub.items}">
+              <th:block th:replace="~{billing/fragments/menu-grid :: menu-item(item=${item},billId=${billId})}"/>
+            </th:block>
+          </div>
         </div>
       </th:block>
     </div>
@@ -64,9 +69,10 @@
 
   <!-- Available: clickable form-card -->
   <form th:if="${item.isAvailable}"
-        th:attr="hx-post=@{/bills/{id}/items(id=${billId})}"
+        th:attr="hx-post=@{/bills/{id}/items(id=${billId})},data-item-name=${item.name}"
         hx-target="#bill-panel"
-        hx-swap="innerHTML">
+        hx-swap="innerHTML"
+        class="menu-item">
     <input type="hidden" name="menuItemId" th:value="${item.id}"/>
     <input type="hidden" name="quantity" value="1"/>
     <button type="submit"
@@ -91,7 +97,8 @@
 
   <!-- Unavailable: greyed out, non-clickable -->
   <div th:unless="${item.isAvailable}"
-       class="text-left p-3 rounded-xl border border-elevated/40 bg-surface/50 opacity-50 cursor-not-allowed">
+       th:attr="data-item-name=${item.name}"
+       class="menu-item text-left p-3 rounded-xl border border-elevated/40 bg-surface/50 opacity-50 cursor-not-allowed">
     <div th:if="${item.imagePath != null}" class="mb-2 overflow-hidden rounded-lg h-20">
       <img th:src="${(item.thumbnailPath != null ? item.thumbnailPath : item.imagePath) + '?v=' + item.imageVersion}"
            class="w-full h-full object-cover grayscale"

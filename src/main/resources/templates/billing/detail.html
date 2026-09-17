@@ -71,32 +71,31 @@
              hx-swap="innerHTML"
              class="h-0 overflow-hidden pointer-events-none" aria-hidden="true"></div>
 
-        <!-- Search -->
+        <!-- Search: client-side (all items already rendered below), no server round trip -->
         <div class="mb-3">
-          <input type="text"
+          <input type="text" id="billing-search-input"
                  placeholder="Search menu items..."
                  class="w-full bg-surface rounded-lg px-4 py-2.5 text-ivory text-sm
                         placeholder-sand/40 outline-none border border-elevated/60
                         focus:border-accent focus:shadow-neon-sm transition-all duration-200"
-                 th:attr="hx-get=@{/bills/{id}/menu-search(id=${bill.id})}"
-                 hx-trigger="keyup changed delay:300ms"
-                 hx-target="#menu-items-grid"
+                 oninput="billingOnSearchInput(this)"
                  name="q"/>
         </div>
 
-        <!-- Category tabs -->
+        <!-- Category tabs: client-side show/hide, no server round trip -->
         <div class="flex flex-wrap gap-2 mb-4">
-          <button th:attr="hx-get=@{/bills/{id}/menu(id=${bill.id})}"
-                  hx-target="#menu-items-grid"
-                  class="px-3 py-1.5 text-xs rounded-lg border border-accent/40 text-accent
+          <button type="button" id="billing-tab-all"
+                  onclick="billingSelectCategory(this, null)"
+                  class="cat-tab px-3 py-1.5 text-xs rounded-lg border border-accent/40 text-accent
                          bg-accent/10 hover:bg-accent/20 transition-colors">
             All
           </button>
           <button th:each="cat : ${categories}"
+                  th:id="'billing-tab-' + ${cat.id}"
                   th:text="${cat.name}"
-                  th:attr="hx-get=@{/bills/{id}/menu(id=${bill.id},categoryId=${cat.id})}"
-                  hx-target="#menu-items-grid"
-                  class="px-3 py-1.5 text-xs rounded-lg border border-elevated/60 text-sand
+                  th:onclick="'billingSelectCategory(this, ' + ${cat.id} + ')'"
+                  type="button"
+                  class="cat-tab px-3 py-1.5 text-xs rounded-lg border border-elevated/60 text-sand
                          hover:border-accent/40 hover:text-ivory transition-colors">
           </button>
         </div>
@@ -181,6 +180,85 @@
       var chev = document.getElementById('subcat-chevron-' + id);
       if (body) body.classList.toggle('hidden');
       if (chev) chev.classList.toggle('rotate-180');
+    }
+
+    // Category tab active-state styling
+    function billingSetActiveTab(el) {
+      document.querySelectorAll('.cat-tab').forEach(function (t) {
+        t.classList.remove('border-accent/40', 'text-accent', 'bg-accent/10', 'hover:bg-accent/20');
+        t.classList.add('border-elevated/60', 'text-sand', 'hover:border-accent/40', 'hover:text-ivory');
+      });
+      el.classList.add('border-accent/40', 'text-accent', 'bg-accent/10', 'hover:bg-accent/20');
+      el.classList.remove('border-elevated/60', 'text-sand', 'hover:border-accent/40', 'hover:text-ivory');
+    }
+
+    // Category tab click: every category's items were already rendered into #menu-items-grid
+    // on initial page load, so switching tabs is a pure client-side show/hide — no server
+    // round trip needed.
+    function billingSelectCategory(el, categoryId) {
+      billingSetActiveTab(el);
+      var input = document.getElementById('billing-search-input');
+      if (input) input.value = '';
+      billingApplySearch(''); // undo any client-side search filtering before re-applying the tab filter
+      document.querySelectorAll('#menu-items-grid > .menu-cat-section').forEach(function (sec) {
+        var match = (categoryId === null) || (String(sec.dataset.categoryId) === String(categoryId));
+        sec.style.display = match ? '' : 'none';
+        var header = sec.querySelector('.menu-cat-header');
+        if (header) header.style.display = (match && categoryId !== null) ? 'none' : '';
+      });
+    }
+
+    // Client-side search: filters the already-rendered .menu-item cards by name
+    // (case-insensitive substring, matching the old server query) — no network round trip.
+    // Hides now-empty subcategory/category groups, and hides every header while searching
+    // for a flat, ungrouped look (matching what the old server-rendered search results looked like).
+    function billingApplySearch(query) {
+      var q = (query || '').trim().toLowerCase();
+      var searching = q.length > 0;
+      var grid = document.getElementById('menu-items-grid');
+      if (!grid) return;
+      var anyMatch = false;
+      grid.querySelectorAll('.menu-item').forEach(function (item) {
+        var match = !searching || (item.dataset.itemName || '').toLowerCase().indexOf(q) !== -1;
+        item.style.display = match ? '' : 'none';
+        if (match) anyMatch = true;
+      });
+      function hasVisibleItem(el) {
+        return Array.prototype.some.call(el.querySelectorAll('.menu-item'), function (i) {
+          return i.style.display !== 'none';
+        });
+      }
+      grid.querySelectorAll('.menu-items-group').forEach(function (grp) {
+        grp.style.display = hasVisibleItem(grp) ? '' : 'none';
+      });
+      grid.querySelectorAll('.menu-cat-section').forEach(function (sec) {
+        sec.style.display = hasVisibleItem(sec) ? '' : 'none';
+      });
+      grid.querySelectorAll('.menu-cat-header, .menu-subcat-header').forEach(function (h) {
+        h.style.display = searching ? 'none' : '';
+      });
+      if (searching) {
+        grid.querySelectorAll('[id^="subcat-body-"]').forEach(function (b) {
+          b.classList.remove('hidden');
+        });
+      }
+      var emptyEl = document.getElementById('billing-search-empty');
+      if (emptyEl) emptyEl.style.display = (searching && !anyMatch) ? '' : 'none';
+    }
+
+    // Search box: deselect category tabs while searching, restore "All" once cleared,
+    // and run the client-side filter.
+    function billingOnSearchInput(el) {
+      if (el.value) {
+        document.querySelectorAll('.cat-tab').forEach(function (t) {
+          t.classList.remove('border-accent/40', 'text-accent', 'bg-accent/10', 'hover:bg-accent/20');
+          t.classList.add('border-elevated/60', 'text-sand', 'hover:border-accent/40', 'hover:text-ivory');
+        });
+      } else {
+        var allTab = document.getElementById('billing-tab-all');
+        if (allTab) billingSetActiveTab(allTab);
+      }
+      billingApplySearch(el.value);
     }
   </script>
 
