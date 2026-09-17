@@ -71,13 +71,17 @@
            class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
+      <!-- Client-side search over the already-rendered #items-list (no server round trip) when the
+           full category tree is on the page. The rare deep-link case (?categoryId=leaf on initial
+           load) only has that one category's items in the DOM, so it keeps the old server-backed
+           search via hx-get instead of silently searching a partial menu. -->
       <input type="search" id="pub-search-input" name="q" placeholder="Search menu…" autocomplete="off"
              class="w-full bg-surface border border-elevated/60 focus:border-accent rounded-full
                     pl-9 pr-9 py-2 text-sm text-ivory placeholder-sand/50 outline-none transition-colors"
-             hx-get="/public/menu/items"
-             hx-trigger="keyup changed delay:300ms, search"
-             hx-target="#items-list"
-             hx-swap="outerHTML"
+             th:attr="hx-get=${categoryTree == null} ? @{/public/menu/items} : null,
+                      hx-trigger=${categoryTree == null} ? 'keyup changed delay:300ms, search' : null,
+                      hx-target=${categoryTree == null} ? '#items-list' : null,
+                      hx-swap=${categoryTree == null} ? 'outerHTML' : null"
              oninput="pubOnSearchInput(this)"/>
       <button type="button" id="pub-search-clear" onclick="pubClearSearch()"
               class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-sand hover:text-ivory text-base leading-none">×</button>
@@ -117,6 +121,9 @@
            class="text-center text-sand text-sm py-16"
            th:text="${searching} ? 'No items match your search.' : 'Nothing on the menu right now.'">Nothing on the menu right now.</div>
 
+      <!-- Populated by client-side search when it finds zero matches in the already-rendered tree -->
+      <div id="pub-search-empty" class="hidden text-center text-sand text-sm py-16">No items match your search.</div>
+
       <th:block th:unless="${#lists.isEmpty(items)}">
 
         <!-- Grouped view with section headers (shown when all items are displayed) -->
@@ -125,14 +132,15 @@
           <div class="menu-cat-section"
                th:attr="data-category-id=${node.category.id},data-has-subs=${!#lists.isEmpty(node.subcategories)}">
             <th:block th:with="catItems=${items.?[category.id == __${node.category.id}__]}">
-            <div th:unless="${#lists.isEmpty(catItems)}" class="mb-7">
+            <div th:unless="${#lists.isEmpty(catItems)}" class="mb-7 menu-items-group">
               <h2 class="font-heading text-lg text-sand tracking-widest uppercase mb-3
                          border-b border-elevated/40 pb-1 menu-cat-header"
                   th:text="${node.category.name}">Category</h2>
               <div class="space-y-2">
                 <div th:each="item : ${catItems}"
                      th:classappend="${!item.available} ? 'opacity-50' : ''"
-                     class="bg-surface rounded-xl border border-elevated/60 px-5 py-4
+                     th:attr="data-item-name=${item.name}"
+                     class="menu-item bg-surface rounded-xl border border-elevated/60 px-5 py-4
                             flex items-start gap-4">
                   <img th:if="${item.imagePath != null}"
                        th:src="${(item.thumbnailPath != null ? item.thumbnailPath : item.imagePath) + '?v=' + item.imageVersion}"
@@ -168,9 +176,9 @@
             </th:block>
             <th:block th:each="sub : ${node.subcategories}"
                       th:with="subItems=${items.?[category.id == __${sub.id}__]}">
-              <div th:unless="${#lists.isEmpty(subItems)}" class="mb-7 pl-3 border-l-2 border-accent/30">
+              <div th:unless="${#lists.isEmpty(subItems)}" class="mb-7 pl-3 border-l-2 border-accent/30 menu-items-group menu-subcat-section">
                 <button type="button"
-                        class="w-full flex items-center justify-between gap-2 mb-3 cursor-pointer select-none"
+                        class="w-full flex items-center justify-between gap-2 mb-3 cursor-pointer select-none menu-subcat-header"
                         th:attr="onclick=|toggleSubcat(${sub.id})|">
                   <h3 class="font-heading text-base text-sand/80 tracking-widest uppercase"
                       th:text="${sub.name}">Subcategory</h3>
@@ -180,7 +188,8 @@
                 <div th:id="'subcat-body-' + ${sub.id}" class="space-y-2">
                   <div th:each="item : ${subItems}"
                        th:classappend="${!item.available} ? 'opacity-50' : ''"
-                       class="bg-surface rounded-xl border border-elevated/60 px-5 py-4
+                       th:attr="data-item-name=${item.name}"
+                       class="menu-item bg-surface rounded-xl border border-elevated/60 px-5 py-4
                               flex items-start gap-4">
                     <img th:if="${item.imagePath != null}"
                          th:src="${(item.thumbnailPath != null ? item.thumbnailPath : item.imagePath) + '?v=' + item.imageVersion}"
@@ -265,7 +274,54 @@
   </main>
 
   <script>
-    // Search box: toggle the clear (×) button and deselect category tabs while searching
+    // Whether #items-list currently holds the full grouped category tree (the common case —
+    // every category's items already sitting in the DOM). False only for the rare deep-link
+    // load (?categoryId=leaf), where the flat server-rendered view has no .menu-cat-section
+    // markers and search still needs to hit the server (it can't search items that were never
+    // rendered).
+    function pubHasGroupedTree() {
+      return !!document.querySelector('#items-list > .menu-cat-section');
+    }
+
+    // Client-side search: filters the already-rendered .menu-item rows by name (case-insensitive
+    // substring, matching the old server query), hides now-empty subcategory/category groups, and
+    // hides every header while searching for a flat, ungrouped look. No network round trip.
+    function pubApplySearch(query) {
+      var q = (query || '').trim().toLowerCase();
+      var searching = q.length > 0;
+      var itemsList = document.getElementById('items-list');
+      if (!itemsList) return;
+      var anyMatch = false;
+      itemsList.querySelectorAll('.menu-item').forEach(function (item) {
+        var match = !searching || (item.dataset.itemName || '').toLowerCase().indexOf(q) !== -1;
+        item.style.display = match ? '' : 'none';
+        if (match) anyMatch = true;
+      });
+      function hasVisibleItem(el) {
+        return Array.prototype.some.call(el.querySelectorAll('.menu-item'), function (i) {
+          return i.style.display !== 'none';
+        });
+      }
+      itemsList.querySelectorAll('.menu-items-group').forEach(function (grp) {
+        grp.style.display = hasVisibleItem(grp) ? '' : 'none';
+      });
+      itemsList.querySelectorAll('.menu-cat-section').forEach(function (sec) {
+        sec.style.display = hasVisibleItem(sec) ? '' : 'none';
+      });
+      itemsList.querySelectorAll('.menu-cat-header, .menu-subcat-header').forEach(function (h) {
+        h.style.display = searching ? 'none' : '';
+      });
+      if (searching) {
+        itemsList.querySelectorAll('[id^="subcat-body-"]').forEach(function (b) {
+          b.classList.remove('hidden');
+        });
+      }
+      var emptyEl = document.getElementById('pub-search-empty');
+      if (emptyEl) emptyEl.style.display = (searching && !anyMatch) ? '' : 'none';
+    }
+
+    // Search box: toggle the clear (×) button, deselect category tabs while searching, and run
+    // the client-side filter (or, in the rare flat-view case, let the input's own hx-get fire).
     function pubOnSearchInput(el) {
       var clearBtn = document.getElementById('pub-search-clear');
       if (clearBtn) clearBtn.classList.toggle('hidden', !el.value);
@@ -278,6 +334,7 @@
         var allTab = document.getElementById('tab-all');
         if (allTab) setActiveTab(allTab);
       }
+      if (pubHasGroupedTree()) pubApplySearch(el.value);
     }
     // Clear the search box without re-triggering a request (used when a category tab is clicked)
     function pubClearSearchInput() {
@@ -287,13 +344,13 @@
       var clearBtn = document.getElementById('pub-search-clear');
       if (clearBtn) clearBtn.classList.add('hidden');
     }
-    // Clear the search box and re-fetch the "All" view (× button)
+    // Clear the search box (× button)
     function pubClearSearch() {
       var el = document.getElementById('pub-search-input');
       if (!el) return;
       el.value = '';
       pubOnSearchInput(el);
-      el.dispatchEvent(new Event('search'));
+      if (!pubHasGroupedTree()) el.dispatchEvent(new Event('search'));
     }
     function setActiveTab(el) {
       document.querySelectorAll('.cat-tab').forEach(function(t) {
@@ -314,11 +371,12 @@
       // Search results replace #items-list with flat, ungrouped markup that has no
       // .menu-cat-section wrappers to toggle — fall back to a real fetch in that case
       // (and only that case) so category filtering stays correct after a search.
-      if (!document.querySelector('#items-list > .menu-cat-section')) {
+      if (!pubHasGroupedTree()) {
         var url = categoryId === null ? '/public/menu/items' : '/public/menu/items?categoryId=' + categoryId;
         htmx.ajax('GET', url, { target: '#items-list', swap: 'outerHTML' });
         return;
       }
+      pubApplySearch(''); // undo any client-side search filtering before re-applying the tab filter
       document.querySelectorAll('#items-list > .menu-cat-section').forEach(function (sec) {
         var match = (categoryId === null) || (String(sec.dataset.categoryId) === String(categoryId));
         sec.style.display = match ? '' : 'none';

@@ -70,7 +70,8 @@
                      savedNote=${noteMap != null ? noteMap.get(item.id) : null}">
 
   <div th:classappend="${!item.available} ? 'opacity-50' : ''"
-       class="bg-surface rounded-xl border border-elevated/60 overflow-hidden flex gap-3 p-3">
+       th:attr="data-item-name=${item.name}"
+       class="menu-item bg-surface rounded-xl border border-elevated/60 overflow-hidden flex gap-3 p-3">
 
     <!-- Thumbnail -->
     <div class="flex-shrink-0 w-20 h-20">

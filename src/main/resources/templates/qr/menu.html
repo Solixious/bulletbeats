@@ -205,10 +205,6 @@
         <input type="search" id="qr-search-input" name="q" placeholder="Search menu…" autocomplete="off"
                class="w-full bg-elevated/70 border border-elevated/60 focus:border-accent rounded-full
                       pl-9 pr-8 py-1.5 text-sm text-ivory placeholder-sand/50 outline-none transition-colors"
-               th:attr="hx-get=@{/qr/{c}/menu-items(c=${qrCode},billId=${billId},customerName=${customerName},customerId=${customerId})}"
-               hx-trigger="keyup changed delay:300ms, search"
-               hx-target="#menu-grid"
-               hx-swap="innerHTML"
                oninput="qrOnSearchInput(this)"/>
         <button type="button" id="qr-search-clear" onclick="qrClearSearch()"
                 class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-sand hover:text-ivory text-base leading-none">×</button>
@@ -224,28 +220,32 @@
       <div class="mb-6 menu-cat-section" th:attr="data-category-id=${dto.category.id}">
         <h3 class="font-heading text-xl text-sand tracking-widest mb-3 uppercase menu-cat-header"
             th:text="${dto.category.name}">Category</h3>
-        <div class="space-y-3">
+        <div class="space-y-3 menu-items-group">
           <th:block th:each="item : ${dto.items}">
             <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked},noteMap=${noteMap})}"/>
           </th:block>
         </div>
         <th:block th:each="sub : ${dto.subcategories}">
-          <button type="button"
-                  class="w-full flex items-center justify-between gap-2 mt-4 mb-2 pl-2 border-l-2 border-accent/40 cursor-pointer select-none"
-                  th:attr="onclick=|toggleSubcat(${sub.subcategory.id})|">
-            <h4 class="font-heading text-base text-sand/80 tracking-widest uppercase"
-                th:text="${sub.subcategory.name}">Subcategory</h4>
-            <span th:id="'subcat-chevron-' + ${sub.subcategory.id}"
-                  class="text-sand/60 transition-transform duration-200 text-xs leading-none flex-shrink-0 mr-2">▼</span>
-          </button>
-          <div th:id="'subcat-body-' + ${sub.subcategory.id}" class="space-y-3">
-            <th:block th:each="item : ${sub.items}">
-              <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked},noteMap=${noteMap})}"/>
-            </th:block>
+          <div class="menu-items-group menu-subcat-section">
+            <button type="button"
+                    class="w-full flex items-center justify-between gap-2 mt-4 mb-2 pl-2 border-l-2 border-accent/40 cursor-pointer select-none menu-subcat-header"
+                    th:attr="onclick=|toggleSubcat(${sub.subcategory.id})|">
+              <h4 class="font-heading text-base text-sand/80 tracking-widest uppercase"
+                  th:text="${sub.subcategory.name}">Subcategory</h4>
+              <span th:id="'subcat-chevron-' + ${sub.subcategory.id}"
+                    class="text-sand/60 transition-transform duration-200 text-xs leading-none flex-shrink-0 mr-2">▼</span>
+            </button>
+            <div th:id="'subcat-body-' + ${sub.subcategory.id}" class="space-y-3">
+              <th:block th:each="item : ${sub.items}">
+                <th:block th:replace="~{qr/fragments/menu-grid :: qr-menu-item(item=${item},bill=${bill},billId=${billId},qrCode=${qrCode},customerName=${customerName},customerId=${customerId},locked=${locked},noteMap=${noteMap})}"/>
+              </th:block>
+            </div>
           </div>
         </th:block>
       </div>
     </th:block>
+    <!-- Populated by client-side search when it finds zero matches -->
+    <div id="qr-search-empty" class="hidden py-16 text-center text-sand text-sm">No items match your search.</div>
   </div>
 
   <!-- ── Order panel wrapper (fixed bottom, always present) ─────────── -->
@@ -378,13 +378,14 @@
       if (hadValue) {
         var allTab = document.getElementById('tab-all');
         if (allTab) setActiveTab(allTab);
-        el.dispatchEvent(new Event('search'));
+        qrApplySearch('');
       }
     }
-    // Search box: toggle the clear (×) button
+    // Search box: toggle the clear (×) button and run the client-side filter
     function qrOnSearchInput(el) {
       var clearBtn = document.getElementById('qr-search-clear');
       if (clearBtn) clearBtn.classList.toggle('hidden', !el.value);
+      qrApplySearch(el.value);
     }
     // Clear the search box text but stay in search mode (× button)
     function qrClearSearch() {
@@ -392,8 +393,46 @@
       if (!el) return;
       el.value = '';
       qrOnSearchInput(el);
-      el.dispatchEvent(new Event('search'));
       el.focus();
+    }
+
+    // Client-side search: every category's items are already rendered into #menu-grid on initial
+    // page load, so filtering by name (case-insensitive substring, matching the old server query)
+    // is a pure DOM show/hide — no network round trip. Hides now-empty subcategory/category
+    // groups, and hides every header while searching for a flat, ungrouped look (matching what
+    // the old server-rendered search results looked like).
+    function qrApplySearch(query) {
+      var q = (query || '').trim().toLowerCase();
+      var searching = q.length > 0;
+      var grid = document.getElementById('menu-grid');
+      if (!grid) return;
+      var anyMatch = false;
+      grid.querySelectorAll('.menu-item').forEach(function (item) {
+        var match = !searching || (item.dataset.itemName || '').toLowerCase().indexOf(q) !== -1;
+        item.style.display = match ? '' : 'none';
+        if (match) anyMatch = true;
+      });
+      function hasVisibleItem(el) {
+        return Array.prototype.some.call(el.querySelectorAll('.menu-item'), function (i) {
+          return i.style.display !== 'none';
+        });
+      }
+      grid.querySelectorAll('.menu-items-group').forEach(function (grp) {
+        grp.style.display = hasVisibleItem(grp) ? '' : 'none';
+      });
+      grid.querySelectorAll('.menu-cat-section').forEach(function (sec) {
+        sec.style.display = hasVisibleItem(sec) ? '' : 'none';
+      });
+      grid.querySelectorAll('.menu-cat-header, .menu-subcat-header').forEach(function (h) {
+        h.style.display = searching ? 'none' : '';
+      });
+      if (searching) {
+        grid.querySelectorAll('[id^="subcat-body-"]').forEach(function (b) {
+          b.classList.remove('hidden');
+        });
+      }
+      var emptyEl = document.getElementById('qr-search-empty');
+      if (emptyEl) emptyEl.style.display = (searching && !anyMatch) ? '' : 'none';
     }
 
     // Size #menu-grid's top padding to the sticky header's actual rendered height
