@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Slf4j
@@ -24,6 +25,22 @@ public class NotificationService {
 
     private static final String TELEGRAM_TEMPLATE_ORDER_RECEIVED_DINE_IN = """
             New dine-in order via QR at Bullet Beats Cafe.
+
+            *Order Details*
+            • Bill Number: #{{1}}
+            • Customer: {{2}}
+            • Phone: {{3}}
+            • Table: {{4}}
+
+            *Items*
+            {{5}}
+
+            *Total*: {{6}}
+
+            Thank you!""";
+
+    private static final String TELEGRAM_TEMPLATE_ORDER_UPDATED_DINE_IN = """
+            Dine-in order updated via QR at Bullet Beats Cafe.
 
             *Order Details*
             • Bill Number: #{{1}}
@@ -131,12 +148,37 @@ public class NotificationService {
         try {
             String templateText = telegramTemplateFor(template);
             if (templateText != null) {
-                doSendTelegram(renderTelegramTemplate(templateText, data), true);
+                doSendTelegram(renderTelegramTemplate(templateText, data.templateVariables()), true);
             } else {
                 doSendTelegram(data.formattedText(), false);
             }
         } catch (Exception e) {
             log.error("Failed to send Telegram {} staff notification: {}", template, e.getMessage());
+        }
+    }
+
+    /**
+     * Dine-in staff alert, Telegram-only variant: uses a message distinct from the
+     * "order received" one when {@code isUpdate} is true, and — unlike the WhatsApp
+     * content API, which the shared {@link DineInOrderNotificationData#itemsSummary()}
+     * is flattened for — lists items one per line since Telegram has no such constraint.
+     */
+    public void sendStaffTelegramDineIn(DineInOrderNotificationData data, String itemsMultiline, boolean isUpdate) {
+        if (!isEnabled()) {
+            log.debug("Telegram notification skipped — notification.enabled is false");
+            return;
+        }
+        if (!isTelegramConfigured()) {
+            log.debug("Telegram notification skipped — bot token / staff chat id not configured");
+            return;
+        }
+        try {
+            String templateText = isUpdate ? TELEGRAM_TEMPLATE_ORDER_UPDATED_DINE_IN : TELEGRAM_TEMPLATE_ORDER_RECEIVED_DINE_IN;
+            Map<String, String> vars = new LinkedHashMap<>(data.templateVariables());
+            vars.put("5", itemsMultiline);
+            doSendTelegram(renderTelegramTemplate(templateText, vars), true);
+        } catch (Exception e) {
+            log.error("Failed to send Telegram dine-in staff notification: {}", e.getMessage());
         }
     }
 
@@ -161,9 +203,9 @@ public class NotificationService {
         };
     }
 
-    private static String renderTelegramTemplate(String templateText, TemplateNotification data) {
+    private static String renderTelegramTemplate(String templateText, Map<String, String> vars) {
         String rendered = templateText;
-        for (Map.Entry<String, String> entry : data.templateVariables().entrySet()) {
+        for (Map.Entry<String, String> entry : vars.entrySet()) {
             rendered = rendered.replace("{{" + entry.getKey() + "}}", escapeMarkdown(entry.getValue()));
         }
         return rendered;

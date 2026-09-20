@@ -210,7 +210,7 @@ public class QrOrderService {
                 "[" + t + "] " + menuItem.getName() + " x" + quantity + " added via QR by " + actor);
 
         if (wasConfirmed) {
-            notifyStaffOfOrder(saved);
+            notifyStaffOfOrder(saved, true);
         }
 
         return saved;
@@ -277,7 +277,7 @@ public class QrOrderService {
             bill.setStatus(BillStatus.CONFIRMED);
             bill.setConfirmedAt(java.time.LocalDateTime.now());
             menuService.recomputeAllAutoMode();
-            notifyStaffOfOrder(bill);
+            notifyStaffOfOrder(bill, false);
         }
 
         String actor = customerName != null ? customerName : "QR customer";
@@ -288,18 +288,25 @@ public class QrOrderService {
         return billRepository.save(bill);
     }
 
-    private void notifyStaffOfOrder(Bill bill) {
+    private void notifyStaffOfOrder(Bill bill, boolean isUpdate) {
         String customerName = bill.getCustomer() != null ? bill.getCustomer().getName() : "Guest";
         String customerPhone = bill.getCustomer() != null ? bill.getCustomer().getPhone() : "N/A";
         String tableNumber = bill.getCafeTable() != null ? bill.getCafeTable().getName() : "N/A";
         String itemsSummary = bill.getItems().stream()
                 .map(i -> i.getQuantity() + "x " + i.getItemName())
                 .collect(Collectors.joining(", "));
+        String itemsMultiline = bill.getItems().stream()
+                .map(i -> i.getQuantity() + "x " + i.getItemName())
+                .collect(Collectors.joining("\n"));
         String total = "₹" + bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
 
         String formattedText = "New dine-in order via QR — Bill #" + bill.getBillNumber()
                 + ", Table " + tableNumber + ", Customer " + customerName + " (" + customerPhone + ")"
                 + ", Items: " + itemsSummary + ", Total: " + total;
+
+        DineInOrderNotificationData data = new DineInOrderNotificationData(
+                null, NotificationChannel.WHATSAPP, bill.getBillNumber(),
+                customerName, customerPhone, tableNumber, itemsSummary, total, formattedText);
 
         for (String staffPhone : userService.getActiveStaffPhones()) {
             notificationService.send(WhatsappTemplate.ORDER_RECEIVED_DINE_IN, new DineInOrderNotificationData(
@@ -307,9 +314,7 @@ public class QrOrderService {
                     customerName, customerPhone, tableNumber, itemsSummary, total, formattedText));
         }
 
-        notificationService.sendStaffTelegram(WhatsappTemplate.ORDER_RECEIVED_DINE_IN, new DineInOrderNotificationData(
-                null, NotificationChannel.WHATSAPP, bill.getBillNumber(),
-                customerName, customerPhone, tableNumber, itemsSummary, total, formattedText));
+        notificationService.sendStaffTelegramDineIn(data, itemsMultiline, isUpdate);
     }
 
     @Transactional(readOnly = true)
@@ -370,7 +375,7 @@ public class QrOrderService {
                 "[" + t + "] " + itemName + " qty updated to " + newQty + " via QR by " + actor);
 
         if (wasConfirmed) {
-            notifyStaffOfOrder(saved);
+            notifyStaffOfOrder(saved, true);
         }
 
         return saved;
