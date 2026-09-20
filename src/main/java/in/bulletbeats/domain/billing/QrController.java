@@ -104,6 +104,8 @@ public class QrController {
         model.addAttribute("returning", returning);
         model.addAttribute("noteMap", qrOrderService.getSavedNotesForCustomer(customerId));
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
+        model.addAttribute("instagramUrl", appConfigService.get("social.instagram_url", ""));
+        model.addAttribute("googleReviewUrl", appConfigService.get("social.google_review_url", ""));
         model.addAttribute("locked", bill.getStatus().isTerminal());
         model.addAttribute("promotedItem", bill.getStatus() == BillStatus.DRAFT
                 ? menuService.getPromotedItem().orElse(null) : null);

@@ -34,6 +34,10 @@ public class AppSettingsDto {
 
     private String appBaseUrl;
 
+    private String instagramUrl;
+
+    private String googleReviewUrl;
+
     @Min(1)
     private int idleTimeoutMinutes = 10;
 }

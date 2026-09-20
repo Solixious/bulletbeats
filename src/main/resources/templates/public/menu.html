@@ -46,6 +46,23 @@
 
   <main class="max-w-2xl mx-auto px-4 py-8">
 
+    <!-- Social links -->
+    <div th:if="${(instagramUrl != null and !#strings.isEmpty(instagramUrl)) or (googleReviewUrl != null and !#strings.isEmpty(googleReviewUrl))}"
+         class="flex items-center justify-center gap-3 mb-6">
+      <a th:if="${instagramUrl != null and !#strings.isEmpty(instagramUrl)}" th:href="${instagramUrl}"
+         target="_blank" rel="noopener noreferrer"
+         class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-elevated border border-elevated/60
+                text-sand hover:text-ivory hover:border-accent/40 text-xs font-medium transition-colors">
+        <span>📷</span><span>Instagram</span>
+      </a>
+      <a th:if="${googleReviewUrl != null and !#strings.isEmpty(googleReviewUrl)}" th:href="${googleReviewUrl}"
+         target="_blank" rel="noopener noreferrer"
+         class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-elevated border border-elevated/60
+                text-sand hover:text-ivory hover:border-accent/40 text-xs font-medium transition-colors">
+        <span>⭐</span><span>Review us on Google</span>
+      </a>
+    </div>
+
     <!-- Direct delivery order link -->
     <a id="delivery-cta-inline" href="/order"
        class="flex items-center justify-between gap-3 mb-6 px-5 py-3.5 rounded-xl

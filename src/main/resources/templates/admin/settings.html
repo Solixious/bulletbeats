@@ -57,6 +57,33 @@
       </div>
     </div>
 
+    <!-- ── Social Links ───────────────────────────────────────────── -->
+    <div class="bg-surface rounded-xl border border-elevated/60 p-5">
+      <h2 class="font-heading text-lg text-ivory tracking-wide mb-4">Social Links</h2>
+      <p class="text-sand text-xs mb-4">Shown on the public menu, and the dine-in / delivery QR menus, before the categories.</p>
+      <div class="space-y-4">
+
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Instagram Page URL <span class="text-sand/50 normal-case">(optional)</span></label>
+          <input type="text" th:field="*{instagramUrl}" maxlength="255"
+                 placeholder="https://instagram.com/yourcafe"
+                 class="w-full bg-elevated rounded-lg px-3 py-2 text-ivory text-sm
+                        border border-elevated/60 focus:border-accent outline-none
+                        transition-colors placeholder-sand/40"/>
+        </div>
+
+        <div>
+          <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Review Us On Google URL <span class="text-sand/50 normal-case">(optional)</span></label>
+          <input type="text" th:field="*{googleReviewUrl}" maxlength="255"
+                 placeholder="https://g.page/r/your-place/review"
+                 class="w-full bg-elevated rounded-lg px-3 py-2 text-ivory text-sm
+                        border border-elevated/60 focus:border-accent outline-none
+                        transition-colors placeholder-sand/40"/>
+        </div>
+
+      </div>
+    </div>
+
     <!-- ── Tax (GST) ──────────────────────────────────────────────── -->
     <div class="bg-surface rounded-xl border border-elevated/60 p-5">
       <h2 class="font-heading text-lg text-ivory tracking-wide mb-4">Tax (GST)</h2>

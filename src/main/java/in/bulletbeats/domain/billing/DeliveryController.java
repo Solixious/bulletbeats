@@ -83,6 +83,8 @@ public class DeliveryController {
         model.addAttribute("customerName", customerName != null ? customerName : "Guest");
         model.addAttribute("locked", bill.getStatus().isTerminal());
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
+        model.addAttribute("instagramUrl", appConfigService.get("social.instagram_url", ""));
+        model.addAttribute("googleReviewUrl", appConfigService.get("social.google_review_url", ""));
         model.addAttribute("hoursStatus", hoursStatus);
         model.addAttribute("promotedItem", bill.getStatus() == BillStatus.DRAFT && !hoursStatus.closed()
                 ? menuService.getPromotedItem().orElse(null) : null);

@@ -60,6 +60,8 @@ public class AppSettingsController {
         appConfigService.set("cafe.gstin",         dto.getGstin() != null ? dto.getGstin().trim() : "");
         appConfigService.set("loyalty.earn_rate",  dto.getLoyaltyEarnRate().toPlainString());
         appConfigService.set("app.base-url",       dto.getAppBaseUrl() != null ? dto.getAppBaseUrl().trim() : "");
+        appConfigService.set("social.instagram_url",     dto.getInstagramUrl() != null ? dto.getInstagramUrl().trim() : "");
+        appConfigService.set("social.google_review_url", dto.getGoogleReviewUrl() != null ? dto.getGoogleReviewUrl().trim() : "");
         return "redirect:/admin/settings?saved";
     }
 
@@ -99,6 +101,8 @@ public class AppSettingsController {
         dto.setGstin(appConfigService.get("cafe.gstin", ""));
         dto.setLoyaltyEarnRate(appConfigService.getDecimal("loyalty.earn_rate", new BigDecimal("10.00")));
         dto.setAppBaseUrl(appConfigService.get("app.base-url", ""));
+        dto.setInstagramUrl(appConfigService.get("social.instagram_url", ""));
+        dto.setGoogleReviewUrl(appConfigService.get("social.google_review_url", ""));
         dto.setIdleTimeoutMinutes(appConfigService.getInt("table.idle.timeout.minutes", 10));
         return dto;
     }

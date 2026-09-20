@@ -33,6 +33,8 @@ public class PublicMenuController {
         applyItemsAndTree(categoryId, q, model);
         model.addAttribute("selectedCategoryId", categoryId);
         model.addAttribute("cafeName", appConfigService.get("cafe.name", "Bullet Beats Café"));
+        model.addAttribute("instagramUrl", appConfigService.get("social.instagram_url", ""));
+        model.addAttribute("googleReviewUrl", appConfigService.get("social.google_review_url", ""));
         return "public/menu";
     }
 
