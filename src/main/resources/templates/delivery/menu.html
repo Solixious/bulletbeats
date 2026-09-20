@@ -131,7 +131,7 @@
   </script>
 
   <!-- ── Fixed top bar ──────────────────────────────────────────────── -->
-  <header class="fixed top-0 left-0 right-0 z-50 h-14 bg-surface border-b border-elevated/60
+  <header class="fixed top-0 left-0 right-0 z-50 h-11 bg-surface border-b border-elevated/60
                  flex items-center px-4 gap-3">
     <span class="font-heading text-accent text-xl tracking-widest leading-none flex-shrink-0">🛵</span>
     <span class="font-heading text-accent text-lg tracking-widest leading-none flex-shrink-0"
@@ -144,28 +144,28 @@
   </header>
 
   <!-- ── Category tabs (sticky below topbar) — hidden once locked ─────── -->
-  <div th:unless="${locked}" id="delivery-sticky-header" class="fixed top-14 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
+  <div th:unless="${locked}" id="delivery-sticky-header" class="fixed top-11 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
     <!-- Social links (shown before the category tabs) -->
     <div th:if="${(instagramUrl != null and !#strings.isEmpty(instagramUrl)) or (googleReviewUrl != null and !#strings.isEmpty(googleReviewUrl))}"
-         class="flex items-center justify-center gap-3 px-3 pt-2.5">
+         class="flex items-center justify-center gap-3 px-3 pt-2 pb-1.5">
       <a th:if="${instagramUrl != null and !#strings.isEmpty(instagramUrl)}" th:href="${instagramUrl}"
          target="_blank" rel="noopener noreferrer"
-         class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-elevated border border-elevated/60
+         class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-elevated border border-elevated/60
                 text-sand hover:text-ivory hover:border-accent/40 text-xs font-medium transition-colors">
         <span>📷</span><span>Instagram</span>
       </a>
       <a th:if="${googleReviewUrl != null and !#strings.isEmpty(googleReviewUrl)}" th:href="${googleReviewUrl}"
          target="_blank" rel="noopener noreferrer"
-         class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-elevated border border-elevated/60
+         class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-elevated border border-elevated/60
                 text-sand hover:text-ivory hover:border-accent/40 text-xs font-medium transition-colors">
         <span>⭐</span><span>Review us on Google</span>
       </a>
     </div>
 
     <!-- Tabs row (default view): pinned search icon + scrollable category tabs -->
-    <div id="delivery-tabs-row" class="flex items-center gap-1.5 px-3 py-2">
+    <div id="delivery-tabs-row" class="flex items-center gap-1.5 px-3 py-1.5">
       <button type="button" onclick="deliveryOpenSearch()"
-              class="flex-shrink-0 w-8 h-8 rounded-full border border-elevated/60 text-sand
+              class="flex-shrink-0 w-7 h-7 rounded-full border border-elevated/60 text-sand
                      hover:text-ivory hover:border-accent/40 transition-colors flex items-center justify-center">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -174,14 +174,14 @@
       </button>
       <div id="delivery-cat-scroll" class="cat-tabs overflow-x-auto flex items-center gap-1 flex-1 min-w-0">
         <button id="tab-all"
-                class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-bold
+                class="cat-tab flex-shrink-0 px-3.5 py-1 rounded-full text-sm font-bold
                        bg-accent text-base transition-all"
                 onclick="deliverySelectCategory(this, null)">
           All
         </button>
         <button th:each="dto : ${menuDto.categories}"
                 th:id="'tab-' + ${dto.category.id}"
-                class="cat-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm border border-elevated/60
+                class="cat-tab flex-shrink-0 px-3.5 py-1 rounded-full text-sm border border-elevated/60
                        text-sand hover:text-ivory hover:border-accent/40 transition-all"
                 th:onclick="'deliverySelectCategory(this, ' + ${dto.category.id} + ')'"
                 th:text="${dto.category.name}">
@@ -200,7 +200,7 @@
     </div>
 
     <!-- Search row (shown in place of the tabs row while searching) -->
-    <div id="delivery-search-row" class="hidden items-center gap-2 px-3 py-2">
+    <div id="delivery-search-row" class="hidden items-center gap-2 px-3 py-1.5">
       <div class="relative flex-1 min-w-0">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
              fill="none" stroke="#9A9080" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
@@ -220,7 +220,7 @@
   </div>
 
   <!-- ── Menu grid ──────────────────────────────────────────────────── -->
-  <div id="menu-grid" th:class="${locked} ? 'px-4 pt-20 pb-4' : 'px-4 pt-32 pb-4'">
+  <div id="menu-grid" th:class="${locked} ? 'px-4 pt-14 pb-4' : 'px-4 pt-24 pb-4'">
     <!-- Social links (locked state only — the sticky header with its own copy of these links doesn't render once locked) -->
     <div th:if="${locked and ((instagramUrl != null and !#strings.isEmpty(instagramUrl)) or (googleReviewUrl != null and !#strings.isEmpty(googleReviewUrl)))}"
          class="flex items-center justify-center gap-3 mb-4">
@@ -424,7 +424,7 @@
     // Size #menu-grid's top padding to the sticky header's actual rendered height
     // (topbar + search + tabs) instead of a hardcoded value, since the search row
     // changes that height and hardcoding it drifts out of sync easily.
-    // When locked, the sticky header doesn't render at all — leave the CSS-set pt-20 alone.
+    // When locked, the sticky header doesn't render at all — leave the CSS-set pt-14 alone.
     (function() {
       var sticky = document.getElementById('delivery-sticky-header');
       if (!sticky) return;
