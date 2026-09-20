@@ -289,11 +289,6 @@ public class QrOrderService {
     }
 
     private void notifyStaffOfOrder(Bill bill) {
-        List<String> staffPhones = userService.getActiveStaffPhones();
-        if (staffPhones.isEmpty()) {
-            return;
-        }
-
         String customerName = bill.getCustomer() != null ? bill.getCustomer().getName() : "Guest";
         String customerPhone = bill.getCustomer() != null ? bill.getCustomer().getPhone() : "N/A";
         String tableNumber = bill.getCafeTable() != null ? bill.getCafeTable().getName() : "N/A";
@@ -306,11 +301,15 @@ public class QrOrderService {
                 + ", Table " + tableNumber + ", Customer " + customerName + " (" + customerPhone + ")"
                 + ", Items: " + itemsSummary + ", Total: " + total;
 
-        for (String staffPhone : staffPhones) {
+        for (String staffPhone : userService.getActiveStaffPhones()) {
             notificationService.send(WhatsappTemplate.ORDER_RECEIVED_DINE_IN, new DineInOrderNotificationData(
                     staffPhone, NotificationChannel.WHATSAPP, bill.getBillNumber(),
                     customerName, customerPhone, tableNumber, itemsSummary, total, formattedText));
         }
+
+        notificationService.sendStaffTelegram(WhatsappTemplate.ORDER_RECEIVED_DINE_IN, new DineInOrderNotificationData(
+                null, NotificationChannel.WHATSAPP, bill.getBillNumber(),
+                customerName, customerPhone, tableNumber, itemsSummary, total, formattedText));
     }
 
     @Transactional(readOnly = true)

@@ -9,7 +9,9 @@ import in.bulletbeats.domain.admin.AppConfigService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
@@ -20,8 +22,42 @@ public class NotificationService {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    private static final String TELEGRAM_TEMPLATE_ORDER_RECEIVED_DINE_IN = """
+            New dine-in order via QR at Bullet Beats Cafe.
+
+            *Order Details*
+            • Bill Number: #{{1}}
+            • Customer: {{2}}
+            • Phone: {{3}}
+            • Table: {{4}}
+
+            *Items*
+            {{5}}
+
+            *Total*: {{6}}
+
+            Thank you!""";
+
+    private static final String TELEGRAM_TEMPLATE_ORDER_RECEIVED_DELIVERY = """
+            New direct delivery order at Bullet Beats Cafe.
+
+            • Bill Number: #{{1}}
+            • Customer: {{2}}
+            • Phone: {{3}}
+            • Address: {{4}}
+
+            *Items*
+            {{5}}
+
+            *Total*: {{6}}
+
+            Thank you!""";
+
+    private final RestClient restClient = RestClient.create();
+
     private final AppConfigService appConfigService;
     private final TwilioProperties properties;
+    private final TelegramProperties telegramProperties;
 
     @PostConstruct
     void initTwilio() {
@@ -43,12 +79,27 @@ public class NotificationService {
         return hasText(properties.getTemplateSid(template));
     }
 
+    public boolean isTelegramConfigured() {
+        return hasText(telegramProperties.getBotToken()) && hasText(telegramProperties.getStaffChatId());
+    }
+
+    /** Whether staff order alerts should still go out over WhatsApp (in addition to Telegram). */
+    public boolean isWhatsappStaffEnabled() {
+        return appConfigService.getBoolean("notification.whatsapp.staff.enabled", true);
+    }
+
     /**
      * Auto-send on trigger (e.g. payment) — silent, checks the notification.enabled flag.
      */
     public void send(WhatsappTemplate template, TemplateNotification data) {
         if (!isEnabled()) {
             log.debug("Notification skipped — notification.enabled is false");
+            return;
+        }
+        if (data.channel() == NotificationChannel.WHATSAPP
+                && template.getAudience() == TemplateAudience.STAFF
+                && !isWhatsappStaffEnabled()) {
+            log.debug("WhatsApp skipped for staff template {} — notification.whatsapp.staff.enabled is false", template);
             return;
         }
         if (!isConfigured()) {
@@ -61,6 +112,80 @@ public class NotificationService {
             log.error("Failed to send {} {} notification to {}: {}",
                     data.channel(), template, data.toPhone(), e.getMessage());
         }
+    }
+
+    /**
+     * Auto-send a staff alert to the shared Telegram staff chat — silent, checks the
+     * notification.enabled flag. Independent of the WhatsApp staff toggle: both
+     * channels can run side by side while reliability is being evaluated.
+     */
+    public void sendStaffTelegram(WhatsappTemplate template, TemplateNotification data) {
+        if (!isEnabled()) {
+            log.debug("Telegram notification skipped — notification.enabled is false");
+            return;
+        }
+        if (!isTelegramConfigured()) {
+            log.debug("Telegram notification skipped — bot token / staff chat id not configured");
+            return;
+        }
+        try {
+            String templateText = telegramTemplateFor(template);
+            if (templateText != null) {
+                doSendTelegram(renderTelegramTemplate(templateText, data), true);
+            } else {
+                doSendTelegram(data.formattedText(), false);
+            }
+        } catch (Exception e) {
+            log.error("Failed to send Telegram {} staff notification: {}", template, e.getMessage());
+        }
+    }
+
+    /**
+     * Explicit manual test send to the staff Telegram chat — throws on any error,
+     * bypasses the notification.enabled flag, still requires configuration.
+     */
+    public void testSendTelegram(String message) {
+        if (!isTelegramConfigured()) {
+            throw new IllegalStateException(
+                    "Telegram not configured — set TELEGRAM_BOT_TOKEN and TELEGRAM_STAFF_CHAT_ID");
+        }
+        doSendTelegram(message, false);
+        log.info("Test Telegram notification sent to staff chat");
+    }
+
+    private static String telegramTemplateFor(WhatsappTemplate template) {
+        return switch (template) {
+            case ORDER_RECEIVED_DINE_IN -> TELEGRAM_TEMPLATE_ORDER_RECEIVED_DINE_IN;
+            case ORDER_RECEIVED_DELIVERY -> TELEGRAM_TEMPLATE_ORDER_RECEIVED_DELIVERY;
+            default -> null;
+        };
+    }
+
+    private static String renderTelegramTemplate(String templateText, TemplateNotification data) {
+        String rendered = templateText;
+        for (Map.Entry<String, String> entry : data.templateVariables().entrySet()) {
+            rendered = rendered.replace("{{" + entry.getKey() + "}}", escapeMarkdown(entry.getValue()));
+        }
+        return rendered;
+    }
+
+    /** Escapes Telegram legacy-Markdown entity characters in interpolated (non-template) text. */
+    private static String escapeMarkdown(String s) {
+        return s.replaceAll("([_*\\[`])", "\\\\$1");
+    }
+
+    private void doSendTelegram(String text, boolean markdown) {
+        String url = "https://api.telegram.org/bot" + telegramProperties.getBotToken() + "/sendMessage";
+        Map<String, Object> body = markdown
+                ? Map.of("chat_id", telegramProperties.getStaffChatId(), "text", text, "parse_mode", "Markdown")
+                : Map.of("chat_id", telegramProperties.getStaffChatId(), "text", text);
+        String response = restClient.post()
+                .uri(url)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .body(String.class);
+        log.info("Telegram response: {}", response);
     }
 
     /**

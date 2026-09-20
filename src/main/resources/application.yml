@@ -112,6 +112,17 @@ twilio:
     order-received-delivery: ${TWILIO_TEMPLATES_ORDER_RECEIVED_DELIVERY:}
     feedback-request: ${TWILIO_TEMPLATES_FEEDBACK_REQUEST:}
 
+# ── Telegram (Staff Notification Channel) ─────────────────────
+# Cheaper alternative to WhatsApp for internal "new order" alerts. Runs
+# alongside Twilio for now — see notification.whatsapp.staff.enabled
+# (app_config) to turn WhatsApp off for staff alerts once Telegram proves
+# reliable. Create a bot via @BotFather, add it to a staff group, then get
+# the group's chat id (e.g. via https://api.telegram.org/bot<token>/getUpdates).
+# Message text for each staff template is hardcoded in NotificationService.
+telegram:
+  bot-token: ${TELEGRAM_BOT_TOKEN:}
+  staff-chat-id: ${TELEGRAM_STAFF_CHAT_ID:}
+
 # ── Logging (console only — Docker captures stdout) ──────────
 logging:
   pattern:

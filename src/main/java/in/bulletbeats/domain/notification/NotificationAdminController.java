@@ -31,4 +31,17 @@ public class NotificationAdminController {
         }
         return "admin/fragments/notification-test-result :: result";
     }
+
+    @PostMapping("/test-telegram")
+    public String sendTestTelegram(@RequestParam String message, Model model) {
+        try {
+            notificationService.testSendTelegram(message);
+            model.addAttribute("success", true);
+            model.addAttribute("channel", "TELEGRAM");
+            model.addAttribute("phone", "staff chat");
+        } catch (Exception e) {
+            model.addAttribute("error", e.getMessage());
+        }
+        return "admin/fragments/notification-test-result :: result";
+    }
 }

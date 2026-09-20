@@ -35,6 +35,8 @@ public class AppSettingsController {
         model.addAttribute("notificationEnabled",
                 appConfigService.getBoolean("notification.enabled", false));
         model.addAttribute("notificationConfigured", notificationService.isConfigured());
+        model.addAttribute("telegramConfigured", notificationService.isTelegramConfigured());
+        model.addAttribute("whatsappStaffEnabled", notificationService.isWhatsappStaffEnabled());
         model.addAttribute("deliveryFee", appConfigService.get("delivery.fee", "0.00"));
         model.addAttribute("deliveryHoursEnabled", appConfigService.getBoolean("delivery.hours.enabled", false));
         model.addAttribute("deliveryClosedStart", appConfigService.get("delivery.closed.start", "00:00"));
@@ -67,6 +69,7 @@ public class AppSettingsController {
             "student.discount.percentage",
             "student.discount.min_bill_amount",
             "notification.enabled",
+            "notification.whatsapp.staff.enabled",
             "delivery.fee",
             "delivery.hours.enabled",
             "delivery.closed.start",
