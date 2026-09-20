@@ -48,7 +48,10 @@ public class NotificationService {
             • Phone: {{3}}
             • Table: {{4}}
 
-            *Items*
+            *New Items*
+            {{7}}
+
+            *All Items So Far*
             {{5}}
 
             *Total*: {{6}}
@@ -162,8 +165,11 @@ public class NotificationService {
      * "order received" one when {@code isUpdate} is true, and — unlike the WhatsApp
      * content API, which the shared {@link DineInOrderNotificationData#itemsSummary()}
      * is flattened for — lists items one per line since Telegram has no such constraint.
+     * {@code newItemsMultiline} (only rendered when {@code isUpdate} is true) calls out
+     * what was just added, on top of the full running order in {@code itemsMultiline}.
      */
-    public void sendStaffTelegramDineIn(DineInOrderNotificationData data, String itemsMultiline, boolean isUpdate) {
+    public void sendStaffTelegramDineIn(DineInOrderNotificationData data, String itemsMultiline,
+                                         boolean isUpdate, String newItemsMultiline) {
         if (!isEnabled()) {
             log.debug("Telegram notification skipped — notification.enabled is false");
             return;
@@ -176,6 +182,9 @@ public class NotificationService {
             String templateText = isUpdate ? TELEGRAM_TEMPLATE_ORDER_UPDATED_DINE_IN : TELEGRAM_TEMPLATE_ORDER_RECEIVED_DINE_IN;
             Map<String, String> vars = new LinkedHashMap<>(data.templateVariables());
             vars.put("5", itemsMultiline);
+            if (isUpdate) {
+                vars.put("7", newItemsMultiline);
+            }
             doSendTelegram(renderTelegramTemplate(templateText, vars), true);
         } catch (Exception e) {
             log.error("Failed to send Telegram dine-in staff notification: {}", e.getMessage());

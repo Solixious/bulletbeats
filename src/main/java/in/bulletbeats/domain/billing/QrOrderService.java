@@ -210,7 +210,7 @@ public class QrOrderService {
                 "[" + t + "] " + menuItem.getName() + " x" + quantity + " added via QR by " + actor);
 
         if (wasConfirmed) {
-            notifyStaffOfOrder(saved, true);
+            notifyStaffOfOrder(saved, true, quantity + "x " + menuItem.getName());
         }
 
         return saved;
@@ -277,7 +277,7 @@ public class QrOrderService {
             bill.setStatus(BillStatus.CONFIRMED);
             bill.setConfirmedAt(java.time.LocalDateTime.now());
             menuService.recomputeAllAutoMode();
-            notifyStaffOfOrder(bill, false);
+            notifyStaffOfOrder(bill, false, null);
         }
 
         String actor = customerName != null ? customerName : "QR customer";
@@ -288,7 +288,7 @@ public class QrOrderService {
         return billRepository.save(bill);
     }
 
-    private void notifyStaffOfOrder(Bill bill, boolean isUpdate) {
+    private void notifyStaffOfOrder(Bill bill, boolean isUpdate, String addedItemsMultiline) {
         String customerName = bill.getCustomer() != null ? bill.getCustomer().getName() : "Guest";
         String customerPhone = bill.getCustomer() != null ? bill.getCustomer().getPhone() : "N/A";
         String tableNumber = bill.getCafeTable() != null ? bill.getCafeTable().getName() : "N/A";
@@ -314,7 +314,7 @@ public class QrOrderService {
                     customerName, customerPhone, tableNumber, itemsSummary, total, formattedText));
         }
 
-        notificationService.sendStaffTelegramDineIn(data, itemsMultiline, isUpdate);
+        notificationService.sendStaffTelegramDineIn(data, itemsMultiline, isUpdate, addedItemsMultiline);
     }
 
     @Transactional(readOnly = true)
@@ -375,7 +375,7 @@ public class QrOrderService {
                 "[" + t + "] " + itemName + " qty updated to " + newQty + " via QR by " + actor);
 
         if (wasConfirmed) {
-            notifyStaffOfOrder(saved, true);
+            notifyStaffOfOrder(saved, true, delta + "x " + itemName);
         }
 
         return saved;
