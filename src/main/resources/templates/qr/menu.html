@@ -157,7 +157,7 @@
   <div id="qr-sticky-header" class="fixed top-9 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
     <!-- Social links (shown before the category tabs) -->
     <div th:if="${(instagramUrl != null and !#strings.isEmpty(instagramUrl)) or (googleReviewUrl != null and !#strings.isEmpty(googleReviewUrl))}"
-         class="flex items-center justify-center gap-2.5 px-3 pt-1.5 pb-1">
+         class="flex items-center justify-center gap-2.5 px-3 pt-4 pb-4">
       <a th:if="${instagramUrl != null and !#strings.isEmpty(instagramUrl)}" th:href="${instagramUrl}"
          target="_blank" rel="noopener noreferrer"
          class="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-elevated border border-elevated/60
@@ -232,7 +232,7 @@
   </div>
 
   <!-- ── Menu grid ──────────────────────────────────────────────────── -->
-  <div id="menu-grid" class="px-4 pt-[104px] pb-4">
+  <div id="menu-grid" class="px-4 pt-[125px] pb-4">
     <th:block th:each="dto : ${menuDto.categories}">
       <div class="mb-6 menu-cat-section" th:attr="data-category-id=${dto.category.id}">
         <h3 class="font-heading text-xl text-sand tracking-widest mb-3 uppercase menu-cat-header"
