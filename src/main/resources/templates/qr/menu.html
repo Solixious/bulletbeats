@@ -141,9 +141,9 @@
   </script>
 
   <!-- ── Fixed top bar ──────────────────────────────────────────────── -->
-  <header class="fixed top-0 left-0 right-0 z-50 h-11 bg-surface border-b border-elevated/60
+  <header class="fixed top-0 left-0 right-0 z-50 h-9 bg-surface border-b border-elevated/60
                  flex items-center px-4 gap-3">
-    <span class="font-heading text-accent text-xl tracking-widest leading-none flex-shrink-0">🏍</span>
+    <span class="font-heading text-accent text-lg tracking-widest leading-none flex-shrink-0">🏍</span>
     <span class="font-heading text-accent text-lg tracking-widest leading-none flex-shrink-0"
           th:text="${cafeName}">Bullet Beats</span>
     <span class="flex-1 text-center text-ivory text-sm truncate"
@@ -154,30 +154,30 @@
   </header>
 
   <!-- ── Category tabs (sticky below topbar) ───────────────────────── -->
-  <div id="qr-sticky-header" class="fixed top-11 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
+  <div id="qr-sticky-header" class="fixed top-9 left-0 right-0 z-40 bg-base border-b border-elevated/40 relative">
     <!-- Social links (shown before the category tabs) -->
     <div th:if="${(instagramUrl != null and !#strings.isEmpty(instagramUrl)) or (googleReviewUrl != null and !#strings.isEmpty(googleReviewUrl))}"
-         class="flex items-center justify-center gap-3 px-3 pt-2 pb-1.5">
+         class="flex items-center justify-center gap-2.5 px-3 pt-1.5 pb-1">
       <a th:if="${instagramUrl != null and !#strings.isEmpty(instagramUrl)}" th:href="${instagramUrl}"
          target="_blank" rel="noopener noreferrer"
-         class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-elevated border border-elevated/60
+         class="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-elevated border border-elevated/60
                 text-sand hover:text-ivory hover:border-accent/40 text-xs font-medium transition-colors">
         <span>📷</span><span>Instagram</span>
       </a>
       <a th:if="${googleReviewUrl != null and !#strings.isEmpty(googleReviewUrl)}" th:href="${googleReviewUrl}"
          target="_blank" rel="noopener noreferrer"
-         class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-elevated border border-elevated/60
+         class="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-elevated border border-elevated/60
                 text-sand hover:text-ivory hover:border-accent/40 text-xs font-medium transition-colors">
         <span>⭐</span><span>Review us on Google</span>
       </a>
     </div>
 
     <!-- Tabs row (default view): pinned search icon + scrollable category tabs -->
-    <div id="qr-tabs-row" class="flex items-center gap-1.5 px-3 py-1.5">
+    <div id="qr-tabs-row" class="flex items-center gap-1.5 px-3 py-1">
       <button type="button" onclick="qrOpenSearch()"
-              class="flex-shrink-0 w-7 h-7 rounded-full border border-elevated/60 text-sand
+              class="flex-shrink-0 w-6 h-6 rounded-full border border-elevated/60 text-sand
                      hover:text-ivory hover:border-accent/40 transition-colors flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
@@ -185,14 +185,14 @@
       <div id="qr-cat-scroll" class="cat-tabs overflow-x-auto flex items-center gap-1 flex-1 min-w-0">
         <!-- "All" tab -->
         <button id="tab-all"
-                class="cat-tab flex-shrink-0 px-3.5 py-1 rounded-full text-sm font-bold
+                class="cat-tab flex-shrink-0 px-3 py-0.5 rounded-full text-sm font-bold
                        bg-accent text-base transition-all"
                 onclick="qrSelectCategory(this, null)">
           All
         </button>
         <button th:each="dto : ${menuDto.categories}"
                 th:id="'tab-' + ${dto.category.id}"
-                class="cat-tab flex-shrink-0 px-3.5 py-1 rounded-full text-sm border border-elevated/60
+                class="cat-tab flex-shrink-0 px-3 py-0.5 rounded-full text-sm border border-elevated/60
                        text-sand hover:text-ivory hover:border-accent/40 transition-all"
                 th:onclick="'qrSelectCategory(this, ' + ${dto.category.id} + ')'"
                 th:text="${dto.category.name}">
@@ -212,7 +212,7 @@
     </div>
 
     <!-- Search row (shown in place of the tabs row while searching) -->
-    <div id="qr-search-row" class="hidden items-center gap-2 px-3 py-1.5">
+    <div id="qr-search-row" class="hidden items-center gap-2 px-3 py-1">
       <div class="relative flex-1 min-w-0">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
              fill="none" stroke="#9A9080" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
@@ -232,7 +232,7 @@
   </div>
 
   <!-- ── Menu grid ──────────────────────────────────────────────────── -->
-  <div id="menu-grid" class="px-4 pt-24 pb-4">
+  <div id="menu-grid" class="px-4 pt-[104px] pb-4">
     <th:block th:each="dto : ${menuDto.categories}">
       <div class="mb-6 menu-cat-section" th:attr="data-category-id=${dto.category.id}">
         <h3 class="font-heading text-xl text-sand tracking-widest mb-3 uppercase menu-cat-header"
