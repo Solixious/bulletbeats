@@ -4,6 +4,8 @@ import in.bulletbeats.domain.notification.NotificationChannel;
 import in.bulletbeats.domain.shared.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -66,6 +68,7 @@ public class Customer extends BaseEntity {
 
     /** Daily promo rotation bucket, 1 (Monday) .. 7 (Sunday). */
     @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.SMALLINT)
     private int promoBucket;
 
     @Column(nullable = false)
