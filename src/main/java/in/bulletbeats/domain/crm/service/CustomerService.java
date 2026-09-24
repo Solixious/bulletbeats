@@ -4,14 +4,19 @@ import in.bulletbeats.domain.crm.entity.Customer;
 import in.bulletbeats.domain.crm.entity.CustomerNote;
 import in.bulletbeats.domain.crm.repository.CustomerNoteRepository;
 import in.bulletbeats.domain.crm.repository.CustomerRepository;
+import in.bulletbeats.domain.shared.enums.BillStatus;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 @Service
 @RequiredArgsConstructor
@@ -21,12 +26,15 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
     private final CustomerNoteRepository customerNoteRepository;
 
+    private static final ZoneId CAFE_ZONE = ZoneId.of("Asia/Kolkata");
+
     @Transactional
     public Customer findOrCreateByPhone(String phone, String name, Long createdByUserId) {
         return customerRepository.findByPhone(phone).orElseGet(() -> {
             Customer newCustomer = Customer.builder()
                     .phone(phone)
                     .name(name)
+                    .promoBucket(customerRepository.findLeastPopulatedPromoBucket())
                     .build();
             return customerRepository.save(newCustomer);
         });
@@ -35,6 +43,26 @@ public class CustomerService {
     public Customer getById(Long id) {
         return customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+    }
+
+    /** Today's promo bucket: Monday = 1 ... Sunday = 7, in café local time. */
+    public int todaysPromoBucket() {
+        return LocalDate.now(CAFE_ZONE).getDayOfWeek().getValue();
+    }
+
+    /** Customers in the bucket with at least one PAID bill, i.e. who receive that day's promo. */
+    public List<Customer> getPromoAudience(int bucket) {
+        return customerRepository.findPromoAudience(bucket, BillStatus.PAID);
+    }
+
+    /** Promo audience size for each bucket 1..7 (zero-filled). */
+    public Map<Integer, Long> getPromoAudienceCounts() {
+        Map<Integer, Long> counts = new TreeMap<>();
+        for (int b = 1; b <= 7; b++) counts.put(b, 0L);
+        for (Object[] row : customerRepository.countPromoAudienceByBucket(BillStatus.PAID)) {
+            counts.put(((Number) row[0]).intValue(), ((Number) row[1]).longValue());
+        }
+        return counts;
     }
 
     public List<Customer> search(String query) {

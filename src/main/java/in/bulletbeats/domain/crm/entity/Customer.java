@@ -64,12 +64,25 @@ public class Customer extends BaseEntity {
     @Builder.Default
     private NotificationChannel notificationPreference = NotificationChannel.WHATSAPP;
 
+    /** Daily promo rotation bucket, 1 (Monday) .. 7 (Sunday). */
+    @Column(nullable = false)
+    private int promoBucket;
+
     @Column(nullable = false)
     @Builder.Default
     private long tenantId = 1L;
 
     public boolean isEligibleForStudentDiscount() {
         return isStudent && name != null && !name.isBlank();
+    }
+
+    /** Digits-only number for wa.me links; bare 10-digit numbers are assumed Indian (+91). */
+    public String getWhatsAppNumber() {
+        if (phone == null) {
+            return "";
+        }
+        String digits = phone.replaceAll("\\D", "");
+        return digits.length() == 10 ? "91" + digits : digits;
     }
 
     public String getMaskedPhone() {

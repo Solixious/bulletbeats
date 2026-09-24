@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: shell(~{::title}, ~{::main})}">
+<head>
+  <title>Daily Promo — Customers — Bullet Beats Café</title>
+</head>
+<body>
+<main class="p-4 sm:p-6 max-w-4xl mx-auto"
+      th:with="dayNames=${ {'Mon','Tue','Wed','Thu','Fri','Sat','Sun'} }">
+
+  <a href="/customers"
+     class="inline-flex items-center gap-1.5 text-sand text-sm hover:text-ivory transition-colors mb-6">
+    ← Customers
+  </a>
+
+  <div class="mb-5">
+    <h1 class="font-heading text-3xl text-ivory tracking-wide">Daily Promo Buckets</h1>
+    <p class="text-sand text-sm mt-0.5">
+      Every customer sits in one of 7 buckets — one per weekday. Message today's bucket and
+      everyone with a paid bill is covered once a week. New customers are auto-assigned to the smallest bucket.
+    </p>
+  </div>
+
+  <!-- Bucket tabs -->
+  <div class="grid grid-cols-7 gap-1.5 mb-5">
+    <a th:each="entry : ${bucketCounts}"
+       th:href="@{/customers/promo-buckets(bucket=${entry.key})}"
+       th:classappend="${entry.key == selectedBucket}
+                       ? 'border-accent bg-accent/10 text-ivory shadow-neon-sm'
+                       : 'border-elevated/60 bg-surface text-sand hover:text-ivory'"
+       class="rounded-lg border px-1 py-2 text-center transition-colors">
+      <span class="block text-xs uppercase tracking-widest"
+            th:text="${dayNames[entry.key - 1]}">Mon</span>
+      <span class="block font-heading text-xl" th:text="${entry.value}">0</span>
+      <span th:if="${entry.key == todayBucket}"
+            class="block text-[10px] text-accent font-bold uppercase">Today</span>
+    </a>
+  </div>
+
+  <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
+    <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-elevated/60">
+      <p class="text-ivory text-sm font-medium"
+         th:text="${dayNames[selectedBucket - 1]} + ' bucket · ' + ${#lists.size(customers)}
+                  + ' customer' + (${#lists.size(customers)} == 1 ? '' : 's')
+                  + (${selectedBucket == todayBucket} ? ' (today)' : '')">
+      </p>
+      <button type="button"
+              th:if="${!#lists.isEmpty(customers)}"
+              th:data-text="${#strings.listJoin(customers.![name + ' - ' + phone], '&#10;')}"
+              onclick="navigator.clipboard.writeText(this.dataset.text).then(() => {
+                         const t = this.textContent; this.textContent = 'Copied!';
+                         setTimeout(() => this.textContent = t, 1500); })"
+              class="text-xs px-2.5 py-1 rounded border border-sand/30 text-sand
+                     hover:border-ivory/40 hover:text-ivory transition-colors">
+        Copy list
+      </button>
+    </div>
+
+    <div th:if="${#lists.isEmpty(customers)}" class="py-12 text-center text-sand text-sm">
+      No customers with a paid bill in this bucket yet.
+    </div>
+
+    <ul th:unless="${#lists.isEmpty(customers)}">
+      <li th:each="c, st : ${customers}"
+          class="flex items-center gap-3 px-4 py-3 border-b border-elevated/40 last:border-b-0">
+        <span class="text-sand/60 text-xs font-mono w-6 text-right" th:text="${st.count}">1</span>
+        <div class="flex-1 min-w-0">
+          <a th:href="@{/customers/{id}(id=${c.id})}"
+             class="block text-ivory font-medium truncate hover:text-accent"
+             th:text="${c.name}">Name</a>
+          <span class="text-sand font-mono text-xs" th:text="${c.phone}">phone</span>
+        </div>
+        <a th:href="'https://wa.me/' + ${c.whatsAppNumber}"
+           target="_blank" rel="noopener"
+           class="text-xs px-2.5 py-1.5 rounded border border-green-500/40 text-green-400
+                  hover:bg-green-500/10 transition-colors whitespace-nowrap">
+          WhatsApp
+        </a>
+      </li>
+    </ul>
+  </div>
+
+</main>
+</body>
+</html>

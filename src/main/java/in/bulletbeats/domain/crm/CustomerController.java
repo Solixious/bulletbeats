@@ -52,6 +52,17 @@ public class CustomerController {
         return "crm/list";
     }
 
+    @GetMapping("/promo-buckets")
+    public String promoBuckets(@RequestParam(required = false) Integer bucket, Model model) {
+        int today = customerService.todaysPromoBucket();
+        int selected = (bucket != null && bucket >= 1 && bucket <= 7) ? bucket : today;
+        model.addAttribute("todayBucket", today);
+        model.addAttribute("selectedBucket", selected);
+        model.addAttribute("bucketCounts", customerService.getPromoAudienceCounts());
+        model.addAttribute("customers", customerService.getPromoAudience(selected));
+        return "crm/promo-buckets";
+    }
+
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model, Authentication auth) {
         boolean manager = isManager(auth);
