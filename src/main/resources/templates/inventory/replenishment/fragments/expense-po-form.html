@@ -18,6 +18,12 @@
         hx-swap="innerHTML"
         class="p-5">
 
+    <div th:if="${lastLoggedAmount != null}"
+         class="mb-4 px-4 py-2 rounded-lg bg-elevated border border-accent/30 text-accent text-sm">
+      Logged ₹<span th:text="${#numbers.formatDecimal(lastLoggedAmount, 1, 2)}"></span> expense.
+      Supplier and date kept — continue logging or close.
+    </div>
+
     <p class="text-sand text-xs mb-4">
       Record a spend against a supplier without tracking individual items — useful for
       one-off purchases you don't need in inventory.
@@ -30,7 +36,8 @@
                 class="w-full bg-base border border-elevated/60 focus:border-accent rounded
                        px-3 py-2 text-ivory text-sm outline-none transition-colors focus:shadow-neon-sm">
           <option value="0">Select supplier…</option>
-          <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
+          <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"
+                  th:selected="${s.id == selectedSupplierId}"></option>
         </select>
       </div>
       <div>
@@ -38,13 +45,14 @@
         <div class="relative">
           <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sand/60 text-sm font-mono pointer-events-none">₹</span>
           <input type="number" name="totalAmount" step="0.01" min="0.01" placeholder="0.00" required
+                 th:autofocus="${lastLoggedAmount != null}"
                  class="w-full pl-7 bg-base border border-elevated/60 focus:border-accent rounded
                         px-3 py-2 text-ivory text-sm font-mono outline-none transition-colors focus:shadow-neon-sm"/>
         </div>
       </div>
       <div>
         <label class="block text-sand text-xs uppercase tracking-widest mb-1.5">Date (optional)</label>
-        <input type="date" name="expectedDeliveryDate"
+        <input type="date" name="expectedDeliveryDate" th:value="${selectedDate}"
                class="w-full bg-base border border-elevated/60 focus:border-accent rounded
                       px-3 py-2 text-ivory text-sm outline-none transition-colors focus:shadow-neon-sm"/>
       </div>
@@ -71,6 +79,19 @@
     </div>
   </form>
 </div>
+
+<!-- ── Response after an expense is logged ───────────────────────────── -->
+<!--
+  Primary content goes into #po-card (hx-swap="innerHTML").
+  OOB re-renders the form in #manual-po-panel with supplier/date kept, so
+  several past expenses can be logged in a row.
+-->
+<th:block th:fragment="expense-po-created">
+  <div th:replace="~{inventory/replenishment/fragments/po-section :: po-section}"></div>
+  <div id="manual-po-panel" hx-swap-oob="innerHTML">
+    <div th:replace="~{inventory/replenishment/fragments/expense-po-form :: expense-po-form}"></div>
+  </div>
+</th:block>
 
 </body>
 </html>

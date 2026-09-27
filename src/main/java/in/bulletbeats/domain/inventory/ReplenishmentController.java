@@ -134,6 +134,11 @@ public class ReplenishmentController {
             Model model) {
         purchaseOrderService.createExpenseOnlyPO(supplierId, totalAmount, expectedDeliveryDate, notes);
         model.addAttribute("orders", purchaseOrderService.getAllOrders());
-        return "inventory/replenishment/fragments/manual-po-form :: manual-po-created";
+        // Keep the form open with supplier/date prefilled for logging several expenses in a row
+        model.addAttribute("suppliers", supplierService.getAllActiveSuppliers());
+        model.addAttribute("selectedSupplierId", supplierId);
+        model.addAttribute("selectedDate", expectedDeliveryDate);
+        model.addAttribute("lastLoggedAmount", totalAmount);
+        return "inventory/replenishment/fragments/expense-po-form :: expense-po-created";
     }
 }
