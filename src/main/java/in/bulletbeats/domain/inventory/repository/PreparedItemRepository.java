@@ -13,6 +13,9 @@ public interface PreparedItemRepository extends JpaRepository<PreparedItem, Long
 
     boolean existsByNameIgnoreCase(String name);
 
+    @Query("SELECT COUNT(p) FROM PreparedItem p WHERE p.isActive = true AND p.quantityInStock < p.minThreshold")
+    long countLowStockItems();
+
     @Query("SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END FROM PreparedItem p JOIN p.ingredients i " +
            "WHERE i.groceryItem.id = :groceryItemId")
     boolean existsByIngredientsGroceryItemId(@Param("groceryItemId") Long groceryItemId);

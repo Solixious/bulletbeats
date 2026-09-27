@@ -64,6 +64,10 @@ public class PreparedItemService {
         return preparedItemRepository.findByIsActiveTrueOrderByNameAsc();
     }
 
+    public long getLowStockCount() {
+        return preparedItemRepository.countLowStockItems();
+    }
+
     public PreparedItem getById(Long id) {
         return preparedItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Prepared item not found with id: " + id));

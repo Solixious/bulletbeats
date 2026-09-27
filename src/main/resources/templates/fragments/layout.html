@@ -143,7 +143,13 @@
         <a href="/admin/prepared-items"
            th:classappend="${uri.startsWith('/admin/prepared-items')} ? ${activeClass} : ${inactiveClass}"
            class="flex items-center gap-3 px-5 py-2.5 text-sm transition-all duration-150">
-          <span class="text-base">🥣</span> Prepared Items
+          <span class="text-base">🥣</span>
+          <span class="flex-1">Prepared Items</span>
+          <span th:if="${preparedLowStockCount != null and preparedLowStockCount > 0}"
+                th:text="${preparedLowStockCount}"
+                class="px-1.5 py-0.5 text-xs rounded-full font-bold
+                       bg-amber-400/20 text-amber-400 border border-amber-400/40">
+          </span>
         </a>
 
         <a href="/customers"

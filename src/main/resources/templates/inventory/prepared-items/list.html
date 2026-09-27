@@ -33,6 +33,15 @@
     Prepared item deleted.
   </div>
 
+  <!-- Low stock banner -->
+  <div th:if="${preparedLowStockCount > 0}"
+       class="mb-5 flex items-center gap-3 px-4 py-3 rounded-lg
+              bg-amber-400/10 border border-amber-400/40 text-amber-400 text-sm"
+       style="box-shadow: 0 0 16px rgba(251,191,36,0.15)">
+    <span class="text-base">⚠</span>
+    <span><strong th:text="${preparedLowStockCount}"></strong> prepared item<span th:if="${preparedLowStockCount > 1}">s</span> running low — time to prepare a batch.</span>
+  </div>
+
   <div class="bg-surface rounded-xl overflow-hidden border border-elevated/60">
 
     <div th:if="${#lists.isEmpty(items)}" class="py-16 text-center text-sand text-sm">
