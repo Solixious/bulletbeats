@@ -192,6 +192,28 @@ public class NotificationService {
     }
 
     /**
+     * Delivery staff alert, Telegram-only variant: lists items one per line (with any
+     * customer prep notes) instead of the comma-flattened WhatsApp {@code itemsSummary}.
+     */
+    public void sendStaffTelegramDelivery(DeliveryOrderNotificationData data, String itemsMultiline) {
+        if (!isEnabled()) {
+            log.debug("Telegram notification skipped — notification.enabled is false");
+            return;
+        }
+        if (!isTelegramConfigured()) {
+            log.debug("Telegram notification skipped — bot token / staff chat id not configured");
+            return;
+        }
+        try {
+            Map<String, String> vars = new LinkedHashMap<>(data.templateVariables());
+            vars.put("5", itemsMultiline);
+            doSendTelegram(renderTelegramTemplate(TELEGRAM_TEMPLATE_ORDER_RECEIVED_DELIVERY, vars), true);
+        } catch (Exception e) {
+            log.error("Failed to send Telegram delivery staff notification: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Explicit manual test send to the staff Telegram chat — throws on any error,
      * bypasses the notification.enabled flag, still requires configuration.
      */

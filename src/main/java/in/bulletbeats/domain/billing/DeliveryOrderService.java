@@ -375,6 +375,9 @@ public class DeliveryOrderService {
         String itemsSummary = bill.getItems().stream()
                 .map(i -> i.getQuantity() + "x " + i.getItemName())
                 .collect(Collectors.joining(", "));
+        String itemsMultiline = bill.getItems().stream()
+                .map(i -> telegramItemLine(i.getQuantity(), i.getItemName(), i.getNote()))
+                .collect(Collectors.joining("\n"));
         String total = "₹" + bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
 
         String formattedText = "New direct delivery order — Bill #" + bill.getBillNumber()
@@ -387,9 +390,15 @@ public class DeliveryOrderService {
                     customerName, customerPhone, address, itemsSummary, total, formattedText));
         }
 
-        notificationService.sendStaffTelegram(WhatsappTemplate.ORDER_RECEIVED_DELIVERY, new DeliveryOrderNotificationData(
+        notificationService.sendStaffTelegramDelivery(new DeliveryOrderNotificationData(
                 null, NotificationChannel.WHATSAPP, bill.getBillNumber(),
-                customerName, customerPhone, address, itemsSummary, total, formattedText));
+                customerName, customerPhone, address, itemsSummary, total, formattedText), itemsMultiline);
+    }
+
+    /** One Telegram item line, with the customer's prep note (if any) on the line below. */
+    private static String telegramItemLine(int qty, String itemName, String note) {
+        String line = qty + "x " + itemName;
+        return (note != null && !note.isBlank()) ? line + "\n    ↳ Note: " + note : line;
     }
 
     @Transactional(readOnly = true)

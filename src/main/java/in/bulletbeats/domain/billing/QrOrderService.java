@@ -210,7 +210,7 @@ public class QrOrderService {
                 "[" + t + "] " + menuItem.getName() + " x" + quantity + " added via QR by " + actor);
 
         if (wasConfirmed) {
-            notifyStaffOfOrder(saved, true, quantity + "x " + menuItem.getName());
+            notifyStaffOfOrder(saved, true, telegramItemLine(quantity, menuItem.getName(), normalizedNote));
         }
 
         return saved;
@@ -296,7 +296,7 @@ public class QrOrderService {
                 .map(i -> i.getQuantity() + "x " + i.getItemName())
                 .collect(Collectors.joining(", "));
         String itemsMultiline = bill.getItems().stream()
-                .map(i -> i.getQuantity() + "x " + i.getItemName())
+                .map(i -> telegramItemLine(i.getQuantity(), i.getItemName(), i.getNote()))
                 .collect(Collectors.joining("\n"));
         String total = "₹" + bill.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
 
@@ -315,6 +315,12 @@ public class QrOrderService {
         }
 
         notificationService.sendStaffTelegramDineIn(data, itemsMultiline, isUpdate, addedItemsMultiline);
+    }
+
+    /** One Telegram item line, with the customer's prep note (if any) on the line below. */
+    private static String telegramItemLine(int qty, String itemName, String note) {
+        String line = qty + "x " + itemName;
+        return (note != null && !note.isBlank()) ? line + "\n    ↳ Note: " + note : line;
     }
 
     @Transactional(readOnly = true)
@@ -375,7 +381,7 @@ public class QrOrderService {
                 "[" + t + "] " + itemName + " qty updated to " + newQty + " via QR by " + actor);
 
         if (wasConfirmed) {
-            notifyStaffOfOrder(saved, true, delta + "x " + itemName);
+            notifyStaffOfOrder(saved, true, telegramItemLine(delta, itemName, item.getNote()));
         }
 
         return saved;
