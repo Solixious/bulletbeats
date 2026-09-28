@@ -4,6 +4,7 @@ import in.bulletbeats.domain.billing.entity.Bill;
 import in.bulletbeats.domain.billing.entity.CafeTable;
 import in.bulletbeats.domain.billing.repository.BillRepository;
 import in.bulletbeats.domain.billing.repository.CafeTableRepository;
+import in.bulletbeats.domain.dashboard.dto.CustomerWeekPointDto;
 import in.bulletbeats.domain.dashboard.dto.DashboardStatsDto;
 import in.bulletbeats.domain.dashboard.dto.OrderNameStatsDto;
 import in.bulletbeats.domain.dashboard.dto.OrderTypeRevenueDto;
@@ -32,14 +33,17 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -340,6 +344,86 @@ public class DashboardService {
             anonymousPercent = BigDecimal.valueOf(100).subtract(namedPercent);
         }
         return new OrderNameStatsDto(namedCount, anonymousCount, namedPercent, anonymousPercent);
+    }
+
+    /**
+     * Weekly customer activity + next-week retention for every ISO week from the
+     * first PAID bill to the current (partial) week. The dashboard slices this
+     * client-side into 1/3/6/12-month and all-time views.
+     */
+    public List<CustomerWeekPointDto> buildWeeklyCustomerTrend() {
+        LocalDate currentWeekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        Map<LocalDate, Set<Long>> visitorsByWeek = new TreeMap<>();
+        Map<Long, LocalDate> firstWeekByCustomer = new HashMap<>();
+        for (Object[] row : billRepository.findWeeklyPaidCustomerVisits()) {
+            LocalDate week = toLocalDate(row[0]);
+            Long customerId = ((Number) row[1]).longValue();
+            visitorsByWeek.computeIfAbsent(week, w -> new HashSet<>()).add(customerId);
+            firstWeekByCustomer.merge(customerId, week, (a, b) -> a.isBefore(b) ? a : b);
+        }
+
+        Map<LocalDate, Long> anonymousByWeek = new HashMap<>();
+        for (Object[] row : billRepository.countWeeklyAnonymousPaidOrders()) {
+            anonymousByWeek.put(toLocalDate(row[0]), ((Number) row[1]).longValue());
+        }
+
+        LocalDate earliest = Stream.concat(
+                        visitorsByWeek.keySet().stream(), anonymousByWeek.keySet().stream())
+                .min(LocalDate::compareTo)
+                .orElse(null);
+        if (earliest == null) {
+            return List.of();
+        }
+
+        DateTimeFormatter shortFmt = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH);
+        DateTimeFormatter fullFmt = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
+        Function<LocalDate, String> rangeFmt =
+                start -> start.format(shortFmt) + " – " + start.plusDays(6).format(fullFmt);
+
+        List<CustomerWeekPointDto> points = new ArrayList<>();
+        for (LocalDate week = earliest; !week.isAfter(currentWeekStart); week = week.plusWeeks(1)) {
+            LocalDate thisWeek = week;
+            LocalDate nextWeek = week.plusWeeks(1);
+            Set<Long> visitors = visitorsByWeek.getOrDefault(week, Set.of());
+            Set<Long> nextWeekVisitors = visitorsByWeek.getOrDefault(nextWeek, Set.of());
+
+            long newCount = 0, existingCount = 0, newRetained = 0, existingRetained = 0;
+            for (Long customerId : visitors) {
+                boolean returned = nextWeekVisitors.contains(customerId);
+                if (thisWeek.equals(firstWeekByCustomer.get(customerId))) {
+                    newCount++;
+                    if (returned) newRetained++;
+                } else {
+                    existingCount++;
+                    if (returned) existingRetained++;
+                }
+            }
+            long anonymous = anonymousByWeek.getOrDefault(week, 0L);
+
+            boolean hasRetention = week.isBefore(currentWeekStart);
+            points.add(new CustomerWeekPointDto(
+                    week.toString(),
+                    week.format(shortFmt),
+                    rangeFmt.apply(week),
+                    rangeFmt.apply(nextWeek),
+                    newCount, existingCount, anonymous,
+                    newCount + existingCount + anonymous,
+                    week.equals(currentWeekStart),
+                    hasRetention,
+                    nextWeek.equals(currentWeekStart),
+                    newRetained, existingRetained,
+                    hasRetention ? percentOrNull(newRetained, newCount) : null,
+                    hasRetention ? percentOrNull(existingRetained, existingCount) : null));
+        }
+        return points;
+    }
+
+    private static Double percentOrNull(long part, long whole) {
+        if (whole == 0) return null;
+        return BigDecimal.valueOf(part * 100L)
+                .divide(BigDecimal.valueOf(whole), 1, RoundingMode.HALF_UP)
+                .doubleValue();
     }
 
     public enum RevenueGranularity {

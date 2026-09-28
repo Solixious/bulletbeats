@@ -197,6 +197,30 @@ public interface BillRepository extends JpaRepository<Bill, Long>, JpaSpecificat
     long countByCustomerIdAndCreatedAtAfter(
             @Param("customerId") Long customerId, @Param("since") LocalDateTime since);
 
+    // One row per (ISO week, customer) with at least one PAID bill — feeds the
+    // dashboard's weekly new/existing/retention trend charts.
+    @Query(value = """
+            SELECT
+              CAST(DATE_TRUNC('week', b.created_at) AS date) AS weekStart,
+              b.customer_id AS customerId
+            FROM bills b
+            WHERE b.status = 'PAID'
+            AND b.customer_id IS NOT NULL
+            GROUP BY CAST(DATE_TRUNC('week', b.created_at) AS date), b.customer_id
+            """, nativeQuery = true)
+    List<Object[]> findWeeklyPaidCustomerVisits();
+
+    @Query(value = """
+            SELECT
+              CAST(DATE_TRUNC('week', b.created_at) AS date) AS weekStart,
+              COUNT(*) AS orderCount
+            FROM bills b
+            WHERE b.status = 'PAID'
+            AND b.customer_id IS NULL
+            GROUP BY CAST(DATE_TRUNC('week', b.created_at) AS date)
+            """, nativeQuery = true)
+    List<Object[]> countWeeklyAnonymousPaidOrders();
+
     // createdAt is @Column(updatable = false) so JPA auditing never lets the
     // entity's own save() path touch it again; this bulk update is the only
     // way to backdate a bill's creation timestamp for the admin flow.

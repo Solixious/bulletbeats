@@ -55,6 +55,8 @@ public class DashboardController {
             model.addAttribute("revenueGranularity", DashboardService.RevenueGranularity.DAILY.name());
             model.addAttribute("revenueChart",
                     dashboardService.buildRevenueChart(DashboardService.RevenueGranularity.DAILY));
+
+            model.addAttribute("customerTrend", dashboardService.buildWeeklyCustomerTrend());
         }
 
         return "dashboard/dashboard";
