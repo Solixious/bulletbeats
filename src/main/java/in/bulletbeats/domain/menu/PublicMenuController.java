@@ -58,7 +58,7 @@ public class PublicMenuController {
             model.addAttribute("items", menuService.getAllItems());
             return;
         }
-        Category selected = categoryService.getById(categoryId);
+        Category selected = categoryService.getActiveById(categoryId);
         if (selected.getParent() != null) {
             model.addAttribute("items", menuService.getItemsByCategory(categoryId));
             return;

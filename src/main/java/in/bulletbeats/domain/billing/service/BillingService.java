@@ -51,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Join;
@@ -125,6 +126,7 @@ public class BillingService {
      * Active menu items (available and unavailable — staff can see both) grouped by category
      * and subcategory in tree order, for the "All" view of the billing menu picker.
      */
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<CategoryWithItemsDto> getGroupedMenuItems() {
         List<CategoryNode> tree = categoryService.getActiveCategoryTree();
         List<MenuItem> allActive = menuService.getAllItems();

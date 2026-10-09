@@ -32,6 +32,7 @@ import in.bulletbeats.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -118,7 +119,7 @@ public class DeliveryOrderService {
         return new DeliveryMenuDto(billId, bill.getDeliveryAddress(), customerName, grouped);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<CategoryWithItemsDto> getGroupedMenuItems() {
         List<CategoryNode> tree = categoryService.getActiveCategoryTree();
         List<MenuItem> allAvailable = menuService.getAllAvailableItems();

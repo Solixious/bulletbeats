@@ -12,7 +12,9 @@ import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,9 +42,12 @@ public class MenuService {
     private final MenuItemPlatformPriceRepository menuItemPlatformPriceRepository;
     private final OnlinePlatformService onlinePlatformService;
     private final IngredientAggregationService ingredientAggregationService;
+    private final MenuCache menuCache;
+    private final ApplicationEventPublisher eventPublisher;
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<MenuItem> getAllItems() {
-        return menuItemRepository.findByIsActiveTrueOrderByCategoryDisplayOrderAscDisplayOrderAscNameAsc();
+        return menuCache.activeItems();
     }
 
     public List<MenuItem> getAllItemsForAdmin() {
@@ -59,20 +64,24 @@ public class MenuService {
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<MenuItem> getItemsByCategory(Long categoryId) {
-        return menuItemRepository.findByCategoryIdAndIsActiveTrueOrderByDisplayOrderAscNameAsc(categoryId);
+        return menuCache.itemsByCategory(categoryId);
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<MenuItem> getAllAvailableItems() {
-        return menuItemRepository.findAllAvailableOrdered();
+        return menuCache.availableItems();
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<MenuItem> searchAvailableItems(String q) {
-        return menuItemRepository.searchAvailableItems(q);
+        return menuCache.searchActiveItems(q).stream().filter(MenuItem::isAvailable).toList();
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<MenuItem> searchActiveItems(String q) {
-        return menuItemRepository.searchActiveItems(q);
+        return menuCache.searchActiveItems(q);
     }
 
     /**
@@ -80,10 +89,12 @@ public class MenuService {
      * rather than the raw {@code category.displayOrder} column, which is scoped independently per
      * parent and collides across unrelated categories/subcategories when compared directly.
      */
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<MenuItem> getAllItemsTreeOrdered() {
         return treeOrder(getAllItems());
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<MenuItem> searchActiveItemsTreeOrdered(String q) {
         return treeOrder(searchActiveItems(q));
     }
@@ -179,6 +190,7 @@ public class MenuService {
                 .build();
         MenuItem saved = menuItemRepository.save(item);
         syncPlatformPrices(saved, dto.getPlatformPrices());
+        menuChanged();
         return saved;
     }
 
@@ -220,6 +232,7 @@ public class MenuService {
         item.setDisplayOrder(dto.getDisplayOrder());
         MenuItem saved = menuItemRepository.save(item);
         syncPlatformPrices(saved, dto.getPlatformPrices());
+        menuChanged();
         return saved;
     }
 
@@ -312,6 +325,7 @@ public class MenuService {
         priceHistoryRepository.save(history);
         item.setPrice(newPrice);
         menuItemRepository.save(item);
+        menuChanged();
     }
 
     @Transactional
@@ -329,6 +343,7 @@ public class MenuService {
         item.setAvailabilityOverride(newOverride);
         item.setAvailable(newOverride != null ? newOverride : computeIngredientAvailability(item));
         menuItemRepository.save(item);
+        menuChanged();
     }
 
     @Transactional
@@ -341,6 +356,7 @@ public class MenuService {
             item.setAvailable(computeIngredientAvailability(item));
         }
         menuItemRepository.save(item);
+        menuChanged();
     }
 
     @Transactional
@@ -351,6 +367,7 @@ public class MenuService {
             item.setAvailable(computeIngredientAvailability(item));
         }
         menuItemRepository.saveAll(items);
+        menuChanged();
     }
 
     @Transactional
@@ -360,6 +377,7 @@ public class MenuService {
             item.setDisplayOrder(i);
             menuItemRepository.save(item);
         }
+        menuChanged();
     }
 
     @Transactional
@@ -370,6 +388,7 @@ public class MenuService {
         imageStorageService.delete(item.getThumbnailPath());
         item.setActive(false);
         menuItemRepository.save(item);
+        menuChanged();
     }
 
     @Transactional
@@ -378,10 +397,12 @@ public class MenuService {
         MenuItem item = getItemById(id);
         item.setActive(true);
         menuItemRepository.save(item);
+        menuChanged();
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     public Optional<MenuItem> getPromotedItem() {
-        return menuItemRepository.findActivePromoted();
+        return menuCache.promotedItem();
     }
 
     @Transactional
@@ -395,6 +416,7 @@ public class MenuService {
         item.setPromoted(true);
         item.setPromotionText(text);
         menuItemRepository.save(item);
+        menuChanged();
     }
 
     @Transactional
@@ -404,6 +426,7 @@ public class MenuService {
             item.setPromotionText(null);
             menuItemRepository.save(item);
         });
+        menuChanged();
     }
 
     public List<?> getIngredients(Long id) {
@@ -443,6 +466,11 @@ public class MenuService {
 
     public List<MenuItemAvailabilityLog> getAvailabilityLog(Long id) {
         return availabilityLogRepository.findByMenuItemIdOrderByChangedAtDesc(id);
+    }
+
+    /** Refreshes {@link MenuCache} once the current transaction commits. */
+    private void menuChanged() {
+        eventPublisher.publishEvent(new MenuChangedEvent());
     }
 
     private boolean computeIngredientAvailability(MenuItem item) {

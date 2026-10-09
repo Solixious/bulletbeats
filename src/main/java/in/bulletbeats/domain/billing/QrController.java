@@ -231,7 +231,7 @@ public class QrController {
             categories = qrOrderService.getGroupedMenuItems();
         } else {
             items = menuService.getItemsByCategory(categoryId);
-            Category selected = categoryService.getById(categoryId);
+            Category selected = categoryService.getActiveById(categoryId);
             if (selected.getParent() == null) {
                 subcategoryGroups = categoryService.getActiveSubcategories(categoryId).stream()
                         .map(sub -> new SubcategoryWithItemsDto(sub, menuService.getItemsByCategory(sub.getId())))

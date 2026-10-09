@@ -32,7 +32,7 @@ public class MenuViewController {
         if (categoryId == null) {
             items = menuService.getAllItemsTreeOrdered();
         } else {
-            Category selected = categoryService.getById(categoryId);
+            Category selected = categoryService.getActiveById(categoryId);
             List<Category> subs = selected.getParent() == null
                     ? categoryService.getActiveSubcategories(categoryId)
                     : List.of();

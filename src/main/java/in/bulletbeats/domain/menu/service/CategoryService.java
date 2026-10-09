@@ -8,7 +8,9 @@ import in.bulletbeats.domain.menu.repository.MenuItemRepository;
 import in.bulletbeats.domain.shared.exception.CategoryInUseException;
 import in.bulletbeats.domain.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -20,9 +22,12 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final MenuItemRepository menuItemRepository;
+    private final MenuCache menuCache;
+    private final ApplicationEventPublisher eventPublisher;
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<Category> getAllActive() {
-        return categoryRepository.findByParentIsNullAndIsActiveTrueOrderByDisplayOrderAscNameAsc();
+        return menuCache.activeTopLevelCategories();
     }
 
     public List<Category> getAllInactive() {
@@ -33,18 +38,28 @@ public class CategoryService {
         return categoryRepository.findByParentIsNullOrderByDisplayOrderAscNameAsc();
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<Category> getActiveSubcategories(Long parentId) {
-        return categoryRepository.findByParentIdAndIsActiveTrueOrderByDisplayOrderAscNameAsc(parentId);
+        return menuCache.activeSubcategories(parentId);
     }
 
     public List<Category> getAllSubcategories(Long parentId) {
         return categoryRepository.findByParentIdOrderByDisplayOrderAscNameAsc(parentId);
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<CategoryNode> getActiveCategoryTree() {
-        return getAllActive().stream()
-                .map(cat -> new CategoryNode(cat, getActiveSubcategories(cat.getId())))
-                .toList();
+        return menuCache.activeCategoryTree();
+    }
+
+    /**
+     * Read-only lookup for menu-rendering paths: served from {@link MenuCache} for active
+     * categories, falling back to the DB otherwise. Never mutate the returned entity — write
+     * paths use {@link #getById(Long)}.
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public Category getActiveById(Long id) {
+        return menuCache.activeCategory(id).orElseGet(() -> getById(id));
     }
 
     public Category getById(Long id) {
@@ -66,7 +81,9 @@ public class CategoryService {
                 .tenantId(1L)
                 .parent(parent)
                 .build();
-        return categoryRepository.save(category);
+        Category saved = categoryRepository.save(category);
+        menuChanged();
+        return saved;
     }
 
     @Transactional
@@ -86,7 +103,9 @@ public class CategoryService {
         category.setDescription(dto.getDescription());
         category.setDisplayOrder(dto.getDisplayOrder());
         category.setParent(parent);
-        return categoryRepository.save(category);
+        Category saved = categoryRepository.save(category);
+        menuChanged();
+        return saved;
     }
 
     private Category resolveParent(Long parentId, Long selfId) {
@@ -116,6 +135,7 @@ public class CategoryService {
             category.setDisplayOrder(i);
             categoryRepository.save(category);
         }
+        menuChanged();
     }
 
     @Transactional
@@ -123,6 +143,7 @@ public class CategoryService {
         Category category = getById(id);
         category.setActive(false);
         categoryRepository.save(category);
+        menuChanged();
     }
 
     @Transactional
@@ -130,6 +151,7 @@ public class CategoryService {
         Category category = getById(id);
         category.setActive(true);
         categoryRepository.save(category);
+        menuChanged();
     }
 
     @Transactional
@@ -143,5 +165,11 @@ public class CategoryService {
                     "This category has subcategories — delete or reassign them first");
         }
         categoryRepository.delete(category);
+        menuChanged();
+    }
+
+    /** Refreshes {@link MenuCache} once the current transaction commits. */
+    private void menuChanged() {
+        eventPublisher.publishEvent(new MenuChangedEvent());
     }
 }

@@ -15,10 +15,15 @@ public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager manager = new CaffeineCacheManager("users", "menuItems");
+        CaffeineCacheManager manager = new CaffeineCacheManager("users");
         manager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(500)
                 .expireAfterWrite(10, TimeUnit.MINUTES));
+        // Per-id menu item lookups; also cleared wholesale by MenuCache on every menu change.
+        manager.registerCustomCache("menuItems", Caffeine.newBuilder()
+                .maximumSize(500)
+                .expireAfterWrite(5, TimeUnit.MINUTES)
+                .build());
         return manager;
     }
 }
