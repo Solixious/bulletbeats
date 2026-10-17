@@ -80,7 +80,6 @@ public class BillingController {
     // ── History ───────────────────────────────────────────────────────────
 
     @GetMapping("/history")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public String history(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
                           @RequestParam(required = false) String phone,
@@ -539,10 +538,9 @@ public class BillingController {
         return "redirect:/bills/" + id;
     }
 
-    // ── Cancel (Manager+) ─────────────────────────────────────────────────
+    // ── Cancel ────────────────────────────────────────────────────────────
 
     @PostMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public String cancelBill(@PathVariable Long id, Authentication auth) {
         billingService.cancelBill(id, currentUserId(auth));
         return "redirect:/bills?cancelled";
