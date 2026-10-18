@@ -23,10 +23,10 @@
                   + (${bill.createdAt != null} ? ' · ' + ${#temporals.format(bill.createdAt, 'dd MMM, HH:mm')} : '')">
       </p>
     </div>
-    <!-- Header actions (manager+) -->
-    <div class="flex items-center gap-2" sec:authorize="hasAnyRole('MANAGER','ADMIN')">
-      <!-- Transfer Table button (dine-in only) -->
-      <div id="bill-transfer-btn">
+    <!-- Header actions -->
+    <div class="flex items-center gap-2">
+      <!-- Transfer Table button (dine-in only, manager+) -->
+      <div id="bill-transfer-btn" sec:authorize="hasAnyRole('MANAGER','ADMIN')">
         <button th:if="${bill.cafeTable != null and (bill.status.name() == 'DRAFT' or bill.status.name() == 'CONFIRMED')}"
                 th:attr="hx-get=@{/bills/{id}/transfer-form(id=${bill.id})}"
                 hx-target="#transfer-panel"
