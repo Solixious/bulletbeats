@@ -16,11 +16,22 @@ public class SupabaseStorageService {
     private final SupabaseProperties props;
     private final RestClient supabaseRestClient;
 
+    // Supabase stores this value verbatim as the object's Cache-Control (prefixed with "public, ").
+    // Without the header it defaults to "no-cache", forcing a revalidation request on every view.
+    public static final String CACHE_IMMUTABLE = "max-age=31536000, immutable";
+    private static final String CACHE_NONE = "no-cache";
+
     public String upload(byte[] bytes, String contentType, String objectPath) {
+        return upload(bytes, contentType, objectPath, CACHE_NONE);
+    }
+
+    /** Use CACHE_IMMUTABLE only for objects whose path is never reused for different content. */
+    public String upload(byte[] bytes, String contentType, String objectPath, String cacheControl) {
         supabaseRestClient.post()
                 .uri(objectUri(objectPath))
                 .header("Authorization", "Bearer " + props.getServiceRoleKey())
                 .header("x-upsert", "true")
+                .header("cache-control", cacheControl)
                 .contentType(MediaType.parseMediaType(contentType))
                 .body(bytes)
                 .retrieve()

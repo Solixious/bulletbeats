@@ -43,7 +43,8 @@ public class ImageStorageService {
 
         String objectPath = subDir + "/" + UUID.randomUUID() + "." + extension;
         try {
-            return supabaseStorageService.upload(file.getBytes(), file.getContentType(), objectPath);
+            return supabaseStorageService.upload(file.getBytes(), file.getContentType(), objectPath,
+                    SupabaseStorageService.CACHE_IMMUTABLE);
         } catch (IOException e) {
             throw new ImageStorageException("Failed to read uploaded file", e);
         }
@@ -70,14 +71,16 @@ public class ImageStorageService {
         }
 
         String objectPath = subDir + "/" + UUID.randomUUID() + "." + extension;
-        String imagePath = supabaseStorageService.upload(bytes, file.getContentType(), objectPath);
+        String imagePath = supabaseStorageService.upload(bytes, file.getContentType(), objectPath,
+                SupabaseStorageService.CACHE_IMMUTABLE);
 
         String thumbnailPath = null;
         try {
             byte[] thumbBytes = createThumbnail(bytes, extension);
             if (thumbBytes != null) {
                 String thumbObjectPath = subDir + "/thumbs/" + UUID.randomUUID() + "." + extension;
-                thumbnailPath = supabaseStorageService.upload(thumbBytes, file.getContentType(), thumbObjectPath);
+                thumbnailPath = supabaseStorageService.upload(thumbBytes, file.getContentType(), thumbObjectPath,
+                        SupabaseStorageService.CACHE_IMMUTABLE);
             }
         } catch (Exception ignored) {
             // thumbnail is optional — fall back to full image in templates
